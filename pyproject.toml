@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "claude-quant"
+version = "0.1.0"
+description = "Autonomous AI Trading System powered by Claude agents"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+dependencies = [
+    "ccxt>=4.2.0",
+    "pandas>=2.1.0",
+    "numpy>=1.25.0",
+    "TA-Lib>=0.4.28",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "rich>=13.7.0",
+    "aiohttp>=3.9.0",
+    "websockets>=12.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.5.0",
+    "anthropic>=0.40.0",
+    "mcp>=1.0.0",
+    "apscheduler>=3.10.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "mypy>=1.8.0",
+    "ruff>=0.2.0",
+]
+freqtrade = [
+    "freqtrade>=2024.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow running",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

@@ -1,0 +1,40 @@
+# Circuit Breaker Thresholds
+# NOTE: These are REFERENCE ONLY. The actual thresholds are HARDCODED
+# in src/risk/circuit_breaker.py and CANNOT be overridden.
+# This file exists for documentation purposes.
+
+levels:
+  GREEN:
+    balance_min: 60.0
+    description: "Normal trading"
+    max_leverage: 10
+    max_positions: 3
+    size_multiplier: 1.0
+
+  YELLOW:
+    balance_min: 45.0
+    balance_max: 60.0
+    description: "Reduced risk mode"
+    max_leverage: 5
+    max_positions: 2
+    size_multiplier: 0.5
+
+  RED:
+    balance_min: 30.0
+    balance_max: 45.0
+    description: "Survival mode"
+    max_leverage: 3
+    max_positions: 1
+    size_multiplier: 0.25
+    min_recent_win_rate: 0.667  # 2/3 in last 10 trades
+
+  DEAD:
+    balance_max: 30.0
+    description: "HALT ALL TRADING - manual intervention required"
+    max_leverage: 0
+    max_positions: 0
+    size_multiplier: 0.0
+
+daily_loss_halt:
+  threshold_pct: 0.10  # 10% daily loss = halt
+  resume: "next_utc_day"

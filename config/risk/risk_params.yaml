@@ -1,0 +1,44 @@
+# Risk Management Parameters
+# WARNING: Circuit breaker thresholds are HARDCODED in circuit_breaker.py
+# This file contains tunable (non-safety-critical) parameters only.
+
+position_sizing:
+  method: "half_kelly"
+  kelly_fraction: 0.5  # Half-Kelly for safety
+  max_position_pct: 0.15  # Max 15% of balance per trade
+  min_position_usd: 5.0  # Minimum viable position
+
+leverage:
+  max_leverage: 10
+  default_leverage: 3
+  # Confidence -> leverage mapping
+  tiers:
+    - min_confidence: 80
+      regime: "strong_trend"
+      leverage: [7, 10]
+    - min_confidence: 60
+      regime: "moderate_trend"
+      leverage: [5, 7]
+    - min_confidence: 60
+      regime: "volatile"
+      leverage: [3, 5]
+    - min_confidence: 40
+      regime: "ranging"
+      leverage: [2, 3]
+
+risk_reward:
+  min_rr_ratio: 2.0  # Minimum 1:2 risk/reward
+  max_risk_per_trade_pct: 0.02  # 2% of balance max risk
+
+stop_loss:
+  atr_multiplier: 1.5  # Default SL at 1.5x ATR
+  max_sl_pct: 0.03  # Max 3% stop loss distance
+
+overtrading:
+  max_daily_trades: 20
+  cooldown_after_loss_streak: 7200  # 2 hours in seconds
+  loss_streak_threshold: 5
+
+correlation:
+  max_correlated_exposure: 0.25  # Max 25% in correlated assets
+  correlation_threshold: 0.7  # Assets > 0.7 corr considered correlated

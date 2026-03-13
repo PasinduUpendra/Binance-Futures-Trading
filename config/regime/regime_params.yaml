@@ -1,0 +1,44 @@
+# Market Regime Detection Parameters
+
+regime_classification:
+  trending:
+    adx_min: 25
+    bb_width: "normal"
+    atr_ratio: "normal"
+    volume: "normal_or_rising"
+
+  ranging:
+    adx_max: 20
+    bb_width: "narrow"
+    atr_ratio: "low"
+    volume: "low"
+
+  volatile:
+    adx_range: [15, 30]
+    bb_width_multiplier: 1.5  # >1.5x average = wide
+    atr_ratio_multiplier: 1.2  # >1.2x average = high
+    volume: "spike"
+
+  quiet:
+    adx_max: 15
+    bb_width: "very_narrow"
+    atr_ratio: "very_low"
+    volume: "very_low"
+
+indicators:
+  adx_period: 14
+  bb_period: 20
+  bb_std: 2.0
+  atr_period: 14
+  ema_periods: [9, 21, 50, 200]
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  volume_avg_period: 20
+
+lookback:
+  regime_window: 50  # candles for regime assessment
+  bb_width_avg_window: 100  # candles for BB width average
+  atr_avg_window: 100  # candles for ATR average
+  volume_avg_window: 20  # candles for volume average

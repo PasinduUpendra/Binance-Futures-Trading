@@ -1,0 +1,33 @@
+# Core trading
+ccxt>=4.2.0
+pandas>=2.1.0
+numpy>=1.25.0
+TA-Lib>=0.4.28
+
+# Configuration
+python-dotenv>=1.0.0
+pyyaml>=6.0
+pydantic>=2.5.0
+
+# HTTP / WebSocket
+aiohttp>=3.9.0
+websockets>=12.0
+httpx>=0.27.0
+requests>=2.31.0
+
+# Claude Agent SDK
+anthropic>=0.40.0
+mcp>=1.0.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# UI / Reporting
+rich>=13.7.0
+jinja2>=3.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0

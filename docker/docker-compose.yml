@@ -1,0 +1,148 @@
+# ---------------------------------------------------------------------------
+# Claude Quant — Full Stack Docker Compose
+# ---------------------------------------------------------------------------
+# Services:
+#   orchestrator  — Main Claude agent loop (MCP tools + orchestrator)
+#   freqtrade     — Freqtrade trading engine with custom strategy
+# ---------------------------------------------------------------------------
+
+version: "3.9"
+
+services:
+  # -----------------------------------------------------------------------
+  # Orchestrator: Claude Agent main loop
+  # -----------------------------------------------------------------------
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: claude-quant-orchestrator
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET}
+      - BINANCE_TESTNET=${BINANCE_TESTNET:-true}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - INITIAL_CAPITAL=${INITIAL_CAPITAL:-75.0}
+      - HARD_FLOOR_BALANCE=${HARD_FLOOR_BALANCE:-30.0}
+      - MAX_LEVERAGE=${MAX_LEVERAGE:-10}
+      - MAX_CONCURRENT_POSITIONS=${MAX_CONCURRENT_POSITIONS:-3}
+      - MAX_DAILY_TRADES=${MAX_DAILY_TRADES:-20}
+      - TRADEMEMORY_DB_PATH=/app/user_data/tradememory.db
+      - FREQTRADE_API_URL=http://freqtrade:8080
+      - FREQTRADE_API_USER=${FREQTRADE_API_USER:-freqtrade}
+      - FREQTRADE_API_PASS=${FREQTRADE_API_PASS:-freqtrade}
+    volumes:
+      # Persistent state across restarts
+      - agent_state:/app/user_data/agent_state
+      - data:/app/user_data/data
+      - logs:/app/user_data/logs
+      - reports:/app/docs/reports
+    networks:
+      - claude-quant-net
+    depends_on:
+      freqtrade:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys; sys.exit(0 if os.path.exists('/app/src/orchestrator/__init__.py') else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Graceful shutdown: send SIGTERM, wait up to 60s for open orders
+    stop_grace_period: 60s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # -----------------------------------------------------------------------
+  # Freqtrade: Trading engine
+  # -----------------------------------------------------------------------
+  freqtrade:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.freqtrade
+    container_name: claude-quant-freqtrade
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - FREQTRADE__EXCHANGE__KEY=${BINANCE_API_KEY}
+      - FREQTRADE__EXCHANGE__SECRET=${BINANCE_API_SECRET}
+      - FREQTRADE__DRY_RUN=${FREQTRADE_DRY_RUN:-true}
+      - FREQTRADE__DRY_RUN_WALLET=${INITIAL_CAPITAL:-75.0}
+      - FREQTRADE__TELEGRAM__ENABLED=${TELEGRAM_ENABLED:-false}
+      - FREQTRADE__TELEGRAM__TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - FREQTRADE__TELEGRAM__CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    ports:
+      - "${FREQTRADE_PORT:-8080}:8080"
+    volumes:
+      # Share data and logs with orchestrator
+      - data:/freqtrade/user_data/data
+      - logs:/freqtrade/user_data/logs
+      - freqtrade_db:/freqtrade/user_data/
+    networks:
+      - claude-quant-net
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/api/v1/ping"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  agent_state:
+    driver: local
+    name: claude-quant-agent-state
+  data:
+    driver: local
+    name: claude-quant-data
+  logs:
+    driver: local
+    name: claude-quant-logs
+  reports:
+    driver: local
+    name: claude-quant-reports
+  freqtrade_db:
+    driver: local
+    name: claude-quant-freqtrade-db
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  claude-quant-net:
+    driver: bridge
+    name: claude-quant-network

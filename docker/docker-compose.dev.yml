@@ -1,0 +1,77 @@
+# ---------------------------------------------------------------------------
+# Claude Quant — Development Docker Compose Overrides
+# ---------------------------------------------------------------------------
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
+#
+# Overrides for development:
+#   - Source code mounted as volumes (live reload)
+#   - Debug logging enabled
+#   - Testnet forced on
+#   - Freqtrade in dry-run mode
+#   - Additional debug ports exposed
+# ---------------------------------------------------------------------------
+
+version: "3.9"
+
+services:
+  # -----------------------------------------------------------------------
+  # Orchestrator: Development overrides
+  # -----------------------------------------------------------------------
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      # No cache for dev builds when source changes
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    environment:
+      - LOG_LEVEL=DEBUG
+      - BINANCE_TESTNET=true
+      - PYTHONDONTWRITEBYTECODE=0
+      # Enable more verbose ccxt logging
+      - CCXT_LOG_LEVEL=DEBUG
+    volumes:
+      # Mount source code for live editing (overrides COPY in Dockerfile)
+      - ../src:/app/src:ro
+      - ../config:/app/config:ro
+      - ../pyproject.toml:/app/pyproject.toml:ro
+      - ../requirements.txt:/app/requirements.txt:ro
+      # Persistent state on local filesystem (not Docker volumes in dev)
+      - ../user_data/agent_state:/app/user_data/agent_state
+      - ../user_data/data:/app/user_data/data
+      - ../user_data/logs:/app/user_data/logs
+      - ../docs/reports:/app/docs/reports
+    # No depends_on override — still waits for freqtrade in dev
+    # Relax resource limits for dev
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "4.0"
+
+  # -----------------------------------------------------------------------
+  # Freqtrade: Development overrides
+  # -----------------------------------------------------------------------
+  freqtrade:
+    environment:
+      - FREQTRADE__DRY_RUN=true
+      - FREQTRADE__DRY_RUN_WALLET=75.0
+      # Enable API server with verbose logging in dev
+      - FREQTRADE__API_SERVER__VERBOSITY=info
+      - FREQTRADE__API_SERVER__ENABLE_OPENAPI=true
+    volumes:
+      # Mount strategies for live editing
+      - ../user_data/strategies:/freqtrade/user_data/strategies:ro
+      - ../config/freqtrade/config.json:/freqtrade/user_data/config.json:ro
+      # Local data directory
+      - ../user_data/data:/freqtrade/user_data/data
+      - ../user_data/logs:/freqtrade/user_data/logs
+    ports:
+      # Expose API for browser access during development
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"

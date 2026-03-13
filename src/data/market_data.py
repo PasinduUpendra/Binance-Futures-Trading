@@ -1,0 +1,398 @@
+"""
+Market data client for Binance Futures via ccxt.
+
+Provides async OHLCV, ticker, orderbook fetching and real-time WebSocket
+price subscriptions. All prices use Decimal for precision and timestamps
+are always UTC.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from typing import Any, Callable, Coroutine
+
+import ccxt.async_support as ccxt_async
+import websockets
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger("claude_quant.data.market_data")
+
+# ---------------------------------------------------------------------------
+# Pydantic models
+# ---------------------------------------------------------------------------
+
+
+class TickerData(BaseModel):
+    """Snapshot of a single symbol's ticker."""
+
+    symbol: str
+    bid: Decimal
+    ask: Decimal
+    last: Decimal
+    high: Decimal
+    low: Decimal
+    volume: Decimal
+    timestamp: datetime
+
+
+class OrderBookEntry(BaseModel):
+    price: Decimal
+    amount: Decimal
+
+
+class OrderBookData(BaseModel):
+    symbol: str
+    bids: list[OrderBookEntry]
+    asks: list[OrderBookEntry]
+    timestamp: datetime
+
+
+# ---------------------------------------------------------------------------
+# Retry decorator
+# ---------------------------------------------------------------------------
+
+_MAX_RETRIES = 3
+_BACKOFF_BASE = 1.0  # seconds
+
+
+def _retry(func: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+    """Decorator: retry an async method up to _MAX_RETRIES with exponential backoff."""
+
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        last_exc: Exception | None = None
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                return await func(*args, **kwargs)
+            except (
+                ccxt_async.NetworkError,
+                ccxt_async.ExchangeNotAvailable,
+                ccxt_async.RequestTimeout,
+                ccxt_async.DDoSProtection,
+            ) as exc:
+                last_exc = exc
+                wait = _BACKOFF_BASE * (2 ** (attempt - 1))
+                logger.warning(
+                    "Attempt %d/%d for %s failed (%s). Retrying in %.1fs ...",
+                    attempt,
+                    _MAX_RETRIES,
+                    func.__qualname__,
+                    exc,
+                    wait,
+                )
+                await asyncio.sleep(wait)
+            except ccxt_async.ExchangeError as exc:
+                # Non-transient exchange errors should not be retried.
+                logger.error("%s raised ExchangeError: %s", func.__qualname__, exc)
+                raise
+        # All retries exhausted
+        raise RuntimeError(
+            f"{func.__qualname__} failed after {_MAX_RETRIES} attempts"
+        ) from last_exc
+
+    wrapper.__qualname__ = func.__qualname__
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+# ---------------------------------------------------------------------------
+# MarketDataClient
+# ---------------------------------------------------------------------------
+
+
+class MarketDataClient:
+    """Async Binance Futures market-data client backed by ccxt.
+
+    Parameters
+    ----------
+    api_key : str | None
+        Binance API key.  Defaults to ``BINANCE_API_KEY`` env var.
+    api_secret : str | None
+        Binance API secret.  Defaults to ``BINANCE_API_SECRET`` env var.
+    testnet : bool | None
+        If *True* use Binance Futures testnet.  Defaults to ``BINANCE_TESTNET``
+        env var (``"true"`` means testnet, anything else means production).
+    """
+
+    TESTNET_WS_URL = "wss://fstream.binancefuture.com/ws"
+    PRODUCTION_WS_URL = "wss://fstream.binance.com/ws"
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        api_secret: str | None = None,
+        testnet: bool | None = None,
+    ) -> None:
+        self._api_key = api_key or os.getenv("BINANCE_API_KEY", "")
+        self._api_secret = api_secret or os.getenv("BINANCE_API_SECRET", "")
+
+        if testnet is None:
+            testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
+        self._testnet = testnet
+
+        self._exchange: ccxt_async.binanceusdm | None = None
+        self._ws_connections: dict[str, asyncio.Task[None]] = {}
+        self._ws_stop_events: dict[str, asyncio.Event] = {}
+
+    # -- lifecycle -----------------------------------------------------------
+
+    async def connect(self) -> None:
+        """Initialise the ccxt exchange instance and load markets."""
+        if self._exchange is not None:
+            return
+
+        self._exchange = ccxt_async.binanceusdm(
+            {
+                "apiKey": self._api_key,
+                "secret": self._api_secret,
+                "enableRateLimit": True,
+                "options": {
+                    "defaultType": "future",
+                    "adjustForTimeDifference": True,
+                },
+            }
+        )
+
+        if self._testnet:
+            self._exchange.set_sandbox_mode(True)
+            logger.info("MarketDataClient connected to Binance Futures TESTNET")
+        else:
+            logger.info("MarketDataClient connected to Binance Futures PRODUCTION")
+
+        await self._exchange.load_markets()
+
+    async def close(self) -> None:
+        """Shut down the exchange connection and all WebSocket subscriptions."""
+        # Cancel WebSocket tasks
+        for symbol, stop_event in list(self._ws_stop_events.items()):
+            stop_event.set()
+        for symbol, task in list(self._ws_connections.items()):
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        self._ws_connections.clear()
+        self._ws_stop_events.clear()
+
+        if self._exchange is not None:
+            await self._exchange.close()
+            self._exchange = None
+            logger.info("MarketDataClient closed")
+
+    async def __aenter__(self) -> MarketDataClient:
+        await self.connect()
+        return self
+
+    async def __aexit__(self, *exc: Any) -> None:
+        await self.close()
+
+    # -- helpers -------------------------------------------------------------
+
+    def _require_exchange(self) -> ccxt_async.binanceusdm:
+        if self._exchange is None:
+            raise RuntimeError("MarketDataClient not connected. Call connect() first.")
+        return self._exchange
+
+    @staticmethod
+    def _to_decimal(value: Any) -> Decimal:
+        """Convert a float/int/str to Decimal, raising on NaN/None."""
+        if value is None:
+            raise ValueError("Cannot convert None to Decimal")
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError(f"Cannot convert {value!r} to Decimal") from exc
+
+    @staticmethod
+    def _utc_from_ms(ms: int | float | None) -> datetime:
+        if ms is None:
+            return datetime.now(tz=timezone.utc)
+        return datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc)
+
+    # -- public API ----------------------------------------------------------
+
+    @_retry
+    async def fetch_ohlcv(
+        self,
+        symbol: str,
+        timeframe: str = "5m",
+        limit: int = 200,
+    ) -> list[dict[str, Any]]:
+        """Fetch OHLCV candles.
+
+        Returns a list of dicts with keys:
+        ``timestamp``, ``open``, ``high``, ``low``, ``close``, ``volume``.
+        All price fields are ``Decimal``.
+        """
+        exchange = self._require_exchange()
+        raw: list[list[Any]] = await exchange.fetch_ohlcv(
+            symbol, timeframe=timeframe, limit=limit
+        )
+
+        candles: list[dict[str, Any]] = []
+        for row in raw:
+            ts_ms, o, h, l, c, v = row[:6]
+            candles.append(
+                {
+                    "timestamp": self._utc_from_ms(ts_ms),
+                    "open": self._to_decimal(o),
+                    "high": self._to_decimal(h),
+                    "low": self._to_decimal(l),
+                    "close": self._to_decimal(c),
+                    "volume": self._to_decimal(v),
+                }
+            )
+        logger.debug(
+            "Fetched %d candles for %s (%s)", len(candles), symbol, timeframe
+        )
+        return candles
+
+    @_retry
+    async def fetch_ticker(self, symbol: str) -> TickerData:
+        """Fetch the latest 24-h ticker for *symbol*."""
+        exchange = self._require_exchange()
+        raw: dict[str, Any] = await exchange.fetch_ticker(symbol)
+        return TickerData(
+            symbol=symbol,
+            bid=self._to_decimal(raw.get("bid", 0)),
+            ask=self._to_decimal(raw.get("ask", 0)),
+            last=self._to_decimal(raw.get("last", 0)),
+            high=self._to_decimal(raw.get("high", 0)),
+            low=self._to_decimal(raw.get("low", 0)),
+            volume=self._to_decimal(raw.get("quoteVolume", raw.get("baseVolume", 0))),
+            timestamp=self._utc_from_ms(raw.get("timestamp")),
+        )
+
+    @_retry
+    async def fetch_orderbook(
+        self, symbol: str, limit: int = 20
+    ) -> OrderBookData:
+        """Fetch the current order book for *symbol*."""
+        exchange = self._require_exchange()
+        raw: dict[str, Any] = await exchange.fetch_order_book(symbol, limit=limit)
+
+        bids = [
+            OrderBookEntry(price=self._to_decimal(p), amount=self._to_decimal(a))
+            for p, a in raw.get("bids", [])
+        ]
+        asks = [
+            OrderBookEntry(price=self._to_decimal(p), amount=self._to_decimal(a))
+            for p, a in raw.get("asks", [])
+        ]
+        return OrderBookData(
+            symbol=symbol,
+            bids=bids,
+            asks=asks,
+            timestamp=self._utc_from_ms(raw.get("timestamp")),
+        )
+
+    @_retry
+    async def get_current_price(self, symbol: str) -> Decimal:
+        """Return the last traded price for *symbol* as a Decimal."""
+        ticker = await self.fetch_ticker(symbol)
+        return ticker.last
+
+    # -- WebSocket -----------------------------------------------------------
+
+    async def subscribe_ticker(
+        self,
+        symbol: str,
+        callback: Callable[[TickerData], Coroutine[Any, Any, None] | None],
+    ) -> None:
+        """Subscribe to real-time mini-ticker updates via Binance WebSocket.
+
+        *callback* is invoked with a ``TickerData`` for every incoming message.
+        The callback can be either sync or async.
+
+        To unsubscribe later, call ``unsubscribe_ticker(symbol)``.
+        """
+        if symbol in self._ws_connections:
+            logger.warning("Already subscribed to %s ticker", symbol)
+            return
+
+        stop_event = asyncio.Event()
+        self._ws_stop_events[symbol] = stop_event
+
+        task = asyncio.create_task(
+            self._ws_ticker_loop(symbol, callback, stop_event),
+            name=f"ws-ticker-{symbol}",
+        )
+        self._ws_connections[symbol] = task
+        logger.info("Subscribed to real-time ticker for %s", symbol)
+
+    async def unsubscribe_ticker(self, symbol: str) -> None:
+        """Stop the WebSocket ticker subscription for *symbol*."""
+        stop_event = self._ws_stop_events.pop(symbol, None)
+        if stop_event is not None:
+            stop_event.set()
+        task = self._ws_connections.pop(symbol, None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        logger.info("Unsubscribed from ticker for %s", symbol)
+
+    async def _ws_ticker_loop(
+        self,
+        symbol: str,
+        callback: Callable[[TickerData], Coroutine[Any, Any, None] | None],
+        stop_event: asyncio.Event,
+    ) -> None:
+        """Internal loop that maintains a WebSocket connection and dispatches updates."""
+        # Binance stream name: e.g. "btcusdt@miniTicker"
+        stream_symbol = symbol.replace("/", "").replace(":", "").lower()
+        stream_name = f"{stream_symbol}@miniTicker"
+        ws_base = self.TESTNET_WS_URL if self._testnet else self.PRODUCTION_WS_URL
+        url = f"{ws_base}/{stream_name}"
+
+        while not stop_event.is_set():
+            try:
+                async with websockets.connect(url) as ws:  # type: ignore[arg-type]
+                    logger.info("WebSocket connected for %s at %s", symbol, url)
+                    while not stop_event.is_set():
+                        try:
+                            raw_msg = await asyncio.wait_for(ws.recv(), timeout=30.0)
+                        except asyncio.TimeoutError:
+                            # Send pong to keep alive
+                            continue
+
+                        data = json.loads(raw_msg)
+                        try:
+                            ticker = TickerData(
+                                symbol=symbol,
+                                bid=self._to_decimal(data.get("b", data.get("c", 0))),
+                                ask=self._to_decimal(data.get("a", data.get("c", 0))),
+                                last=self._to_decimal(data.get("c", 0)),
+                                high=self._to_decimal(data.get("h", 0)),
+                                low=self._to_decimal(data.get("l", 0)),
+                                volume=self._to_decimal(data.get("q", data.get("v", 0))),
+                                timestamp=self._utc_from_ms(data.get("E")),
+                            )
+                        except (ValueError, KeyError) as exc:
+                            logger.warning("Failed to parse WS ticker message: %s", exc)
+                            continue
+
+                        try:
+                            result = callback(ticker)
+                            if asyncio.iscoroutine(result):
+                                await result
+                        except Exception:
+                            logger.exception("Ticker callback raised for %s", symbol)
+
+            except asyncio.CancelledError:
+                logger.info("WebSocket task cancelled for %s", symbol)
+                return
+            except Exception:
+                if stop_event.is_set():
+                    return
+                logger.exception(
+                    "WebSocket error for %s. Reconnecting in 5s ...", symbol
+                )
+                await asyncio.sleep(5.0)
