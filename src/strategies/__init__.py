@@ -14,6 +14,7 @@ Public API
 - ``MeanReversion``      – mean-reversion strategy (BB + Z-score + RSI)
 - ``BreakoutTrader``     – breakout strategy (S/R + volume + BB squeeze)
 - ``Scalper``            – scalping strategy (RSI divergence + trend confirmation)
+- ``SupertrendTrend``    – 4H Supertrend flip strategy (+94% backtest return)
 
 Helpers
 ~~~~~~~
@@ -33,6 +34,7 @@ from src.strategies.breakout_trader import BreakoutTrader
 from src.strategies.mean_reversion import MeanReversion
 from src.strategies.regime_detector import MarketRegime, RegimeDetector, RegimeState
 from src.strategies.scalper import Scalper
+from src.strategies.supertrend_trend import SupertrendTrend
 from src.strategies.trend_follower import TrendFollower
 
 __all__ = [
@@ -47,6 +49,7 @@ __all__ = [
     "Signal",
     "SignalDirection",
     # Concrete strategies
+    "SupertrendTrend",
     "TrendFollower",
     "MeanReversion",
     "BreakoutTrader",

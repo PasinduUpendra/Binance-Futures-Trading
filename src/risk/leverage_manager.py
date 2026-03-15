@@ -20,12 +20,12 @@ _MIN_LIQUIDATION_BUFFER_PCT: Decimal = Decimal("0.05")  # 5 %
 
 
 class MarketRegime(str, Enum):
-    """Broad market-regime labels produced by the Market Analyst agent."""
+    """Market-regime labels matching RegimeDetector output."""
 
-    STRONG_TREND = "strong_trend"
-    MODERATE_TREND = "moderate_trend"
+    TRENDING = "trending"
     VOLATILE = "volatile"
     RANGING = "ranging"
+    QUIET = "quiet"
 
 
 class LeverageResult(BaseModel):
@@ -61,13 +61,24 @@ _LEVERAGE_TABLE: list[
     tuple[int, int, set[MarketRegime], int, int]
 ] = [
     # (conf_min, conf_max, regimes, lev_min, lev_max)
-    (80, 100, {MarketRegime.STRONG_TREND}, 7, 10),
-    (60, 79, {MarketRegime.MODERATE_TREND}, 5, 7),
+    # High confidence trending: 7-10x (midpoint 8)
+    (80, 100, {MarketRegime.TRENDING}, 7, 10),
+    # Good confidence trending: 5-7x (midpoint 6)
+    (60, 79, {MarketRegime.TRENDING}, 5, 7),
+    # Good confidence volatile: 3-5x (midpoint 4)
     (60, 79, {MarketRegime.VOLATILE}, 3, 5),
-    (40, 59, {MarketRegime.RANGING}, 2, 3),
-    (40, 59, {MarketRegime.MODERATE_TREND}, 2, 3),
+    # Good confidence ranging: 3-5x (midpoint 4)
+    (60, 79, {MarketRegime.RANGING}, 3, 5),
+    # Moderate confidence trending: 3-5x (midpoint 4)
+    (40, 59, {MarketRegime.TRENDING}, 3, 5),
+    # Moderate confidence volatile: 2-3x (midpoint 2)
     (40, 59, {MarketRegime.VOLATILE}, 2, 3),
-    (40, 59, {MarketRegime.STRONG_TREND}, 3, 5),
+    # Moderate confidence ranging: 2-3x (midpoint 2)
+    (40, 59, {MarketRegime.RANGING}, 2, 3),
+    # Low confidence — conservative 2x (strategy gates already validated setup)
+    (25, 39, {MarketRegime.TRENDING}, 2, 3),
+    (25, 39, {MarketRegime.VOLATILE}, 1, 2),
+    (25, 39, {MarketRegime.RANGING}, 2, 3),
 ]
 
 # Circuit-breaker leverage caps by level (DEAD = 0 handled specially).
@@ -115,6 +126,14 @@ class LeverageManager:
                 logger.warning("Unknown regime '%s' — defaulting to VOLATILE.", regime)
                 regime = MarketRegime.VOLATILE
 
+        # --- QUIET regime: no trade ----------------------------------------
+        if regime == MarketRegime.QUIET:
+            return LeverageResult(
+                leverage=0,
+                raw_leverage=0,
+                reason="Regime QUIET — no trading.",
+            )
+
         # --- DEAD: instant reject -----------------------------------------
         if circuit_breaker_level == CircuitBreakerLevel.DEAD:
             return LeverageResult(
@@ -125,11 +144,11 @@ class LeverageManager:
             )
 
         # --- Confidence too low: no trade ---------------------------------
-        if confidence < 40:
+        if confidence < 25:
             return LeverageResult(
                 leverage=0,
                 raw_leverage=0,
-                reason=f"Confidence {confidence} < 40 — signal too weak, no trade.",
+                reason=f"Confidence {confidence} < 25 — signal too weak, no trade.",
             )
 
         # --- Lookup -------------------------------------------------------

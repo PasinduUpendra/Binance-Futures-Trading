@@ -70,21 +70,39 @@ class MeanReversion(BaseStrategy):
     COL_CLOSE: str = "close"
 
     # -- Tunables ----------------------------------------------------------
-    ADX_MAX: float = 20.0
-    ZSCORE_THRESHOLD: float = 2.0
-    ZSCORE_AGGRESSIVE: float = 2.5
-    RSI_OVERSOLD: float = 30.0
-    RSI_OVERBOUGHT: float = 70.0
+    # ADX < 30: trust the 4H regime detector, don't double-filter on 1H
+    # (1H ADX diverges from 4H 31% of the time when 4H says ranging)
+    ADX_MAX: float = 30.0
+    ZSCORE_THRESHOLD: float = 1.5   # Crypto mean-reverts at lower extremes
+    ZSCORE_AGGRESSIVE: float = 2.0
+    RSI_OVERSOLD: float = 35.0     # Widened for crypto (was 30)
+    RSI_OVERBOUGHT: float = 65.0   # Widened for crypto (was 70)
     RSI_EXTREME_OVERSOLD: float = 25.0
     RSI_EXTREME_OVERBOUGHT: float = 75.0
     SL_BEYOND_BB_PCT: float = 0.005  # 0.5 %
     VOLUME_AVG_WINDOW: int = 20
+    # Require 2-of-3 confirmation signals (BB touch, Z-score extreme, RSI extreme)
+    MIN_CONFIRMATIONS: int = 2
 
     # ------------------------------------------------------------------
     # Strategy interface
     # ------------------------------------------------------------------
 
-    def generate_signal(self, df: pd.DataFrame) -> Signal:
+    def generate_signal(
+        self,
+        df: pd.DataFrame,
+        entry_price: float | None = None,
+    ) -> Signal:
+        """Evaluate mean-reversion setup.
+
+        Parameters
+        ----------
+        df : DataFrame
+            Indicator-enriched data (can be 1H or 4H).
+        entry_price : float, optional
+            If provided, use this as entry price (e.g., current 1H close
+            for precise timing when analysing 4H data).
+        """
         try:
             self._validate(df)
         except (KeyError, ValueError) as exc:
@@ -113,27 +131,30 @@ class MeanReversion(BaseStrategy):
         if adx > self.ADX_MAX:
             return self._no_signal(f"ADX {adx:.1f} > {self.ADX_MAX} — market trending, skip MR")
 
-        # --- Direction detection ------------------------------------------
+        # --- Direction detection (2-of-3 confirmation) ---------------------
         direction = SignalDirection.NONE
 
-        long_setup = (
-            close <= bb_lower
-            and zscore <= -self.ZSCORE_THRESHOLD
-            and rsi <= self.RSI_OVERSOLD
-        )
-        short_setup = (
-            close >= bb_upper
-            and zscore >= self.ZSCORE_THRESHOLD
-            and rsi >= self.RSI_OVERBOUGHT
-        )
+        # Count long confirmations
+        long_confirms = sum([
+            close <= bb_lower,                       # Price at/below lower BB
+            zscore <= -self.ZSCORE_THRESHOLD,         # Z-score extreme
+            rsi <= self.RSI_OVERSOLD,                 # RSI oversold
+        ])
+        # Count short confirmations
+        short_confirms = sum([
+            close >= bb_upper,                        # Price at/above upper BB
+            zscore >= self.ZSCORE_THRESHOLD,           # Z-score extreme
+            rsi >= self.RSI_OVERBOUGHT,               # RSI overbought
+        ])
 
-        if long_setup:
+        if long_confirms >= self.MIN_CONFIRMATIONS:
             direction = SignalDirection.LONG
-        elif short_setup:
+        elif short_confirms >= self.MIN_CONFIRMATIONS:
             direction = SignalDirection.SHORT
         else:
             return self._no_signal(
-                f"No MR setup: close={close:.6f}, BB=[{bb_lower:.6f},{bb_upper:.6f}], "
+                f"No MR setup ({long_confirms}L/{short_confirms}S confirms, need {self.MIN_CONFIRMATIONS}): "
+                f"close={close:.6f}, BB=[{bb_lower:.6f},{bb_upper:.6f}], "
                 f"Z={zscore:.2f}, RSI={rsi:.1f}"
             )
 
@@ -141,13 +162,17 @@ class MeanReversion(BaseStrategy):
         use_aggressive = self._is_extreme(zscore, rsi, direction)
 
         # --- Entry / SL / TP --------------------------------------------
-        entry_price = close
+        # Use provided entry_price (e.g. 1H close) or fall back to df close
+        if entry_price is None:
+            entry_price = close
 
         if direction == SignalDirection.LONG:
-            stop_loss = bb_lower * (1.0 - self.SL_BEYOND_BB_PCT)
+            # SL must be below entry — use the lower of bb_lower and entry
+            stop_loss = min(bb_lower, entry_price) * (1.0 - self.SL_BEYOND_BB_PCT)
             take_profit = bb_upper if use_aggressive else bb_mid
         else:
-            stop_loss = bb_upper * (1.0 + self.SL_BEYOND_BB_PCT)
+            # SL must be above entry — use the higher of bb_upper and entry
+            stop_loss = max(bb_upper, entry_price) * (1.0 + self.SL_BEYOND_BB_PCT)
             take_profit = bb_lower if use_aggressive else bb_mid
 
         if stop_loss <= 0 or take_profit <= 0:
@@ -176,6 +201,7 @@ class MeanReversion(BaseStrategy):
                     )
 
         # --- Confidence scoring ------------------------------------------
+        n_confirms = long_confirms if direction == SignalDirection.LONG else short_confirms
         confidence = self._compute_confidence(
             zscore=zscore,
             rsi=rsi,
@@ -183,6 +209,7 @@ class MeanReversion(BaseStrategy):
             volume=volume,
             df=df,
             direction=direction,
+            n_confirmations=n_confirms,
         )
 
         # --- Reasoning ---------------------------------------------------
@@ -246,35 +273,38 @@ class MeanReversion(BaseStrategy):
         volume: float,
         df: pd.DataFrame,
         direction: SignalDirection,
+        n_confirmations: int = 2,
     ) -> float:
         """Compute 0-100 confidence.
 
         Breakdown (max 100):
-          Z-score extremity   : up to 35
-          RSI extremity       : up to 25
-          ADX flatness        : up to 15
-          Volume drying up    : up to 15
+          Base (2/3 confirm=25, 3/3=35) : 25-35
+          Z-score extremity beyond threshold : up to 20
+          RSI extremity beyond threshold     : up to 15
+          ADX flatness        : up to 10
+          Volume drying up    : up to 10
           Multi-bar extreme   : up to 10
         """
-        score = 0.0
+        # Base confidence for meeting 2/3 or 3/3 confirmation
+        score = 25.0 if n_confirmations == 2 else 35.0
 
-        # 1. Z-score (|2| -> 15, |3| -> 35)
+        # 1. Z-score extremity beyond threshold
         z_abs = abs(zscore)
-        z_score = min(35.0, max(0.0, (z_abs - self.ZSCORE_THRESHOLD) / 1.0) * 20.0 + 15.0)
-        if z_abs < self.ZSCORE_THRESHOLD:
-            z_score = 0.0
-        score += z_score
+        if z_abs >= self.ZSCORE_THRESHOLD:
+            z_bonus = min(20.0, (z_abs - self.ZSCORE_THRESHOLD) / 1.5 * 20.0)
+            score += z_bonus
 
-        # 2. RSI extremity
-        if direction == SignalDirection.LONG:
-            rsi_ext = max(0.0, (self.RSI_OVERSOLD - rsi) / self.RSI_OVERSOLD) * 25.0
-        else:
-            rsi_ext = max(0.0, (rsi - self.RSI_OVERBOUGHT) / (100.0 - self.RSI_OVERBOUGHT)) * 25.0
-        score += min(25.0, rsi_ext)
+        # 2. RSI extremity beyond threshold
+        if direction == SignalDirection.LONG and rsi <= self.RSI_OVERSOLD:
+            rsi_ext = min(15.0, (self.RSI_OVERSOLD - rsi) / 15.0 * 15.0)
+            score += rsi_ext
+        elif direction == SignalDirection.SHORT and rsi >= self.RSI_OVERBOUGHT:
+            rsi_ext = min(15.0, (rsi - self.RSI_OVERBOUGHT) / 15.0 * 15.0)
+            score += rsi_ext
 
         # 3. ADX flatness (lower ADX = better for MR)
-        adx_bonus = max(0.0, (self.ADX_MAX - adx) / self.ADX_MAX) * 15.0
-        score += min(15.0, adx_bonus)
+        adx_bonus = max(0.0, (self.ADX_MAX - adx) / self.ADX_MAX) * 10.0
+        score += min(10.0, adx_bonus)
 
         # 4. Volume drying up (low volume at extreme = more likely reversion)
         vol_series = df[self.COL_VOLUME].dropna()
@@ -282,9 +312,8 @@ class MeanReversion(BaseStrategy):
             vol_avg = vol_series.iloc[-self.VOLUME_AVG_WINDOW:].mean()
             if vol_avg > 0 and not np.isnan(volume):
                 vol_ratio = volume / vol_avg
-                # Lower volume = higher score (caps at ratio ~0.5)
-                vol_bonus = max(0.0, (1.0 - vol_ratio) / 0.5) * 15.0
-                score += min(15.0, max(0.0, vol_bonus))
+                vol_bonus = max(0.0, (1.0 - vol_ratio) / 0.5) * 10.0
+                score += min(10.0, max(0.0, vol_bonus))
 
         # 5. Multi-bar extreme (price has been outside BB for 2+ bars)
         close_series = df[self.COL_CLOSE].dropna()

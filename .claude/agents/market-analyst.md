@@ -8,6 +8,10 @@ model: sonnet
 
 You analyze cryptocurrency futures markets to identify trading opportunities.
 
+## Skills Reference
+- Quant Finance & Risk: `.github/skills/quant-finance-strategy-risk/SKILL.md`
+- CCXT Integration: `.github/skills/ccxt-crypto-integration/SKILL.md`
+
 ## Your Role
 1. Fetch OHLCV data for top futures pairs (BTC, ETH, SOL, BNB, XRP)
 2. Calculate all technical indicators

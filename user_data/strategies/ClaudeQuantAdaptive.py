@@ -254,13 +254,13 @@ class ClaudeQuantAdaptive(IStrategy):
         return 3.0
 
     def custom_stake_amount(
-        self, current_time: datetime, current_rate: float,
+        self, pair: str, current_time: datetime, current_rate: float,
         proposed_stake: float, min_stake: Optional[float],
         max_stake: float, leverage: float, entry_tag: Optional[str],
         side: str, **kwargs
     ) -> float:
         """Dynamic position sizing from agent decision."""
-        agent_signal = self._read_agent_signal(kwargs.get("pair", ""))
+        agent_signal = self._read_agent_signal(pair)
         if agent_signal and "stake_amount" in agent_signal:
             requested = float(agent_signal["stake_amount"])
             # Enforce bounds

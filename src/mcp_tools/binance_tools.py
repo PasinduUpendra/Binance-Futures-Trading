@@ -113,7 +113,8 @@ async def _get_exchange() -> ccxt_async.binanceusdm:
     )
 
     if testnet:
-        _exchange.set_sandbox_mode(True)
+        # ccxt >= 4.5.6: use enable_demo_trading instead of set_sandbox_mode (ccxt #26487)
+        _exchange.enable_demo_trading(True)
         logger.info("Binance MCP tools connected to TESTNET")
     else:
         logger.info("Binance MCP tools connected to PRODUCTION")
@@ -234,9 +235,11 @@ def create_binance_server() -> Server:
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
+        import json as _json
+
         try:
             result = await _dispatch_tool(name, arguments)
-            return [TextContent(type="text", text=str(result))]
+            return [TextContent(type="text", text=_json.dumps(result, default=str))]
         except Exception as exc:
             logger.exception("Tool %s failed", name)
             error_msg = f"Error in {name}: {type(exc).__name__}: {exc}"

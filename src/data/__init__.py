@@ -7,6 +7,12 @@ validation, and candle persistence.
 """
 
 from src.data.candle_store import CandleRow, CandleStore
+from src.data.database import (
+    CycleHistoryRow,
+    DailyReportRow,
+    DatabaseManager,
+    StrategyMetricRow,
+)
 from src.data.data_validator import (
     DataValidator,
     ValidationDetail,
@@ -37,4 +43,9 @@ __all__ = [
     # candle_store
     "CandleStore",
     "CandleRow",
+    # database
+    "DatabaseManager",
+    "DailyReportRow",
+    "CycleHistoryRow",
+    "StrategyMetricRow",
 ]

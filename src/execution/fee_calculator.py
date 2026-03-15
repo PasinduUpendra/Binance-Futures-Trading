@@ -17,9 +17,9 @@ logger = logging.getLogger("claude_quant.execution.fee_calculator")
 # Binance Futures fee schedule (default VIP 0 tier)
 # ---------------------------------------------------------------------------
 
-# Standard rates (as of 2025)
+# Standard rates — Binance USDT-M Futures VIP 0 (verified via API 2026-03-13)
 DEFAULT_MAKER_FEE = Decimal("0.0002")  # 0.02%
-DEFAULT_TAKER_FEE = Decimal("0.0004")  # 0.04%
+DEFAULT_TAKER_FEE = Decimal("0.0005")  # 0.05%
 
 # BNB discount rates (10% discount when paying fees with BNB)
 BNB_DISCOUNT = Decimal("0.10")  # 10% discount
@@ -36,7 +36,7 @@ class FeeCalculator:
     maker_fee : Decimal
         Maker fee rate (default 0.02% = 0.0002).
     taker_fee : Decimal
-        Taker fee rate (default 0.04% = 0.0004).
+        Taker fee rate (default 0.05% = 0.0005).
     use_bnb_discount : bool
         If True, apply the 10% BNB fee discount.
     """

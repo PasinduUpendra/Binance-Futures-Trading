@@ -8,6 +8,9 @@ model: sonnet
 
 You generate comprehensive daily performance reports at UTC midnight.
 
+## Skills Reference
+- Quant Finance & Risk: `.github/skills/quant-finance-strategy-risk/SKILL.md`
+
 ## Report Contents
 1. **Daily P&L**: Realized + unrealized, gross and net (after fees)
 2. **Cumulative P&L**: Total since inception

@@ -74,14 +74,14 @@ class BreakoutTrader(BaseStrategy):
 
     # -- Tunables ----------------------------------------------------------
     SR_LOOKBACK: int = 50
-    SWING_ORDER: int = 5          # bars on each side for swing detection
-    VOLUME_SURGE_MULT: float = 2.0
+    SWING_ORDER: int = 3          # bars on each side (was 5, too strict for crypto)
+    VOLUME_SURGE_MULT: float = 1.3  # Crypto volume is noisy; 2x was too strict
     VOLUME_AVG_WINDOW: int = 20
     BB_SQUEEZE_PERCENTILE: float = 20.0  # BB width below this % = squeeze
-    BB_EXPANSION_MULT: float = 1.1       # current width > 1.1x prev to confirm release
+    BB_EXPANSION_MULT: float = 1.05      # lowered from 1.1 for more sensitivity
     SL_BUFFER_ATR_MULT: float = 0.5      # how far inside breakout level
     RR_TARGET: float = 3.0               # reward / risk target
-    SR_PROXIMITY_PCT: float = 0.002      # 0.2 % for clustering nearby levels
+    SR_PROXIMITY_PCT: float = 0.003      # 0.3% for clustering (wider for crypto)
     MIN_SR_TESTS: int = 1                # minimum touches to validate a level
 
     # ------------------------------------------------------------------
@@ -110,14 +110,18 @@ class BreakoutTrader(BaseStrategy):
             return self._no_signal("Cannot compute volume average")
 
         vol_ratio = volume / vol_avg
-        if vol_ratio < self.VOLUME_SURGE_MULT:
-            return self._no_signal(
-                f"Volume ratio {vol_ratio:.2f}x below {self.VOLUME_SURGE_MULT}x threshold"
-            )
+        has_volume_surge = vol_ratio >= self.VOLUME_SURGE_MULT
 
         # --- BB squeeze release -------------------------------------------
-        if not self._bb_squeeze_releasing(df):
-            return self._no_signal("No Bollinger Band squeeze release detected")
+        has_bb_release = self._bb_squeeze_releasing(df)
+
+        # Require at least one of: volume surge OR BB squeeze release
+        # (requiring both simultaneously is too restrictive for crypto)
+        if not has_volume_surge and not has_bb_release:
+            return self._no_signal(
+                f"Neither volume surge ({vol_ratio:.2f}x < {self.VOLUME_SURGE_MULT}x) "
+                f"nor BB squeeze release detected"
+            )
 
         # --- Support / Resistance identification --------------------------
         resistances, supports = self._find_sr_levels(df)

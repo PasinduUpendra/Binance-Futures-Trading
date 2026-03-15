@@ -6,8 +6,6 @@
 #   freqtrade     — Freqtrade trading engine with custom strategy
 # ---------------------------------------------------------------------------
 
-version: "3.9"
-
 services:
   # -----------------------------------------------------------------------
   # Orchestrator: Claude Agent main loop

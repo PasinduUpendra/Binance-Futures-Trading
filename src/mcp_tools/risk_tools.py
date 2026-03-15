@@ -181,7 +181,8 @@ async def _get_current_balance() -> Decimal:
         }
     )
     if testnet:
-        exchange.set_sandbox_mode(True)
+        # ccxt >= 4.5.6: use enable_demo_trading instead of set_sandbox_mode (ccxt #26487)
+        exchange.enable_demo_trading(True)
 
     try:
         await exchange.load_markets()
@@ -209,7 +210,8 @@ async def _get_open_positions() -> list[dict[str, Any]]:
         }
     )
     if testnet:
-        exchange.set_sandbox_mode(True)
+        # ccxt >= 4.5.6: use enable_demo_trading instead of set_sandbox_mode (ccxt #26487)
+        exchange.enable_demo_trading(True)
 
     try:
         await exchange.load_markets()
@@ -283,7 +285,7 @@ def create_risk_server() -> Server:
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         try:
             result = await _dispatch_tool(name, arguments)
-            return [TextContent(type="text", text=str(result))]
+            return [TextContent(type="text", text=json.dumps(result, default=str))]
         except Exception as exc:
             logger.exception("Tool %s failed", name)
             error_msg = f"Error in {name}: {type(exc).__name__}: {exc}"

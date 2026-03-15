@@ -15,9 +15,9 @@ class TestFeeCalculator:
         self.calc = FeeCalculator()
 
     def test_taker_fee(self):
-        """Taker fee should be 0.04% of notional."""
+        """Taker fee should be 0.05% of notional (VIP 0, verified via API)."""
         fee = self.calc.calculate_fees(Decimal("1000.0"), is_maker=False)
-        expected = Decimal("1000.0") * Decimal("0.0004")
+        expected = Decimal("1000.0") * Decimal("0.0005")
         assert fee == expected
 
     def test_maker_fee(self):

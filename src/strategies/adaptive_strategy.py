@@ -6,6 +6,16 @@ regime, picks the best concrete strategy, generates a signal, and
 applies a final confidence gate before returning it to the caller.
 
 This is the primary entry point the orchestrator should use.
+
+Multi-timeframe support
+~~~~~~~~~~~~~~~~~~~~~~~
+The ``get_signal_multi_tf`` method is the preferred entry point.
+It accepts **both** 4H and 1H DataFrames so that:
+
+- Regime detection runs on 4H data (macro context).
+- SupertrendTrend and MeanReversion receive 4H indicator data with
+  the 1H close used as ``entry_price`` for precise timing.
+- BreakoutTrader / TrendFollower (fallback) receive 1H data.
 """
 
 from __future__ import annotations
@@ -19,36 +29,41 @@ from src.strategies.base_strategy import BaseStrategy, Signal, SignalDirection
 from src.strategies.breakout_trader import BreakoutTrader
 from src.strategies.mean_reversion import MeanReversion
 from src.strategies.regime_detector import MarketRegime, RegimeDetector, RegimeState
-from src.strategies.scalper import Scalper
+from src.strategies.supertrend_trend import SupertrendTrend
 from src.strategies.trend_follower import TrendFollower
 
 logger = logging.getLogger(__name__)
+
+# Strategies that operate on 4H data and accept an entry_price kwarg.
+_4H_STRATEGIES = (SupertrendTrend, MeanReversion)
 
 
 class AdaptiveStrategy:
     """Regime-aware strategy router.
 
-    Workflow
-    ~~~~~~~~
-    1. ``RegimeDetector.detect(df)``  ->  ``RegimeState``
+    Workflow (multi-timeframe)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    1. ``RegimeDetector.detect(df_4h)``  ->  ``RegimeState``
     2. ``select_strategy(regime_state)``  ->  concrete ``BaseStrategy`` or None
-    3. ``strategy.generate_signal(df)``  ->  ``Signal``
+    3. Strategy-appropriate signal generation:
+       - SupertrendTrend / MeanReversion: ``strategy.generate_signal(df_4h, entry_price=close_1h)``
+       - BreakoutTrader / TrendFollower:  ``strategy.generate_signal(df_1h)``
     4. Confidence gate: reject if < ``MIN_CONFIDENCE``
 
-    Regime -> strategy mapping
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    - **TRENDING** + ADX > 25  : ``TrendFollower``
-    - **RANGING**  + ADX < 20  : ``MeanReversion``
-    - **VOLATILE** + BB expanding : ``BreakoutTrader``
+    Regime -> strategy mapping (updated v3)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - **TRENDING** + ADX >= 18 : ``SupertrendTrend`` (4H Supertrend flips)
+    - **RANGING**  + ADX < 25  : ``MeanReversion`` (4H BB extremes)
+    - **VOLATILE** + BB expanding : ``BreakoutTrader`` (1H breakouts)
     - **QUIET**               : **no trade** (returns ``None``)
 
-    The ``Scalper`` is available as a secondary strategy when the regime
-    is TRENDING or VOLATILE, but the adaptive router currently does not
-    auto-select it.  Callers can instantiate it directly for scalping
-    sessions.
+    TrendFollower is kept as fallback for TRENDING when ADX < 18.
     """
 
-    MIN_CONFIDENCE: float = 40.0
+    # Lowered from 40→35→25. Each strategy has its own quality gates
+    # (2/3 confirmation for MR, volume/squeeze for BO). The confidence
+    # score measures "how extreme" the setup is, not "if" there's a setup.
+    MIN_CONFIDENCE: float = 25.0
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
@@ -57,10 +72,10 @@ class AdaptiveStrategy:
         self._regime_detector = RegimeDetector()
 
         # Pre-instantiate concrete strategies (stateless, safe to reuse)
+        self._supertrend_trend = SupertrendTrend()
         self._trend_follower = TrendFollower()
         self._mean_reversion = MeanReversion()
         self._breakout_trader = BreakoutTrader()
-        self._scalper = Scalper()
 
     # ------------------------------------------------------------------
     # Public API
@@ -72,6 +87,11 @@ class AdaptiveStrategy:
         Returns ``None`` when the regime is QUIET (no-trade zone) or
         when no strategy is suitable.
         """
+        # ── v4 FIX: Only SupertrendTrend is profitable (71.1% WR, +$36.88).
+        # MeanReversion (5.3% WR, -$7.65) and BreakoutTrader (23.9% WR, -$1.13)
+        # DESTROY capital.  Disabled until thresholds are aligned with v3 backtest.
+        # TrendFollower (30% WR, +$0.35) is marginal — disabled.
+
         if regime.regime == MarketRegime.QUIET:
             self.logger.info(
                 "Regime is QUIET (ADX=%.1f, BBw=%.2f). No strategy selected.",
@@ -80,78 +100,56 @@ class AdaptiveStrategy:
             )
             return None
 
-        if regime.regime == MarketRegime.TRENDING and regime.adx >= 25.0:
-            self.logger.info(
-                "Regime TRENDING with ADX=%.1f -> TrendFollower",
-                regime.adx,
-            )
-            return self._trend_follower
-
-        if regime.regime == MarketRegime.RANGING and regime.adx < 20.0:
-            self.logger.info(
-                "Regime RANGING with ADX=%.1f -> MeanReversion",
-                regime.adx,
-            )
-            return self._mean_reversion
-
-        if regime.regime == MarketRegime.VOLATILE and regime.bb_width_ratio >= 1.0:
-            self.logger.info(
-                "Regime VOLATILE with BB width ratio=%.2f -> BreakoutTrader",
-                regime.bb_width_ratio,
-            )
-            return self._breakout_trader
-
-        # Edge cases: regime detected but secondary conditions not met.
-        # Fall back to the closest match.
         if regime.regime == MarketRegime.TRENDING:
-            # ADX below 25 but still classified as trending — try trend follower
-            # (it will gate on ADX internally and may return NONE signal)
-            self.logger.info(
-                "Regime TRENDING but ADX=%.1f < 25 — trying TrendFollower anyway",
-                regime.adx,
-            )
-            return self._trend_follower
+            if regime.adx >= 18.0:
+                self.logger.info(
+                    "Regime TRENDING with ADX=%.1f -> SupertrendTrend (4H)",
+                    regime.adx,
+                )
+                return self._supertrend_trend
+            else:
+                self.logger.info(
+                    "Regime TRENDING but ADX=%.1f < 18 -> NO TRADE (TrendFollower disabled, 30%% WR)",
+                    regime.adx,
+                )
+                return None
 
         if regime.regime == MarketRegime.RANGING:
-            # ADX >= 20 but classified as ranging — try mean reversion
             self.logger.info(
-                "Regime RANGING but ADX=%.1f >= 20 — trying MeanReversion anyway",
+                "Regime RANGING (ADX=%.1f) -> NO TRADE (MeanReversion disabled, 5.3%% WR)",
                 regime.adx,
             )
-            return self._mean_reversion
+            return None
 
         if regime.regime == MarketRegime.VOLATILE:
-            # BB not expanding but volatile — try breakout anyway
             self.logger.info(
-                "Regime VOLATILE but BBw=%.2f — trying BreakoutTrader anyway",
+                "Regime VOLATILE (BBw=%.2f) -> NO TRADE (BreakoutTrader disabled, 23.9%% WR)",
                 regime.bb_width_ratio,
             )
-            return self._breakout_trader
+            return None
 
         self.logger.warning("No strategy selected for regime=%s", regime.regime.value)
         return None
 
-    def get_signal(self, df: pd.DataFrame) -> Optional[Signal]:
-        """End-to-end pipeline: detect regime -> select strategy -> generate signal.
-
-        Returns ``None`` when:
-          - The regime is QUIET
-          - No strategy is selected
-          - The selected strategy returns a NONE-direction signal
-          - The signal confidence is below ``MIN_CONFIDENCE``
+    def get_signal_multi_tf(
+        self,
+        df_4h: pd.DataFrame,
+        df_1h: pd.DataFrame,
+    ) -> Optional[Signal]:
+        """Multi-timeframe signal generation (preferred entry point).
 
         Parameters
         ----------
-        df : DataFrame
-            Indicator-enriched OHLCV data.
-
-        Returns
-        -------
-        Signal or None
+        df_4h : DataFrame
+            4H indicator-enriched data for regime detection and
+            SupertrendTrend / MeanReversion signal generation.
+        df_1h : DataFrame
+            1H indicator-enriched data for entry price timing and
+            BreakoutTrader / TrendFollower signal generation.
         """
-        # 1. Detect regime
+        # 1. Detect regime on 4H
         try:
-            regime = self._regime_detector.detect(df)
+            regime = self._regime_detector.detect(df_4h)
         except (KeyError, ValueError) as exc:
             self.logger.error("Regime detection failed: %s", exc)
             return None
@@ -159,12 +157,17 @@ class AdaptiveStrategy:
         # 2. Select strategy
         strategy = self.select_strategy(regime)
         if strategy is None:
-            self.logger.info("No strategy selected — returning no signal")
             return None
 
-        # 3. Generate signal
+        # 3. Generate signal with correct timeframe data
         try:
-            signal = strategy.generate_signal(df)
+            if isinstance(strategy, _4H_STRATEGIES):
+                # 4H strategies: use 4H data, 1H close as entry_price
+                close_1h = float(df_1h["close"].dropna().iloc[-1])
+                signal = strategy.generate_signal(df_4h, entry_price=close_1h)
+            else:
+                # 1H strategies (TrendFollower, BreakoutTrader)
+                signal = strategy.generate_signal(df_1h)
         except Exception:
             self.logger.exception(
                 "Strategy %s raised an unexpected exception", strategy.name
@@ -193,7 +196,63 @@ class AdaptiveStrategy:
             return None
 
         self.logger.info(
-            "Adaptive signal APPROVED: %s %s @ %.6f (confidence=%.1f%%, regime=%s, strategy=%s)",
+            "Adaptive signal APPROVED: %s %s @ %.6f "
+            "(confidence=%.1f%%, regime=%s, strategy=%s)",
+            signal.direction.value.upper(),
+            signal.strategy_name,
+            signal.entry_price,
+            signal.confidence,
+            regime.regime.value,
+            strategy.name,
+        )
+
+        return signal
+
+    def get_signal(self, df: pd.DataFrame) -> Optional[Signal]:
+        """Single-timeframe pipeline (legacy, kept for backward compat).
+
+        For new code, prefer ``get_signal_multi_tf``.
+        """
+        try:
+            regime = self._regime_detector.detect(df)
+        except (KeyError, ValueError) as exc:
+            self.logger.error("Regime detection failed: %s", exc)
+            return None
+
+        strategy = self.select_strategy(regime)
+        if strategy is None:
+            return None
+
+        try:
+            signal = strategy.generate_signal(df)
+        except Exception:
+            self.logger.exception(
+                "Strategy %s raised an unexpected exception", strategy.name
+            )
+            return None
+
+        if signal.direction == SignalDirection.NONE:
+            self.logger.info(
+                "Strategy %s returned NONE signal: %s",
+                strategy.name,
+                signal.reasoning,
+            )
+            return None
+
+        if signal.confidence < self.MIN_CONFIDENCE:
+            self.logger.info(
+                "Signal confidence %.1f%% below threshold %.1f%% — rejected. "
+                "Strategy=%s, Direction=%s",
+                signal.confidence,
+                self.MIN_CONFIDENCE,
+                signal.strategy_name,
+                signal.direction.value,
+            )
+            return None
+
+        self.logger.info(
+            "Adaptive signal APPROVED: %s %s @ %.6f "
+            "(confidence=%.1f%%, regime=%s, strategy=%s)",
             signal.direction.value.upper(),
             signal.strategy_name,
             signal.entry_price,
@@ -205,6 +264,52 @@ class AdaptiveStrategy:
         return signal
 
     # ------------------------------------------------------------------
+    # Supertrend reversal exit check
+    # ------------------------------------------------------------------
+
+    def check_supertrend_reversal(
+        self,
+        df_4h: pd.DataFrame,
+        position_direction: str,
+    ) -> bool:
+        """Check if 4H Supertrend has flipped against an open position.
+
+        Parameters
+        ----------
+        df_4h : DataFrame
+            4H indicator-enriched data (must have supertrend_direction).
+        position_direction : str
+            'long' or 'short'.
+
+        Returns
+        -------
+        bool
+            True if Supertrend has reversed and position should be closed.
+        """
+        col = self._supertrend_trend.COL_SUPERTREND_DIR
+        if col not in df_4h.columns:
+            return False
+
+        st_dir = BaseStrategy._safe_last(df_4h[col])
+        if st_dir != st_dir:  # NaN check
+            return False
+
+        if position_direction == "long" and st_dir < 0:
+            self.logger.info(
+                "Supertrend reversal EXIT: position is LONG but 4H Supertrend "
+                "flipped BEARISH (dir=%.0f)", st_dir,
+            )
+            return True
+        if position_direction == "short" and st_dir > 0:
+            self.logger.info(
+                "Supertrend reversal EXIT: position is SHORT but 4H Supertrend "
+                "flipped BULLISH (dir=%.0f)", st_dir,
+            )
+            return True
+
+        return False
+
+    # ------------------------------------------------------------------
     # Convenience accessors
     # ------------------------------------------------------------------
 
@@ -212,6 +317,10 @@ class AdaptiveStrategy:
     def regime_detector(self) -> RegimeDetector:
         """Expose the detector so callers can inspect regime independently."""
         return self._regime_detector
+
+    @property
+    def supertrend_trend(self) -> SupertrendTrend:
+        return self._supertrend_trend
 
     @property
     def trend_follower(self) -> TrendFollower:
@@ -224,7 +333,3 @@ class AdaptiveStrategy:
     @property
     def breakout_trader(self) -> BreakoutTrader:
         return self._breakout_trader
-
-    @property
-    def scalper(self) -> Scalper:
-        return self._scalper

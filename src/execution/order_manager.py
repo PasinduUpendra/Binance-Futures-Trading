@@ -233,8 +233,11 @@ class OrderManager:
         )
 
         if self._testnet:
-            self._exchange.set_sandbox_mode(True)
-            logger.info("OrderManager connected to Binance Futures TESTNET")
+            # ccxt >= 4.5.6: enable_demo_trading routes to demo-fapi.binance.com
+            # The old set_sandbox_mode(True) routes to deprecated endpoints and
+            # causes auth failures (see ccxt issues #26487, #27560).
+            self._exchange.enable_demo_trading(True)
+            logger.info("OrderManager connected to Binance Futures TESTNET (demo)")
         else:
             logger.info("OrderManager connected to Binance Futures PRODUCTION")
 
@@ -347,6 +350,230 @@ class OrderManager:
             ),
         )
 
+    # -- idempotent order submission -----------------------------------------
+
+    async def _query_by_client_order_id(
+        self, symbol: str, client_oid: str
+    ) -> OrderStatus | None:
+        """Query exchange for an order by its client order ID.
+
+        Used after timeout/503 to check if the order was actually placed
+        before deciding whether to retry. Returns None if order not found.
+        """
+        exchange = self._require_exchange()
+        await asyncio.sleep(2)  # Brief wait for exchange-side propagation
+        try:
+            market = exchange.market(symbol)
+            response = await exchange.fapiPrivateGetOrder(
+                {
+                    "symbol": market["id"],
+                    "origClientOrderId": client_oid,
+                }
+            )
+            parsed = exchange.parse_order(response, market)
+            return self._parse_order_status(parsed)
+        except Exception as exc:
+            logger.info(
+                "QUERY_CLIENT_OID client_oid=%s result=NOT_FOUND (%s)",
+                client_oid,
+                type(exc).__name__,
+            )
+            return None
+
+    def _order_result_from_status(
+        self, status: OrderStatus, client_oid: str
+    ) -> OrderResult:
+        """Convert an OrderStatus (from query-by-client-id) to an OrderResult."""
+        return OrderResult(
+            order_id=status.order_id,
+            client_order_id=client_oid,
+            symbol=status.symbol,
+            side=status.side,
+            order_type=status.order_type,
+            amount=status.amount,
+            price=status.price,
+            stop_price=status.stop_price,
+            status=status.status.value,
+            filled=status.filled,
+            average_fill_price=status.average_fill_price,
+            cost=status.cost,
+            fee=status.fee,
+            fee_currency=status.fee_currency,
+            timestamp=status.timestamp,
+            verified=True,  # Queried exchange directly
+            raw={},
+        )
+
+    async def _submit_order_idempotent(
+        self,
+        symbol: str,
+        order_type: str,
+        side: str,
+        amount: float,
+        price: float | None = None,
+        extra_params: dict[str, Any] | None = None,
+        log_prefix: str = "ORDER",
+    ) -> OrderResult | None:
+        """Submit an order with idempotent retry logic.
+
+        On timeout/503/NetworkError: queries by newClientOrderId before
+        retrying to prevent duplicate orders. Each retry uses a NEW
+        client order ID (the previous one was confirmed not-placed).
+
+        Returns
+        -------
+        OrderResult | None
+            Order result on success, None on InsufficientFunds/InvalidOrder.
+
+        Raises
+        ------
+        RuntimeError
+            If all retry attempts fail with transient errors.
+        """
+        exchange = self._require_exchange()
+        last_exc: Exception | None = None
+
+        for attempt in range(1, _MAX_RETRIES + 1):
+            client_oid = _generate_client_order_id()
+            params: dict[str, Any] = {
+                **(extra_params or {}),
+                "newClientOrderId": client_oid,
+            }
+
+            logger.info(
+                "%s attempt=%d/%d symbol=%s side=%s amount=%s client_oid=%s",
+                log_prefix,
+                attempt,
+                _MAX_RETRIES,
+                symbol,
+                side,
+                amount,
+                client_oid,
+            )
+
+            try:
+                raw = await exchange.create_order(
+                    symbol=symbol,
+                    type=order_type,
+                    side=side,
+                    amount=amount,
+                    price=price,
+                    params=params,
+                )
+
+                # Success — verify with separate GET call
+                order_id = str(raw.get("id", ""))
+                logger.info(
+                    "%s_PLACED order_id=%s client_oid=%s",
+                    log_prefix,
+                    order_id,
+                    client_oid,
+                )
+
+                verified = False
+                if self._verify_orders and order_id:
+                    try:
+                        verification = await self._verify_order_exists(
+                            symbol, order_id
+                        )
+                        verified = True
+                        logger.info(
+                            "%s_VERIFIED order_id=%s status=%s filled=%s",
+                            log_prefix,
+                            order_id,
+                            verification.status.value,
+                            verification.filled,
+                        )
+                    except Exception as exc:
+                        logger.error(
+                            "%s_VERIFY_FAILED order_id=%s error=%s",
+                            log_prefix,
+                            order_id,
+                            exc,
+                        )
+
+                return self._parse_order_result(raw, client_oid, verified=verified)
+
+            except (
+                ccxt_async.NetworkError,
+                ccxt_async.ExchangeNotAvailable,
+                ccxt_async.RequestTimeout,
+            ) as exc:
+                # UNKNOWN STATE — order may or may not have been placed
+                last_exc = exc
+                logger.warning(
+                    "%s_UNKNOWN_STATE client_oid=%s error=%s — querying exchange",
+                    log_prefix,
+                    client_oid,
+                    exc,
+                )
+
+                # Query by client order ID to check if it was placed
+                existing = await self._query_by_client_order_id(symbol, client_oid)
+                if existing is not None:
+                    logger.info(
+                        "%s_FOUND_EXISTING client_oid=%s order_id=%s status=%s "
+                        "— no retry needed",
+                        log_prefix,
+                        client_oid,
+                        existing.order_id,
+                        existing.status.value,
+                    )
+                    return self._order_result_from_status(existing, client_oid)
+
+                # Confirmed NOT placed — safe to retry with NEW client order ID
+                logger.info(
+                    "%s_NOT_FOUND client_oid=%s — safe to retry with new ID",
+                    log_prefix,
+                    client_oid,
+                )
+                wait = _BACKOFF_BASE * (2 ** (attempt - 1))
+                await asyncio.sleep(wait)
+
+            except ccxt_async.DDoSProtection as exc:
+                # DDoS protection definitely means order was NOT placed
+                last_exc = exc
+                wait = _BACKOFF_BASE * (2 ** (attempt - 1))
+                logger.warning(
+                    "%s_DDOS_PROTECTION attempt=%d/%d — waiting %.1fs",
+                    log_prefix,
+                    attempt,
+                    _MAX_RETRIES,
+                    wait,
+                )
+                await asyncio.sleep(wait)
+
+            except ccxt_async.InsufficientFunds:
+                logger.error(
+                    "%s_INSUFFICIENT_FUNDS symbol=%s amount=%s — SKIP trade",
+                    log_prefix,
+                    symbol,
+                    amount,
+                )
+                return None
+
+            except ccxt_async.InvalidOrder as exc:
+                logger.error(
+                    "%s_INVALID_ORDER symbol=%s error=%s — SKIP trade",
+                    log_prefix,
+                    symbol,
+                    exc,
+                )
+                return None
+
+            except ccxt_async.ExchangeError as exc:
+                logger.error(
+                    "%s_EXCHANGE_ERROR symbol=%s error=%s",
+                    log_prefix,
+                    symbol,
+                    exc,
+                )
+                raise
+
+        raise RuntimeError(
+            f"{log_prefix} failed after {_MAX_RETRIES} idempotent attempts"
+        ) from last_exc
+
     # -- leverage ------------------------------------------------------------
 
     @_retry
@@ -373,14 +600,13 @@ class OrderManager:
 
     # -- market order --------------------------------------------------------
 
-    @_retry
     async def place_market_order(
         self,
         symbol: str,
         side: str,
         amount: Decimal,
-    ) -> OrderResult:
-        """Place a market order on Binance Futures.
+    ) -> OrderResult | None:
+        """Place a market order with idempotent retry on Binance Futures.
 
         Parameters
         ----------
@@ -393,73 +619,27 @@ class OrderManager:
 
         Returns
         -------
-        OrderResult
-            Verified order result with fill details.
+        OrderResult | None
+            Verified order result, or None if InsufficientFunds/InvalidOrder.
         """
-        exchange = self._require_exchange()
-        client_oid = _generate_client_order_id()
-        side_lower = side.lower()
-
-        logger.info(
-            "MARKET_ORDER symbol=%s side=%s amount=%s client_oid=%s",
-            symbol,
-            side_lower,
-            amount,
-            client_oid,
-        )
-
-        params: dict[str, Any] = {"newClientOrderId": client_oid}
-        raw = await exchange.create_order(
+        return await self._submit_order_idempotent(
             symbol=symbol,
-            type="market",
-            side=side_lower,
+            order_type="market",
+            side=side.lower(),
             amount=float(amount),
-            params=params,
+            log_prefix="MARKET_ORDER",
         )
-
-        order_id = str(raw.get("id", ""))
-        logger.info(
-            "MARKET_ORDER_PLACED order_id=%s symbol=%s side=%s amount=%s",
-            order_id,
-            symbol,
-            side_lower,
-            amount,
-        )
-
-        # Anti-hallucination: verify order exists with a separate GET call
-        verified = False
-        if self._verify_orders and order_id:
-            try:
-                verification = await self._verify_order_exists(symbol, order_id)
-                verified = True
-                # Update raw with verified data if the verification was successful
-                logger.info(
-                    "MARKET_ORDER_VERIFIED order_id=%s verified_status=%s "
-                    "verified_filled=%s",
-                    order_id,
-                    verification.status.value,
-                    verification.filled,
-                )
-            except Exception as exc:
-                logger.error(
-                    "MARKET_ORDER_VERIFY_FAILED order_id=%s error=%s",
-                    order_id,
-                    exc,
-                )
-
-        return self._parse_order_result(raw, client_oid, verified=verified)
 
     # -- limit order ---------------------------------------------------------
 
-    @_retry
     async def place_limit_order(
         self,
         symbol: str,
         side: str,
         amount: Decimal,
         price: Decimal,
-    ) -> OrderResult:
-        """Place a limit order on Binance Futures.
+    ) -> OrderResult | None:
+        """Place a limit order with idempotent retry on Binance Futures.
 
         Parameters
         ----------
@@ -474,74 +654,28 @@ class OrderManager:
 
         Returns
         -------
-        OrderResult
-            Verified order result.
+        OrderResult | None
+            Verified order result, or None if InsufficientFunds/InvalidOrder.
         """
-        exchange = self._require_exchange()
-        client_oid = _generate_client_order_id()
-        side_lower = side.lower()
-
-        logger.info(
-            "LIMIT_ORDER symbol=%s side=%s amount=%s price=%s client_oid=%s",
-            symbol,
-            side_lower,
-            amount,
-            price,
-            client_oid,
-        )
-
-        params: dict[str, Any] = {"newClientOrderId": client_oid}
-        raw = await exchange.create_order(
+        return await self._submit_order_idempotent(
             symbol=symbol,
-            type="limit",
-            side=side_lower,
+            order_type="limit",
+            side=side.lower(),
             amount=float(amount),
             price=float(price),
-            params=params,
+            log_prefix="LIMIT_ORDER",
         )
-
-        order_id = str(raw.get("id", ""))
-        logger.info(
-            "LIMIT_ORDER_PLACED order_id=%s symbol=%s side=%s "
-            "amount=%s price=%s",
-            order_id,
-            symbol,
-            side_lower,
-            amount,
-            price,
-        )
-
-        # Anti-hallucination: verify
-        verified = False
-        if self._verify_orders and order_id:
-            try:
-                verification = await self._verify_order_exists(symbol, order_id)
-                verified = True
-                logger.info(
-                    "LIMIT_ORDER_VERIFIED order_id=%s verified_status=%s",
-                    order_id,
-                    verification.status.value,
-                )
-            except Exception as exc:
-                logger.error(
-                    "LIMIT_ORDER_VERIFY_FAILED order_id=%s error=%s",
-                    order_id,
-                    exc,
-                )
-
-        return self._parse_order_result(raw, client_oid, verified=verified)
 
     # -- stop loss -----------------------------------------------------------
 
-    @_retry
     async def place_stop_loss(
         self,
         symbol: str,
         side: str,
         amount: Decimal,
         stop_price: Decimal,
-    ) -> OrderResult:
-        """Place a stop-market (stop-loss) order on Binance Futures.
+    ) -> OrderResult | None:
+        """Place a stop-market (stop-loss) order with idempotent retry.
 
         Parameters
         ----------
@@ -556,67 +690,53 @@ class OrderManager:
 
         Returns
         -------
-        OrderResult
-            Verified order result.
+        OrderResult | None
+            Verified order result, or None if InsufficientFunds/InvalidOrder.
         """
-        exchange = self._require_exchange()
-        client_oid = _generate_client_order_id()
-        side_lower = side.lower()
-
-        logger.info(
-            "STOP_LOSS symbol=%s side=%s amount=%s stop_price=%s client_oid=%s",
-            symbol,
-            side_lower,
-            amount,
-            stop_price,
-            client_oid,
-        )
-
-        params: dict[str, Any] = {
-            "stopPrice": float(stop_price),
-            "newClientOrderId": client_oid,
-            "type": "STOP_MARKET",
-            "closePosition": False,
-        }
-
-        raw = await exchange.create_order(
+        return await self._submit_order_idempotent(
             symbol=symbol,
-            type="STOP_MARKET",
-            side=side_lower,
+            order_type="STOP_MARKET",
+            side=side.lower(),
             amount=float(amount),
-            params=params,
+            extra_params={"stopPrice": float(stop_price)},
+            log_prefix="STOP_LOSS",
         )
 
-        order_id = str(raw.get("id", ""))
-        logger.info(
-            "STOP_LOSS_PLACED order_id=%s symbol=%s side=%s "
-            "amount=%s stop_price=%s",
-            order_id,
-            symbol,
-            side_lower,
-            amount,
-            stop_price,
+    # -- take-profit order ---------------------------------------------------
+
+    async def place_take_profit(
+        self,
+        symbol: str,
+        side: str,
+        amount: Decimal,
+        stop_price: Decimal,
+    ) -> OrderResult | None:
+        """Place a take-profit market order with idempotent retry.
+
+        Parameters
+        ----------
+        symbol : str
+            Trading pair.
+        side : str
+            ``"buy"`` (for short TP) or ``"sell"`` (for long TP).
+        amount : Decimal
+            Order size in base currency units.
+        stop_price : Decimal
+            Trigger price for the take-profit order.
+
+        Returns
+        -------
+        OrderResult | None
+            Verified order result, or None if InsufficientFunds/InvalidOrder.
+        """
+        return await self._submit_order_idempotent(
+            symbol=symbol,
+            order_type="TAKE_PROFIT_MARKET",
+            side=side.lower(),
+            amount=float(amount),
+            extra_params={"stopPrice": float(stop_price)},
+            log_prefix="TAKE_PROFIT",
         )
-
-        # Anti-hallucination: verify
-        verified = False
-        if self._verify_orders and order_id:
-            try:
-                verification = await self._verify_order_exists(symbol, order_id)
-                verified = True
-                logger.info(
-                    "STOP_LOSS_VERIFIED order_id=%s verified_status=%s",
-                    order_id,
-                    verification.status.value,
-                )
-            except Exception as exc:
-                logger.error(
-                    "STOP_LOSS_VERIFY_FAILED order_id=%s error=%s",
-                    order_id,
-                    exc,
-                )
-
-        return self._parse_order_result(raw, client_oid, verified=verified)
 
     # -- cancel order --------------------------------------------------------
 
@@ -723,3 +843,33 @@ class OrderManager:
             symbol or "ALL",
         )
         return orders
+
+    async def cancel_open_orders(self, symbol: str) -> int:
+        """Cancel all open orders for a symbol.
+
+        Parameters
+        ----------
+        symbol : str
+            Trading pair.
+
+        Returns
+        -------
+        int
+            Number of orders cancelled.
+        """
+        open_orders = await self.get_open_orders(symbol)
+        cancelled = 0
+        for order in open_orders:
+            try:
+                await self.cancel_order(symbol, order.order_id)
+                cancelled += 1
+            except Exception as exc:
+                logger.error(
+                    "Failed to cancel order %s for %s: %s",
+                    order.order_id, symbol, exc,
+                )
+        logger.info(
+            "CANCEL_OPEN_ORDERS symbol=%s cancelled=%d/%d",
+            symbol, cancelled, len(open_orders),
+        )
+        return cancelled

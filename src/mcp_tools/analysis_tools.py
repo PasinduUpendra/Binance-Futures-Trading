@@ -653,9 +653,11 @@ def create_analysis_server() -> Server:
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
+        import json as _json
+
         try:
             result = await _dispatch_tool(name, arguments)
-            return [TextContent(type="text", text=str(result))]
+            return [TextContent(type="text", text=_json.dumps(result, default=str))]
         except Exception as exc:
             logger.exception("Tool %s failed", name)
             error_msg = f"Error in {name}: {type(exc).__name__}: {exc}"

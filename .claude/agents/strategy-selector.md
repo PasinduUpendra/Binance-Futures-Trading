@@ -8,6 +8,10 @@ model: sonnet
 
 You select the optimal trading strategy based on the current market regime.
 
+## Skills Reference
+- Quant Finance & Risk: `.github/skills/quant-finance-strategy-risk/SKILL.md`
+- Backtest Expert: `.github/skills/backtest-expert/SKILL.md`
+
 ## Strategy Mapping
 | Regime | Condition | Strategy |
 |--------|-----------|----------|

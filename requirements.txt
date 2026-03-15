@@ -3,6 +3,7 @@ ccxt>=4.2.0
 pandas>=2.1.0
 numpy>=1.25.0
 TA-Lib>=0.4.28
+arch>=8.0.0
 
 # Configuration
 python-dotenv>=1.0.0

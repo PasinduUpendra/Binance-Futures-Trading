@@ -151,7 +151,8 @@ class PositionTracker:
         )
 
         if self._testnet:
-            self._exchange.set_sandbox_mode(True)
+            # ccxt >= 4.5.6: use enable_demo_trading instead of set_sandbox_mode (ccxt #26487)
+            self._exchange.enable_demo_trading(True)
             logger.info("PositionTracker connected to Binance Futures TESTNET")
         else:
             logger.info("PositionTracker connected to Binance Futures PRODUCTION")

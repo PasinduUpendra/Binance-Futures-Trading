@@ -15,16 +15,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and compile TA-Lib C library
-ARG TALIB_VERSION=0.4.0
-RUN wget -q "https://prdownloads.sourceforge.net/ta-lib/ta-lib-${TALIB_VERSION}-src.tar.gz" \
+# Download and compile TA-Lib C library from GitHub
+ARG TALIB_VERSION=0.6.4
+RUN wget -q "https://github.com/ta-lib/ta-lib/releases/download/v${TALIB_VERSION}/ta-lib-${TALIB_VERSION}-src.tar.gz" \
     && tar xzf "ta-lib-${TALIB_VERSION}-src.tar.gz" \
-    && cd ta-lib \
+    && cd "ta-lib-${TALIB_VERSION}" \
     && ./configure --prefix=/usr/local \
     && make -j"$(nproc)" \
     && make install \
     && cd .. \
-    && rm -rf ta-lib ta-lib-*.tar.gz
+    && rm -rf "ta-lib-${TALIB_VERSION}" ta-lib-*.tar.gz
 
 
 # Stage 2: Runtime image

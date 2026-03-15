@@ -452,7 +452,7 @@ def create_reporting_server() -> Server:
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         try:
             result = await _dispatch_tool(name, arguments)
-            return [TextContent(type="text", text=str(result))]
+            return [TextContent(type="text", text=json.dumps(result, default=str))]
         except Exception as exc:
             logger.exception("Tool %s failed", name)
             error_msg = f"Error in {name}: {type(exc).__name__}: {exc}"

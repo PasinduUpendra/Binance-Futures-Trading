@@ -226,7 +226,8 @@ class RegimeDetector:
 
     def _volume_ratio(self, df: pd.DataFrame) -> float:
         """Ratio of current volume to its rolling average."""
-        vol = df[self.COL_VOLUME]
+        # Cast to float to handle Decimal values from exchange APIs
+        vol = df[self.COL_VOLUME].astype(float)
         current = vol.dropna().iloc[-1]
         avg = vol.rolling(window=self.VOLUME_AVG_WINDOW, min_periods=5).mean()
         avg_val = avg.dropna().iloc[-1]

@@ -67,11 +67,14 @@ class TrendFollower(BaseStrategy):
     COL_CLOSE: str = "close"
 
     # -- Tunables ----------------------------------------------------------
-    ADX_MIN: float = 25.0
+    # ADX 22 captures moderate crypto trends (ADX>25 fires only ~50% of time on 1H)
+    ADX_MIN: float = 22.0
     RSI_LOW: float = 30.0
     RSI_HIGH: float = 70.0
-    SL_ATR_MULT: float = 1.5
-    TP_ATR_MULT: float = 3.0
+    # Wider stops for crypto volatility: 1H ATR ~1.25% of price,
+    # so 2.0x = ~2.5% SL room (1.5x was too tight, hit by normal pullbacks)
+    SL_ATR_MULT: float = 2.0
+    TP_ATR_MULT: float = 4.0  # Maintain 2:1 R/R with wider SL
     VOLUME_AVG_WINDOW: int = 20
 
     # ------------------------------------------------------------------

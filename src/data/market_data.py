@@ -158,8 +158,11 @@ class MarketDataClient:
         )
 
         if self._testnet:
-            self._exchange.set_sandbox_mode(True)
-            logger.info("MarketDataClient connected to Binance Futures TESTNET")
+            # ccxt >= 4.5.6: enable_demo_trading routes to demo-fapi.binance.com
+            # The old set_sandbox_mode(True) routes to deprecated endpoints and
+            # causes auth failures (see ccxt issues #26487, #27560).
+            self._exchange.enable_demo_trading(True)
+            logger.info("MarketDataClient connected to Binance Futures TESTNET (demo)")
         else:
             logger.info("MarketDataClient connected to Binance Futures PRODUCTION")
 
@@ -290,6 +293,21 @@ class MarketDataClient:
             asks=asks,
             timestamp=self._utc_from_ms(raw.get("timestamp")),
         )
+
+    @_retry
+    async def get_account_balance(self) -> Decimal:
+        """Fetch the total USDT balance from the Binance Futures account.
+
+        Returns the total USDT balance (available + in positions).
+        """
+        exchange = self._require_exchange()
+        raw = await exchange.fetch_balance()
+        # ccxt unified balance: raw['USDT']['total'] for Binance Futures
+        usdt_info = raw.get("USDT", {})
+        total = usdt_info.get("total", 0)
+        balance = self._to_decimal(total)
+        logger.info("Account balance: %s USDT", balance)
+        return balance
 
     @_retry
     async def get_current_price(self, symbol: str) -> Decimal:
