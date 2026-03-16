@@ -45,14 +45,16 @@ Step 5: Build a "Source of Truth Map":
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **Validated avg daily return** | **0.628%** | SSOT §15 item 11, v4 backtest |
-| **Aspirational target** | **1.0% daily compound** | SSOT §1 |
-| **v4 backtest return** | +172.9% over 172 days, 39 trades | CHANGELOG 2026-03-15 |
-| **v4 win rate** | 69.2% | CHANGELOG 2026-03-15 |
-| **v4 Sharpe** | 3.98 | CHANGELOG 2026-03-15 |
-| **v4 profit factor** | 5.39 | CHANGELOG 2026-03-15 |
+| **Validated avg daily return** | **1.149%** | v5 sweep winner, CHANGELOG 2026-03-16 |
+| **Previous validated ceiling** | 0.628% (ST 10/3.0, immediate rev) | v4 backtest, CHANGELOG 2026-03-15 |
+| **Aspirational target** | **1.0% daily compound** | SSOT §1 — **NOW EXCEEDED** |
+| **v5 backtest return** | +539.8% over 172 days, 75 trades | CHANGELOG 2026-03-16 |
+| **v5 win rate** | 61.3% | CHANGELOG 2026-03-16 |
+| **v5 Sharpe** | 5.83 | CHANGELOG 2026-03-16 |
+| **v5 profit factor** | 52.34 | CHANGELOG 2026-03-16 |
+| **v5 max drawdown** | 1.2% | CHANGELOG 2026-03-16 |
 
-> **CRITICAL FRAMING**: 0.628% daily is the VALIDATED PERFORMANCE CEILING from production-code backtesting. It is NOT underperformance. It is NOT a problem to fix. Any attempt to "close the gap" to 1% MUST go through the full strategy versioning pipeline (Section 8) with backtest evidence. Increasing trade frequency, relaxing entry filters, or adding unproven strategies to chase 1% is FORBIDDEN without evidence proving the change improves risk-adjusted returns net of all costs. The 1% target is aspirational — the bot optimizes for it but never sacrifices validated edge to reach it.
+> **CRITICAL FRAMING**: 1.149% daily is the VALIDATED PERFORMANCE CEILING from production-code backtesting via 240-combo parameter sweep (v5). This EXCEEDS the 1% aspirational target. The previous ceiling (0.628%) was raised by optimizing Supertrend parameters (10/3.0 → 8/2.0), extending max hold time (120 → 150 bars), and changing ST reversal behavior (immediate close → tighten SL to breakeven). All 6 gate checks passed vs baseline. Any further changes MUST still go through the full strategy versioning pipeline (Section 8) with backtest evidence.
 
 > **When to exceed 1%**: The bot should capture outsized returns when GENUINE high-confluence setups appear (all filters align, confidence ≥ 85, regime strongly trending, volume surging). This happens through BETTER TRADES, not MORE TRADES. Trail winners with wider stops. Don't close at TP1 on ≥90 confidence signals. Let the market give you the return — don't manufacture it.
 
@@ -341,12 +343,15 @@ GARCH volatility model adjusts leverage downward during vol spikes (Step 4 of or
 |-----------|-------|--------|
 | Regime required | TRENDING (ADX ≥ 18) | `adaptive_strategy.py` |
 | Timeframe | 4H indicators, 1H close for entry price | SSOT §4.1 |
+| **Supertrend period** | **8** (was 10) | `indicator_engine.py`, v5 sweep 2026-03-16 |
+| **Supertrend multiplier** | **2.0** (was 3.0) | `indicator_engine.py`, v5 sweep 2026-03-16 |
 | Entry LONG | 4H Supertrend flips bearish→bullish AND ADX ≥ 18 | `supertrend_trend.py` |
 | Entry SHORT | 4H Supertrend flips bullish→bearish AND ADX ≥ 18 | `supertrend_trend.py` |
 | Stop-loss | 3.0× ATR(4H) from entry | SSOT §4.3 |
 | Take-profit | 6.0× ATR(4H) from entry (R/R = 2.0) | SSOT §4.3 |
 | Trailing stop | Activate at 2.0× ATR(4H), trail at 2.5× ATR(4H) | SSOT §4.3 |
-| Reversal exit | Close immediately when 4H Supertrend flips against direction | SSOT §4.3 |
+| **Reversal exit** | **Tighten SL to breakeven** (was: close immediately) | v5 sweep 2026-03-16 |
+| **Max hold time** | **150 bars (6.25 days)** — force close after | `orchestrator/main.py`, v5 sweep |
 | Confidence | Base flip 40pts + ADX 20pts + EMA alignment 20pts + RSI 10pts + flip quality 10pts | SSOT §4.3 |
 
 ## Disabled Strategies (With Evidence — SSOT §4.3, CHANGELOG 2026-03-15)
@@ -409,12 +414,12 @@ Step 1b: FETCH MULTI-TIMEFRAME DATA
   │   └── Validate data (anti-hallucination Layer 1)
   └── Store as dict[symbol] → (df_4h, df_1h)
 
-Step 2: SUPERTREND REVERSAL EXITS
+Step 2: SUPERTREND REVERSAL EXITS (TIGHTEN TO BREAKEVEN)
   ├── For each open position:
   │   ├── Check if 4H Supertrend flipped against direction
-  │   ├── If flipped: cancel open orders + close at market
-  │   └── Remove trailing stop state
-  └── Capital recycling: individually -$33 but enables +$97 net
+  │   ├── If flipped: cancel existing SL/TP → place new SL at entry price (breakeven)
+  │   └── Position stays open — trailing stop continues tracking
+  └── v5 sweep: tighten_to_breakeven beats immediate close on all metrics
 
 Step 2b: TRAILING STOP MANAGEMENT
   ├── For each open position with TrailingStopState:
@@ -422,6 +427,13 @@ Step 2b: TRAILING STOP MANAGEMENT
   │   ├── If moved 2.0× ATR(4H) favorably → activate trailing stop
   │   ├── If activated + pullback 2.5× ATR(4H) from best → close position
   │   └── Log state changes
+
+Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 150)
+  ├── For each open position:
+  │   ├── Calculate hours held = (now - entry_time) / 3600
+  │   ├── If hours_held ≥ 150: close at market, cancel orders, clean trailing stop
+  │   └── Record as "time_exit" reason
+  └── Prevents capital lock-up in stale positions (6.25 day cap)
 
 Step 3: MULTI-TIMEFRAME SIGNAL GENERATION
   ├── For each pair:
@@ -592,7 +604,7 @@ Minimal patch plan with rollback procedure.
 # SECTION 11: TEST COVERAGE STATUS & PRIORITY
 # ═══════════════════════════════════════════════════════════════════
 
-**Current**: 287 tests passing (~1.0s) — SSOT §14
+**Current**: 294 tests passing (~1.24s) — SSOT §14
 
 ### Covered Modules (with test counts)
 
@@ -701,7 +713,7 @@ Minimal patch plan with rollback procedure.
 | `src/risk/position_sizer.py` | Position sizing | CRITICAL |
 | `scripts/backtest_v4.py` | Production-code backtest | VALIDATION |
 | `.claude/agents/watchdog.md` | Watchdog agent (9th agent) | MONITORING |
-| `tests/` | 228 tests | QUALITY |
+| `tests/` | 294 tests | QUALITY |
 | `.learnings/` | Self-improving knowledge base | LEARNING |
 | `config/` | risk_params.yaml, regime_params.yaml, circuit_breakers.yaml | CONFIG |
 

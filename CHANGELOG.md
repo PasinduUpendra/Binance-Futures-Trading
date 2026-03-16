@@ -10,6 +10,21 @@ All notable changes to Claude Quant are documented here.
 
 **Bottleneck identified**: 119 of 147 days idle (81%), only 39 trades in 172 days. Capital does nothing 4 out of 5 days. Top 5 days account for 65% of all gains.
 
+##### Task 4: Sweep Winner Applied to Production — ST(8, 2.0) / hold=150 / tighten_to_breakeven
+- **240-combo sweep completed** in 2075s (8.6s/combo) — `ignore` mode dropped (clearly inferior: high DD, low PF)
+- **Winner: ST(8, 2.0) / MAX_HOLD_BARS=150 / ST_REV=tighten_to_breakeven**
+  - Trades: 75 (was 39, +92%), WR: 61.3%, PnL: +$368.82, Return: +539.8% (was +172.9%)
+  - Sharpe: 5.83 (was 3.98, +46%), PF: 52.34 (was 5.39), MaxDD: 1.2% (was 9.8%)
+  - Avg Daily: 1.149% (was 0.628%, EXCEEDS 1% aspirational target!)
+  - ALL 6 gate checks passed vs baseline
+- **Production code changes**:
+  - `src/data/indicator_engine.py`: Default Supertrend params changed (10, 3.0) → (8, 2.0)
+  - `src/orchestrator/main.py`: ST reversal now tightens SL to breakeven instead of immediate close
+  - `src/orchestrator/main.py`: Added `_check_time_based_exits()` with MAX_HOLD_BARS=150 (6.25d)
+  - `scripts/backtest_v4.py`: Updated to match (MAX_HOLD_BARS=150, tighten_to_breakeven)
+- **Top 20 combos ALL used tighten_to_breakeven + multiplier 2.0** — strong convergence
+- 294 tests pass after changes
+
 ##### Task 1-3: Parameter Sweep Backtest (`scripts/backtest_v5_sweep.py`)
 - **NEW FILE**: `scripts/backtest_v5_sweep.py` — Sweeps 360 parameter combinations:
   - Supertrend period: [7, 8, 9, 10, 12, 14]

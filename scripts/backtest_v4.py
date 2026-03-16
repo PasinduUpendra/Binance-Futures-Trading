@@ -48,7 +48,7 @@ INITIAL_BALANCE = 68.33
 HARD_FLOOR = 30.0
 
 # Time-based exit: 120 1H bars = 5 days (matching v3)
-MAX_HOLD_BARS = 120
+MAX_HOLD_BARS = 150
 
 # Trailing stop params (matching v3 and production TrailingStopState)
 TRAIL_ACTIVATE_ATR_MULT = 2.0
@@ -124,19 +124,21 @@ def run_backtest():
             cl = data_1h[pair]["close"].iloc[i]
             atr_val = pos["atr"]
 
-            # ─── Supertrend reversal exit (using production code) ───
-            st_exit = False
+            # ─── Supertrend reversal exit: tighten SL to breakeven (v5 optimisation) ───
             if pos["strategy"] == "SupertrendTrend":
                 current_ts = data_1h[pair]["timestamp"].iloc[i]
                 df_4h = data_4h_ind[pair]
                 df_4h_valid = df_4h[df_4h["timestamp"] <= current_ts]
                 if len(df_4h_valid) > 0:
-                    # Use PRODUCTION check_supertrend_reversal
                     should_exit = adaptive.check_supertrend_reversal(
                         df_4h_valid, pos["direction"]
                     )
                     if should_exit:
-                        st_exit = True
+                        # Tighten SL to entry (breakeven) instead of closing
+                        if pos["direction"] == "long":
+                            pos["sl"] = max(pos["sl"], pos["entry"])
+                        else:
+                            pos["sl"] = min(pos["sl"], pos["entry"])
 
             # ─── Trailing stop (matching production TrailingStopState logic) ───
             if pos["direction"] == "long":
@@ -156,18 +158,13 @@ def run_backtest():
                     if new_sl < pos["sl"]:
                         pos["sl"] = new_sl
 
-            hit_sl = hit_tp = hit_time = hit_st = False
+            hit_sl = hit_tp = hit_time = False
             exit_price = None
 
-            if st_exit:
-                hit_st = True
-                exit_price = cl
-
-            if not hit_st:
-                if pos["direction"] == "long":
-                    if lo <= pos["sl"]:
-                        hit_sl = True
-                        exit_price = pos["sl"]
+            if pos["direction"] == "long":
+                if lo <= pos["sl"]:
+                    hit_sl = True
+                    exit_price = pos["sl"]
                     elif hi >= pos["tp"]:
                         hit_tp = True
                         exit_price = pos["tp"]
@@ -181,11 +178,11 @@ def run_backtest():
 
             # Time-based exit (5 days = 120 1H bars)
             bars_held = i - pos["entry_idx"]
-            if not hit_sl and not hit_tp and not hit_st and bars_held >= MAX_HOLD_BARS:
+            if not hit_sl and not hit_tp and bars_held >= MAX_HOLD_BARS:
                 hit_time = True
                 exit_price = cl
 
-            if hit_sl or hit_tp or hit_time or hit_st:
+            if hit_sl or hit_tp or hit_time:
                 if pos["direction"] == "long":
                     raw_pnl = (exit_price - pos["entry"]) * pos["size"]
                 else:
@@ -200,9 +197,7 @@ def run_backtest():
                 balance += net_pnl
                 peak_balance = max(peak_balance, balance)
 
-                if hit_st:
-                    exit_reason = "ST_REV"
-                elif hit_tp:
+                if hit_tp:
                     exit_reason = "TP"
                 elif hit_time:
                     exit_reason = "TIME"

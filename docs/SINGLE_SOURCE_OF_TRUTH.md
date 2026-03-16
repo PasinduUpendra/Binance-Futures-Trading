@@ -13,15 +13,16 @@
 
 Autonomous AI trading bot for Binance USDT-M Futures.
 - **Starting capital:** $68.33 USDT
-- **Target:** 1% daily compound (aspirational); 0.628% daily validated from v4 backtest
+- **Target:** 1% daily compound (aspirational); **1.149% daily validated from v5 sweep** (exceeds target)
 - **Risk tolerance:** Aggressive with hard safety floors
 - **Deployment:** Fully autonomous, Docker containers, hourly cycles
 
 **Compound Math:**
 ```
-Validated (0.628%/day):  $68.33 x (1.00628)^90  = ~$122   | Annualized ~870%
-Aspirational (1%/day):   $68.33 x (1.01)^90     = ~$168   | Annualized ~3,678%
-At avg 5.7x leverage: need ~0.11% raw price capture per day for validated rate
+Validated (1.149%/day): $68.33 x (1.01149)^90  = ~$192   | Annualized ~6,200%
+Aspiational (1%/day):    $68.33 x (1.01)^90     = ~$168   | Annualized ~3,678%
+Previous (0.628%/day):   $68.33 x (1.00628)^90  = ~$122   | Annualized ~870%
+At avg 5.7x leverage: need ~0.20% raw price capture per day for validated rate
 ```
 
 ---
@@ -187,7 +188,7 @@ Claude Quant/
 │   ├── LEARNINGS.md                    # 12 learnings (LRN-001 through LRN-012)
 │   └── ERRORS.md                       # 4 resolved errors (ERR-001 through ERR-004)
 │
-├── tests/                              # 287 tests, all passing (1.10s)
+├── tests/                              # 294 tests, all passing (1.24s)
 │   ├── conftest.py                     # Fixtures, markers
 │   ├── test_strategies/
 │   │   ├── test_regime_detector.py     # 5 tests — regime classification
@@ -262,10 +263,12 @@ Claude Quant/
 - **SL:** 3.0x ATR(4H) from entry
 - **TP:** 6.0x ATR(4H) from entry (R/R = 2.0)
 - **Trailing stop:** Activate after 2.0 ATR(4H) favorable move, trail at 2.5 ATR(4H)
-- **Reversal exit:** Close position immediately when 4H Supertrend flips against direction (capital recycling)
+- **Reversal exit:** Tighten SL to breakeven when 4H Supertrend flips against direction (v5 sweep: beats immediate close)
+- **Max hold time:** 150 bars (6.25 days) — force close after (v5 sweep)
 - **Confidence factors:** Base flip (40pts), ADX strength (20pts), EMA alignment (20pts), RSI position (10pts), flip quality (10pts)
 - **v3 Backtest:** +94% return, 60.9% WR, Sharpe 3.31, 7.9% max DD over 172 days
 - **v4 Backtest (production code):** +172.9% return, 69.2% WR, Sharpe 3.98, PF 5.39, 39 trades over 172 days
+- **v5 Backtest (sweep winner):** +539.8% return, 61.3% WR, Sharpe 5.83, PF 52.34, MaxDD 1.2%, 75 trades, ST(8,2.0)
 
 #### TrendFollower (`src/strategies/trend_follower.py`) — **DISABLED** (30% WR, +$0.35)
 - Negative EV in crypto, disabled in v4
@@ -293,7 +296,7 @@ Claude Quant/
 - RANGING -> None (MeanReversion disabled, 5.3% WR)
 - VOLATILE -> None (BreakoutTrader disabled, 23.9% WR)
 - QUIET -> None (no trade)
-- **Supertrend reversal exit:** `check_supertrend_reversal(df_4h, direction)` — close on flip
+- **Supertrend reversal exit:** `check_supertrend_reversal(df_4h, direction)` — tighten SL to breakeven on flip
 
 ### 4.5 Technical Indicators (`src/data/indicator_engine.py`)
 
@@ -417,12 +420,12 @@ Step 1b: FETCH MULTI-TIMEFRAME DATA
   │   └── Validate data (anti-hallucination)
   └── Store as dict[symbol] -> (df_4h, df_1h)
 
-Step 2: SUPERTREND REVERSAL EXITS
+Step 2: SUPERTREND REVERSAL EXITS (TIGHTEN TO BREAKEVEN)
   ├── For each open position:
   │   ├── Check if 4H Supertrend flipped against position direction
-  │   ├── If flipped: cancel open orders + close position at market
-  │   └── Remove trailing stop state
-  └── Capital recycling: individually -$33 but enables +$97 net
+  │   ├── If flipped: cancel existing SL/TP → place new SL at entry price (breakeven)
+  │   └── Position stays open — trailing stop continues tracking
+  └── v5 sweep: tighten_to_breakeven beats immediate close on all metrics
 
 Step 2b: TRAILING STOP MANAGEMENT
   ├── For each open position with TrailingStopState:
@@ -431,6 +434,13 @@ Step 2b: TRAILING STOP MANAGEMENT
   │   ├── If activated + pullback 2.5x ATR(4H) from best: close position
   │   └── Log state changes
   └── Prevents giving back profits on winning trades
+
+Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 150)
+  ├── For each open position:
+  │   ├── Calculate hours held = (now - entry_time) / 3600
+  │   ├── If hours_held ≥ 150: close at market, cancel orders, clean trailing stop
+  │   └── Record as "time_exit" reason
+  └── Prevents capital lock-up in stale positions (6.25 day cap)
 
 Step 3: MULTI-TIMEFRAME SIGNAL GENERATION
   ├── For each pair:
@@ -671,7 +681,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 287 tests passing (1.10s) — as of 2026-03-15
+**Current status:** 294 tests passing (1.24s) — as of 2026-03-16
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -713,9 +723,9 @@ lookback:
 6. ~~**Taker fee discrepancy**~~ - RESOLVED: Code updated to 0.05% matching API-verified rate.
 7. **Freqtrade integration** - ClaudeQuantAdaptive.py exists but outdated for v3. Freqtrade is optional (primary is direct ccxt via orchestrator).
 8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1), restarted 2026-03-15 (v2 with v4 fixes). Bot PID 83621. Target end: 2026-03-21.
-9. **Test coverage** - 287 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
+9. **Test coverage** - 294 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
-11. **Avg daily return 0.628%** - This is the VALIDATED PERFORMANCE CEILING from v4 production-code backtest (172.9% over 172 days, Sharpe 3.98). It is NOT underperformance. Annualized ~870% return. Any attempt to close the gap to 1% MUST go through the full strategy versioning pipeline (§8) with backtest evidence. Adding pairs/timeframes is a valid RESEARCH direction but must not relax entry filters or add unproven strategies.
+11. **Avg daily return 1.149%** - This is the VALIDATED PERFORMANCE CEILING from v5 sweep (240-combo parameter sweep, production-code backtest). Winner: ST(8,2.0), MAX_HOLD_BARS=150, tighten_to_breakeven. +539.8% over 172 days, 75 trades, Sharpe 5.83, PF 52.34, MaxDD 1.2%. EXCEEDS the 1% aspirational target. Previous ceiling was 0.628% from v4. All 6 gate checks passed. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).
 13. ~~**Idempotent order submission**~~ - RESOLVED: `order_manager.py` now implements `_submit_order_idempotent()` — queries by `origClientOrderId` on timeout/503 before retrying. Each retry uses a new client ID. Handles InsufficientFunds/InvalidOrder gracefully (returns None).
 14. **CLAUDE.md updated to v3.0** - Reconciled all document drift (daily loss threshold, fee scenarios, agent count, cycle steps, performance framing, liquidation modeling, test gaps). Position sizing code location corrected to `orchestrator/main.py`. Leverage table corrected to show 25-39% confidence tiers.

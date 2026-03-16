@@ -22,6 +22,7 @@ Output: sorted results table + JSON to user_data/backtest_results/
 
 import itertools
 import json
+import logging
 import sys
 import time
 from datetime import datetime, timezone
@@ -48,6 +49,12 @@ from src.execution.fee_calculator import FeeCalculator
 from src.strategies.adaptive_strategy import AdaptiveStrategy
 from src.strategies.base_strategy import SignalDirection
 
+# Suppress ALL logging output during the sweep (must be AFTER imports)
+logging.disable(logging.CRITICAL)
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.root.addHandler(logging.NullHandler())
+
 DATA_DIR = PROJECT_ROOT / "user_data" / "data"
 PAIRS = ["ETH_USDT_USDT", "SOL_USDT_USDT", "DOGE_USDT_USDT"]
 INITIAL_BALANCE = 68.33
@@ -61,7 +68,7 @@ TRAIL_ATR_MULT = 2.5
 SUPERTREND_PERIODS = [7, 8, 9, 10, 12, 14]
 SUPERTREND_MULTIPLIERS = [2.0, 2.5, 3.0, 3.5]
 MAX_HOLD_BARS_OPTIONS = [90, 120, 150, 180, 240]
-ST_REV_MODES = ["immediate", "tighten_to_breakeven", "ignore"]
+ST_REV_MODES = ["immediate", "tighten_to_breakeven"]
 
 
 def load_data(pair: str, timeframe: str) -> pd.DataFrame:
@@ -77,6 +84,7 @@ def load_data(pair: str, timeframe: str) -> pd.DataFrame:
 def run_single_backtest(
     *,
     data_1h: dict[str, pd.DataFrame],
+    data_1h_ind: dict[str, pd.DataFrame],
     data_4h: dict[str, pd.DataFrame],
     ie: IndicatorEngine,
     fee_calc: FeeCalculator,
@@ -97,13 +105,18 @@ def run_single_backtest(
 
     # Pre-compute 4H indicators with CUSTOM Supertrend params
     data_4h_ind: dict[str, pd.DataFrame] = {}
+    # Pre-compute mapping: for each 1H bar index → last valid 4H bar index
+    h1_to_h4_idx: dict[str, np.ndarray] = {}
     for pair in PAIRS:
         df = data_4h[pair].copy()
-        # First compute all standard indicators (uses default ST params internally)
         df = ie.calculate_all(df)
-        # Then OVERWRITE supertrend columns with sweep params
         df = ie.calculate_supertrend(df, period=st_period, multiplier=st_multiplier)
         data_4h_ind[pair] = df
+
+        # Build index mapping: for each 1H timestamp, find the last 4H bar <= that ts
+        ts_1h = data_1h[pair]["timestamp"].values
+        ts_4h = df["timestamp"].values
+        h1_to_h4_idx[pair] = np.searchsorted(ts_4h, ts_1h, side="right") - 1
 
     min_1h_len = min(len(data_1h[p]) for p in PAIRS)
     start_idx = 200  # Skip warmup
@@ -129,10 +142,9 @@ def run_single_backtest(
             # ─── Supertrend reversal check ───
             st_reversal_detected = False
             if pos["strategy"] == "SupertrendTrend":
-                current_ts = data_1h[pair]["timestamp"].iloc[i]
-                df_4h = data_4h_ind[pair]
-                df_4h_valid = df_4h[df_4h["timestamp"] <= current_ts]
-                if len(df_4h_valid) > 0:
+                h4_idx = h1_to_h4_idx[pair][i]
+                if h4_idx >= 100:
+                    df_4h_valid = data_4h_ind[pair].iloc[:h4_idx + 1]
                     should_exit = adaptive.check_supertrend_reversal(
                         df_4h_valid, pos["direction"]
                     )
@@ -287,19 +299,16 @@ def run_single_backtest(
             if len(open_positions) >= constraints.max_positions:
                 break
 
-            current_ts = data_1h[pair]["timestamp"].iloc[i]
-            df_4h = data_4h_ind[pair]
-            df_4h_valid = df_4h[df_4h["timestamp"] <= current_ts]
-            if len(df_4h_valid) < 100:
+            h4_idx = h1_to_h4_idx[pair][i]
+            if h4_idx < 100:
                 continue
+            df_4h_valid = data_4h_ind[pair].iloc[:h4_idx + 1]
 
-            df_1h_slice = data_1h[pair].iloc[:i + 1].copy()
-            # Calculate all indicators on 1H (standard params)
-            df_1h_ind = ie.calculate_all(df_1h_slice.tail(200).copy())
+            df_1h_ind_slice = data_1h_ind[pair].iloc[max(0, i - 199):i + 1]
 
             # Use AdaptiveStrategy — it reads the 4H data which already has
             # overwritten supertrend columns from the sweep params
-            signal = adaptive.get_signal_multi_tf(df_4h_valid, df_1h_ind)
+            signal = adaptive.get_signal_multi_tf(df_4h_valid, df_1h_ind_slice)
 
             if signal is None:
                 continue
@@ -498,13 +507,20 @@ def run_sweep() -> None:
 
     data_1h: dict[str, pd.DataFrame] = {}
     data_4h: dict[str, pd.DataFrame] = {}
+    data_1h_ind: dict[str, pd.DataFrame] = {}
     for pair in PAIRS:
         data_1h[pair] = load_data(pair, "1h")
         data_4h[pair] = load_data(pair, "4h")
-    print("Data loaded.\n")
+    print("Data loaded.")
+
+    # Pre-compute 1H indicators ONCE per pair (constant across sweep combos)
+    for pair in PAIRS:
+        data_1h_ind[pair] = ie.calculate_all(data_1h[pair].copy())
+    print("1H indicators pre-computed.\n")
 
     results: list[dict[str, Any]] = []
     start_time = time.time()
+    quiet = "--quiet" in sys.argv
 
     for idx, (period, mult, hold_bars, rev_mode) in enumerate(
         itertools.product(
@@ -513,17 +529,9 @@ def run_sweep() -> None:
         ),
         start=1,
     ):
-        elapsed = time.time() - start_time
-        eta = (elapsed / idx * (total_combos - idx)) if idx > 1 else 0
-        print(
-            f"[{idx}/{total_combos}] ST({period},{mult}) "
-            f"hold={hold_bars} rev={rev_mode:22s} ",
-            end="",
-            flush=True,
-        )
-
         result = run_single_backtest(
             data_1h=data_1h,
+            data_1h_ind=data_1h_ind,
             data_4h=data_4h,
             ie=ie,
             fee_calc=fee_calc,
@@ -535,14 +543,20 @@ def run_sweep() -> None:
             st_rev_mode=rev_mode,
         )
         results.append(result)
-        print(
-            f"→ {result['trades']:3d} trades  "
-            f"WR={result['win_rate']:5.1f}%  "
-            f"PnL=${result.get('total_pnl', 0):+8.2f}  "
-            f"Sharpe={result['sharpe']:5.2f}  "
-            f"DD={result['max_drawdown']:4.1f}%  "
-            f"PF={result['profit_factor']:5.2f}"
-        )
+        if not quiet:
+            print(
+                f"[{idx}/{total_combos}] ST({period},{mult}) "
+                f"hold={hold_bars} rev={rev_mode:22s} "
+                f"→ {result['trades']:3d} trades  "
+                f"WR={result['win_rate']:5.1f}%  "
+                f"PnL=${result.get('total_pnl', 0):+8.2f}  "
+                f"Sharpe={result['sharpe']:5.2f}  "
+                f"DD={result['max_drawdown']:4.1f}%  "
+                f"PF={result['profit_factor']:5.2f}"
+            )
+        elif idx % 30 == 0 or idx == total_combos:
+            elapsed = time.time() - start_time
+            print(f"  Progress: {idx}/{total_combos} ({elapsed:.0f}s)", flush=True)
 
     total_elapsed = time.time() - start_time
 

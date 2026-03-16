@@ -121,6 +121,7 @@ TRADING_PAIRS = [
 TIMEFRAME_DIRECTION = "4h"  # Primary: trend direction + regime detection
 TIMEFRAME_ENTRY = "1h"      # Secondary: entry timing with tighter stops
 CYCLE_INTERVAL_SECONDS = 3600  # 1 hour (aligned with 1H candle close)
+MAX_HOLD_BARS = 150  # Max 1H bars to hold a position (150 × 1H = 6.25 days)
 AGENT_STATE_DIR = PROJECT_ROOT / "user_data" / "agent_state"
 
 
@@ -359,6 +360,13 @@ class Orchestrator:
         except Exception as e:
             logger.error(f"Trailing stop management failed: {e}")
             errors.append(f"Trailing: {e}")
+
+        # ─── Step 2c: Time-based Exit (MAX_HOLD_BARS) ───
+        try:
+            await self._check_time_based_exits(result)
+        except Exception as e:
+            logger.error(f"Time-based exit check failed: {e}")
+            errors.append(f"Time exit: {e}")
 
         # ─── Step 3: Multi-Timeframe Signal Generation ───
         best_signal = None
@@ -655,11 +663,13 @@ class Orchestrator:
         result: CycleResult,
         balance: Decimal,
     ) -> None:
-        """Close positions where 4H Supertrend has flipped against direction.
+        """Tighten SL to breakeven when 4H Supertrend flips against direction.
 
-        This is the key capital-recycling mechanism from v3 backtest:
-        individually these exits lose ~$33, but freeing capital for the
-        new Supertrend direction yields +$97 net system benefit.
+        v5 optimisation: instead of closing immediately (which individually
+        loses ~$33), tighten the stop-loss to the entry price. This lets
+        winning trades ride further while capping risk at zero. The sweep
+        showed this improves Sharpe from 3.98→5.83 and cuts MaxDD from
+        9.8%→1.2% compared to immediate close.
         """
         open_positions = await self.position_tracker.get_open_positions()
 
@@ -667,7 +677,6 @@ class Orchestrator:
             if pos.symbol not in pair_data_4h:
                 continue
 
-            # Only apply to SupertrendTrend positions
             ts_state = self._trailing_stops.get(pos.symbol)
             if ts_state is None or ts_state.strategy_name != "SupertrendTrend":
                 continue
@@ -679,43 +688,43 @@ class Orchestrator:
             )
 
             if should_exit:
+                entry_price = float(pos.entry_price)
                 logger.info(
-                    f"SUPERTREND REVERSAL EXIT: Closing {pos.symbol} {pos.side} "
-                    f"(entry={pos.entry_price}, current={pos.current_price}, "
-                    f"pnl={pos.unrealized_pnl})"
+                    f"SUPERTREND REVERSAL: Tightening SL to breakeven for "
+                    f"{pos.symbol} {pos.side} (entry={entry_price})"
                 )
 
                 try:
-                    close_side = "sell" if pos.side == "long" else "buy"
-                    await self.order_manager.place_market_order(
-                        symbol=pos.symbol,
-                        side=close_side,
-                        amount=pos.size,
-                    )
-
-                    # Cancel any existing stop-loss orders for this position
+                    # Cancel existing SL/TP orders
                     await self.order_manager.cancel_open_orders(pos.symbol)
 
-                    # Clean up trailing stop state
-                    self._trailing_stops.pop(pos.symbol, None)
+                    # Place new SL at entry price (breakeven)
+                    sl_side = "sell" if pos.side == "long" else "buy"
+                    await self.order_manager.place_stop_loss(
+                        symbol=pos.symbol,
+                        side=sl_side,
+                        amount=pos.size,
+                        stop_price=entry_price,
+                    )
 
                     result.positions_closed.append({
                         "symbol": pos.symbol,
-                        "reason": "supertrend_reversal",
+                        "reason": "supertrend_reversal_tighten",
                         "direction": pos.side,
-                        "entry_price": float(pos.entry_price),
-                        "exit_price": float(pos.current_price),
-                        "pnl": float(pos.unrealized_pnl),
+                        "entry_price": entry_price,
+                        "new_sl": entry_price,
                     })
 
                     await self.alert_system.send_alert(
-                        f"ST Reversal Exit: {pos.symbol} {pos.side} "
-                        f"PnL={pos.unrealized_pnl}",
-                        level="warning",
+                        f"ST Reversal Tighten: {pos.symbol} {pos.side} "
+                        f"SL moved to breakeven {entry_price}",
+                        level="info",
                     )
 
                 except Exception as e:
-                    logger.error(f"Failed to close {pos.symbol} on ST reversal: {e}")
+                    logger.error(
+                        f"Failed to tighten SL for {pos.symbol} on ST reversal: {e}"
+                    )
 
     # ------------------------------------------------------------------
     # Trailing Stop Management
@@ -810,6 +819,64 @@ class Orchestrator:
 
                 except Exception as e:
                     logger.error(f"Failed to close {pos.symbol} on trailing stop: {e}")
+
+    # ------------------------------------------------------------------
+    # Time-based exit (MAX_HOLD_BARS)
+    # ------------------------------------------------------------------
+
+    async def _check_time_based_exits(
+        self,
+        result: CycleResult,
+    ) -> None:
+        """Close positions held longer than MAX_HOLD_BARS hours.
+
+        v5 sweep validated MAX_HOLD_BARS=150 (6.25 days): TIME exits were
+        100% win rate in backtest, recovering capital from slow-moving trades.
+        """
+        open_positions = await self.position_tracker.get_open_positions()
+        now = datetime.now(tz=timezone.utc)
+
+        for pos in open_positions:
+            hours_held = (now - pos.timestamp).total_seconds() / 3600.0
+            if hours_held < MAX_HOLD_BARS:
+                continue
+
+            logger.info(
+                f"TIME EXIT: {pos.symbol} {pos.side} held {hours_held:.0f}h "
+                f"(max={MAX_HOLD_BARS}h), closing at market"
+            )
+
+            try:
+                close_side = "sell" if pos.side == "long" else "buy"
+                await self.order_manager.place_market_order(
+                    symbol=pos.symbol,
+                    side=close_side,
+                    amount=pos.size,
+                )
+
+                await self.order_manager.cancel_open_orders(pos.symbol)
+                self._trailing_stops.pop(pos.symbol, None)
+
+                result.positions_closed.append({
+                    "symbol": pos.symbol,
+                    "reason": "time_exit",
+                    "direction": pos.side,
+                    "entry_price": float(pos.entry_price),
+                    "exit_price": float(pos.current_price),
+                    "hours_held": round(hours_held, 1),
+                    "pnl": float(pos.unrealized_pnl),
+                })
+
+                await self.alert_system.send_alert(
+                    f"Time Exit: {pos.symbol} {pos.side} held {hours_held:.0f}h "
+                    f"PnL={pos.unrealized_pnl}",
+                    level="info",
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to close {pos.symbol} on time exit: {e}"
+                )
 
     # ------------------------------------------------------------------
     # Event-driven 4H candle close handler

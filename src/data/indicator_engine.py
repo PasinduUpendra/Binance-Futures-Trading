@@ -115,7 +115,7 @@ class IndicatorEngine:
     # -- Supertrend ---------------------------------------------------------
 
     def calculate_supertrend(
-        self, df: pd.DataFrame, period: int = 10, multiplier: float = 3.0
+        self, df: pd.DataFrame, period: int = 8, multiplier: float = 2.0
     ) -> pd.DataFrame:
         """Add ``supertrend`` and ``supertrend_direction`` columns.
 
@@ -251,8 +251,8 @@ class IndicatorEngine:
         macd_slow: int = 26,
         macd_signal: int = 9,
         adx_period: int = 14,
-        supertrend_period: int = 10,
-        supertrend_multiplier: float = 3.0,
+        supertrend_period: int = 8,
+        supertrend_multiplier: float = 2.0,
         bb_period: int = 20,
         bb_nbdev: float = 2.0,
         atr_period: int = 14,
