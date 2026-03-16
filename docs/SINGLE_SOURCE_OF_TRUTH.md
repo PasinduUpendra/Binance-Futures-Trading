@@ -187,7 +187,7 @@ Claude Quant/
 │   ├── LEARNINGS.md                    # 12 learnings (LRN-001 through LRN-012)
 │   └── ERRORS.md                       # 4 resolved errors (ERR-001 through ERR-004)
 │
-├── tests/                              # 228 tests, all passing (1.10s)
+├── tests/                              # 287 tests, all passing (1.10s)
 │   ├── conftest.py                     # Fixtures, markers
 │   ├── test_strategies/
 │   │   ├── test_regime_detector.py     # 5 tests — regime classification
@@ -671,7 +671,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 228 tests passing (1.10s) — as of 2026-03-15
+**Current status:** 287 tests passing (1.10s) — as of 2026-03-15
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -713,7 +713,7 @@ lookback:
 6. ~~**Taker fee discrepancy**~~ - RESOLVED: Code updated to 0.05% matching API-verified rate.
 7. **Freqtrade integration** - ClaudeQuantAdaptive.py exists but outdated for v3. Freqtrade is optional (primary is direct ccxt via orchestrator).
 8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1), restarted 2026-03-15 (v2 with v4 fixes). Bot PID 83621. Target end: 2026-03-21.
-9. **Test coverage** - 228 tests passing but ~30 modules lack dedicated tests (execution, data, memory, reporting, anti-hallucination).
+9. **Test coverage** - 287 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
 11. **Avg daily return 0.628%** - This is the VALIDATED PERFORMANCE CEILING from v4 production-code backtest (172.9% over 172 days, Sharpe 3.98). It is NOT underperformance. Annualized ~870% return. Any attempt to close the gap to 1% MUST go through the full strategy versioning pipeline (§8) with backtest evidence. Adding pairs/timeframes is a valid RESEARCH direction but must not relax entry filters or add unproven strategies.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).

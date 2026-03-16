@@ -4,7 +4,58 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-16
+
+#### Maximum Compounding — Parameter Sweep + Event-Driven Detection + Exit Optimization
+
+**Bottleneck identified**: 119 of 147 days idle (81%), only 39 trades in 172 days. Capital does nothing 4 out of 5 days. Top 5 days account for 65% of all gains.
+
+##### Task 1-3: Parameter Sweep Backtest (`scripts/backtest_v5_sweep.py`)
+- **NEW FILE**: `scripts/backtest_v5_sweep.py` — Sweeps 360 parameter combinations:
+  - Supertrend period: [7, 8, 9, 10, 12, 14]
+  - Supertrend multiplier: [2.0, 2.5, 3.0, 3.5]
+  - MAX_HOLD_BARS: [90, 120, 150, 180, 240]
+  - ST_REV exit mode: ["immediate", "tighten_to_breakeven", "ignore"]
+- Uses SAME production code paths as backtest_v4 (AdaptiveStrategy, LeverageManager, GARCH, FeeCalculator)
+- Overrides Supertrend columns via `ie.calculate_supertrend(df, period=P, multiplier=M)` after `calculate_all()`
+- Outputs sorted results table, baseline comparison, gate checks, and JSON results
+- ST_REV "tighten_to_breakeven" mode: on reversal, move SL to entry price instead of immediate close
+- ST_REV "ignore" mode: completely ignore reversals, let SL/TP/TIME handle exits
+- Gate check: winner must beat baseline Sharpe, PF, WR >= 55%, DD < 15%
+
+##### Task 5: Event-Driven 4H Candle Close Detection
+- **`src/data/market_data.py`**: Added `subscribe_kline_close()` and `unsubscribe_kline()` methods
+  - Subscribes to `{symbol}@kline_{timeframe}` WebSocket stream
+  - Only fires callback when `k.x == True` (candle is closed/final)
+  - Auto-reconnects on disconnect (handles 24h WS limit per CLAUDE.md §3)
+- **`src/orchestrator/main.py`**: Added `_on_4h_close()` callback
+  - Subscribes to 4H klines for all 3 pairs at startup
+  - On candle close: re-fetches data, checks ST reversal exits, checks trailing stops, runs full signal→risk→execution pipeline
+  - Eliminates up to 59 minutes of entry delay from hourly polling
+  - Tags trades with `trigger: "4h_candle_close"` for analysis
+- **`tests/test_data/test_kline_subscription.py`**: 7 tests covering subscribe/unsubscribe, close/non-close filtering, data types, reconnection
+
+##### Task 6: BTC + Sentiment Infrastructure (Data Collection Only)
+- **NEW FILE**: `scripts/download_btc_data.py` — Downloads BTC/USDT:USDT 1H + 4H data
+- **`src/data/market_data.py`**: Added `fetch_top_position_ratio()` and `fetch_taker_buy_sell_ratio()`
+  - Infrastructure-only — NO trading logic changes, data collection for future analysis
+  - Uses Binance `/fapi/v1/topLongShortPositionRatio` and `/fapi/v1/takerlongshortRatio`
+
+#### P0 Safety-Critical Test Suite — All 3 Modules Covered
+- `tests/test_execution/test_order_manager.py` — **33 tests** covering idempotent submission (timeout→query→retry with new ID, InsufficientFunds→None, InvalidOrder→None, DDoS→retry, all retries exhausted), client order ID generation, order result parsing, public order methods (market/limit/SL/TP), cancel/query, leverage setting
+- `tests/test_anti_hallucination/test_price_validator.py` — **13 tests** covering 24h range validation, >1% deviation rejection, stale ticker detection, API error handling, cross-validation tolerance, zero-price edge cases, timestamp freshness/staleness/future/naive
+- `tests/test_anti_hallucination/test_signal_validator.py` — **13 tests** covering valid signal passthrough, empty/vague indicators, tolerance checks, missing raw data, long/short R/R validation, zero SL, entry price within/outside spread, missing bid/ask
+- **Total test suite: 287 tests, all passing (~1.0s)**
+- Updated CLAUDE.md §11, SSOT §14/§15, SYSTEM_REVIEW §15 to reflect P0 completion
+
 ### 2026-03-15
+
+#### Document Reconciliation — Philosophy & Testnet Details
+- **FIXED: Performance philosophy conflict** — 7 locations (SSOT, SYSTEM_REVIEW, watchdog.md, watchdog.py, watchdog_tools.py) said "below 1% target, need more signal frequency" which contradicted CLAUDE.md constitution (0.628% = validated ceiling, chasing 1% via more trades is forbidden). All aligned to constitution.
+- **FIXED: CLAUDE.md stale idempotent section** — Section 3 still said "Currently Missing" with proposed code pattern. Updated to document actual implementation (`_submit_order_idempotent`, `_query_by_client_order_id`, `_order_result_from_status`).
+- **ADDED: Binance testnet operational details** — REST `https://demo-fapi.binance.com`, WS `wss://fstream.binancefuture.com`, listen key 60-min expiry, 24h connection limit. Added to CLAUDE.md, SSOT, SYSTEM_REVIEW.
+- **FIXED: Watchdog agent recalibrated** — Target metric changed from `>= 1.0%` to `>= 0.628%` (validated). Alert threshold changed from `< 0.5%` to `< 0.3%`. DAILY_TARGET_PCT constant updated in watchdog.py.
+- **FIXED: SSOT compound math** — Now shows both validated (0.628%) and aspirational (1%) projections.
 
 #### Critical Fix: Production-Code Backtest Reconciliation (v4)
 - **DISCOVERY**: Production code diverged from v3 backtest — used different signal logic, position sizing, and missing TP orders

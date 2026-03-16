@@ -592,7 +592,7 @@ Minimal patch plan with rollback procedure.
 # SECTION 11: TEST COVERAGE STATUS & PRIORITY
 # ═══════════════════════════════════════════════════════════════════
 
-**Current**: 228 tests passing (1.10s) — SSOT §14
+**Current**: 287 tests passing (~1.0s) — SSOT §14
 
 ### Covered Modules (with test counts)
 
@@ -619,9 +619,9 @@ Minimal patch plan with rollback procedure.
 
 | Priority | Module | Why It Matters | Min Tests Needed |
 |----------|--------|---------------|-----------------|
-| **P0 — CRITICAL** | `order_manager.py` | Handles real money. Untested = blind execution. | 15+ (idempotency, SL/TP placement, error handling) |
-| **P0 — CRITICAL** | `price_validator.py` | Anti-hallucination Layer 2. Prevents bad-data trades. | 8+ (cross-reference, staleness, range checks) |
-| **P0 — CRITICAL** | `signal_validator.py` | Anti-hallucination Layer 3. Prevents phantom signals. | 8+ (indicator match, reasoning validation) |
+| **P0 — DONE** | `order_manager.py` | 33 tests (idempotent submission, parsing, cancel/query, leverage) | ✅ Covered |
+| **P0 — DONE** | `price_validator.py` | 13 tests (24h range, deviation, staleness, cross-validation) | ✅ Covered |
+| **P0 — DONE** | `signal_validator.py` | 13 tests (indicator specificity, value matching, R/R, entry price) | ✅ Covered |
 | **P1 — HIGH** | `database.py` | Stores trade journal driving sizing decisions. | 10+ (CRUD, migration, WAL mode, edge cases) |
 | **P1 — HIGH** | `decision_auditor.py` | Anti-hallucination Layer 4. Audit trail integrity. | 6+ |
 | **P1 — HIGH** | `market_data.py` | All data flows through this. | 8+ (fetch, validation, error handling) |

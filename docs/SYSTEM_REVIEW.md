@@ -45,7 +45,7 @@
 | **Cycle Interval** | 1 hour (3600 seconds) |
 | **Trading Pairs** | ETH/USDT:USDT, SOL/USDT:USDT, DOGE/USDT:USDT |
 | **Active Strategy** | SupertrendTrend ONLY (all others disabled) |
-| **Test Suite** | 228 tests passing (1.10s) |
+| **Test Suite** | 287 tests passing (1.10s) |
 | **Target Return** | 1% daily compound (aspirational); 0.628% daily validated |
 
 ### Performance Reality (v4 Production-Code Backtest)
@@ -255,7 +255,7 @@ Claude Quant/
 │   ├── watchdog.py                      # Legacy simple watchdog
 │   └── diagnose_strategies.py           # Strategy rejection diagnostics
 │
-├── tests/                               # 228 tests, all passing (1.10s)
+├── tests/                               # 287 tests, all passing (1.10s)
 │   ├── conftest.py
 │   ├── test_strategies/ (5 files, 51 tests)
 │   ├── test_risk/ (5 files, 104 tests)
@@ -943,7 +943,7 @@ All models use `frozen=True` (immutable after creation) unless noted.
 ## 15. Test Suite
 
 **Run**: `.venv/bin/python -m pytest tests/ -v`
-**Status**: 228 tests passing (1.10s) as of 2026-03-15
+**Status**: 287 tests passing (1.10s) as of 2026-03-15
 
 ### Test Breakdown
 
@@ -965,14 +965,17 @@ All models use `frozen=True` (immutable after creation) unless noted.
 | test_pipeline.py | 7 | End-to-end orchestrator cycle |
 | test_regime_detector.py | 5 | TRENDING/RANGING/VOLATILE/QUIET classification |
 | test_fee_calculator.py | 4 | Maker/taker fees, BNB discount |
+| test_order_manager.py | 33 | Idempotent submission, timeout→query→retry, parsing, cancel/query, leverage, public order methods |
+| test_price_validator.py | 13 | 24h range, deviation, staleness, cross-validation, API errors |
+| test_signal_validator.py | 13 | Indicator specificity, value matching, R/R ratio, entry price spread |
 
 ### UNTESTED Modules — Ranked by Blast Radius
 
 | Priority | Module | Why It Matters | Min Tests |
 |----------|--------|---------------|-----------|
-| **P0** | `order_manager.py` | Handles real money. Idempotent logic untested. | 15+ |
-| **P0** | `price_validator.py` | Anti-hallucination Layer 2 | 8+ |
-| **P0** | `signal_validator.py` | Anti-hallucination Layer 3 | 8+ |
+| ~~**P0**~~ | ~~`order_manager.py`~~ | ~~Handles real money~~ | ✅ 33 tests |
+| ~~**P0**~~ | ~~`price_validator.py`~~ | ~~Anti-hallucination Layer 2~~ | ✅ 13 tests |
+| ~~**P0**~~ | ~~`signal_validator.py`~~ | ~~Anti-hallucination Layer 3~~ | ✅ 13 tests |
 | **P1** | `database.py` | Stores trade journal driving sizing | 10+ |
 | **P1** | `decision_auditor.py` | Anti-hallucination Layer 4 | 6+ |
 | **P1** | `market_data.py` | All data flows through this | 8+ |
@@ -996,7 +999,7 @@ All models use `frozen=True` (immutable after creation) unless noted.
 6. ~~Taker fee discrepancy~~ — RESOLVED
 7. **Freqtrade integration** — `ClaudeQuantAdaptive.py` outdated for v3. Optional.
 8. **Paper trading** — ACTIVE since 2026-03-14. Target end: 2026-03-21.
-9. **Test coverage** — 228 tests but ~30 modules lack dedicated tests
+9. **Test coverage** — 287 tests. All P0 modules covered (order_manager 33, price_validator 13, signal_validator 13). P1+ modules still lack dedicated tests.
 10. v4 backtest validated — +172.9%, 69.2% WR, Sharpe 3.98
 11. Avg daily return 0.628% — VALIDATED CEILING from v4 backtest (~870% annualized). Not underperformance. Closing the gap to 1% requires strategy versioning pipeline with backtest evidence, not adding unproven trades.
 12. **Hyperopt** — not yet run. May not be needed (Sharpe 3.31 already strong).
@@ -1183,4 +1186,4 @@ DEAD (halt) > daily loss halt > consecutive loss pause > RED win-rate gate > nor
 
 ---
 
-*Document compiled 2026-03-15 from production source code, verified against CLAUDE.md v3.0 and SINGLE_SOURCE_OF_TRUTH.md. 228 tests passing.*
+*Document compiled 2026-03-15 from production source code, verified against CLAUDE.md v3.0 and SINGLE_SOURCE_OF_TRUTH.md. 287 tests passing.*

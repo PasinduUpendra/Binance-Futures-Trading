@@ -315,6 +315,62 @@ class MarketDataClient:
         ticker = await self.fetch_ticker(symbol)
         return ticker.last
 
+    # -- Sentiment / aggregate data (infrastructure-only, NOT for trading) ---
+
+    @_retry
+    async def fetch_top_position_ratio(
+        self, symbol: str, period: str = "5m", limit: int = 30,
+    ) -> list[dict[str, Any]]:
+        """Fetch top trader long/short position ratio.
+
+        Uses ``/fapi/v1/topLongShortPositionRatio``.
+        Returns list of dicts with ``timestamp``, ``long_account``, ``short_account``,
+        ``long_short_ratio``.
+        """
+        exchange = self._require_exchange()
+        binance_symbol = symbol.replace("/", "").replace(":USDT", "")
+        response = await exchange.fapiPublicGetTopLongShortPositionRatio({
+            "symbol": binance_symbol,
+            "period": period,
+            "limit": limit,
+        })
+        result = []
+        for entry in response:
+            result.append({
+                "timestamp": self._utc_from_ms(int(entry.get("timestamp", 0))),
+                "long_account": float(entry.get("longAccount", 0)),
+                "short_account": float(entry.get("shortAccount", 0)),
+                "long_short_ratio": float(entry.get("longShortRatio", 0)),
+            })
+        return result
+
+    @_retry
+    async def fetch_taker_buy_sell_ratio(
+        self, symbol: str, period: str = "5m", limit: int = 30,
+    ) -> list[dict[str, Any]]:
+        """Fetch taker buy/sell volume ratio.
+
+        Uses ``/fapi/v1/takerlongshortRatio``.
+        Returns list of dicts with ``timestamp``, ``buy_sell_ratio``,
+        ``buy_vol``, ``sell_vol``.
+        """
+        exchange = self._require_exchange()
+        binance_symbol = symbol.replace("/", "").replace(":USDT", "")
+        response = await exchange.fapiPublicGetTakerlongshortRatio({
+            "symbol": binance_symbol,
+            "period": period,
+            "limit": limit,
+        })
+        result = []
+        for entry in response:
+            result.append({
+                "timestamp": self._utc_from_ms(int(entry.get("timestamp", 0))),
+                "buy_sell_ratio": float(entry.get("buySellRatio", 0)),
+                "buy_vol": float(entry.get("buyVol", 0)),
+                "sell_vol": float(entry.get("sellVol", 0)),
+            })
+        return result
+
     # -- WebSocket -----------------------------------------------------------
 
     async def subscribe_ticker(
@@ -412,5 +468,122 @@ class MarketDataClient:
                     return
                 logger.exception(
                     "WebSocket error for %s. Reconnecting in 5s ...", symbol
+                )
+                await asyncio.sleep(5.0)
+
+    # -- Kline (candle close) WebSocket --------------------------------------
+
+    async def subscribe_kline_close(
+        self,
+        symbol: str,
+        timeframe: str,
+        callback: Callable[[dict[str, Any]], Coroutine[Any, Any, None] | None],
+    ) -> None:
+        """Subscribe to kline WebSocket and invoke *callback* on candle close.
+
+        *callback* receives a dict with keys:
+        ``symbol``, ``timeframe``, ``open``, ``high``, ``low``, ``close``,
+        ``volume``, ``timestamp`` (datetime, UTC).
+
+        Only fires when ``k.x == True`` (candle is closed / final).
+        Automatically reconnects on disconnect (handles 24h WS limit).
+        """
+        key = f"{symbol}@kline_{timeframe}"
+        if key in self._ws_connections:
+            logger.warning("Already subscribed to %s", key)
+            return
+
+        stop_event = asyncio.Event()
+        self._ws_stop_events[key] = stop_event
+
+        task = asyncio.create_task(
+            self._ws_kline_loop(symbol, timeframe, callback, stop_event),
+            name=f"ws-kline-{symbol}-{timeframe}",
+        )
+        self._ws_connections[key] = task
+        logger.info("Subscribed to kline close for %s %s", symbol, timeframe)
+
+    async def unsubscribe_kline(self, symbol: str, timeframe: str) -> None:
+        """Stop the kline WebSocket subscription."""
+        key = f"{symbol}@kline_{timeframe}"
+        stop_event = self._ws_stop_events.pop(key, None)
+        if stop_event is not None:
+            stop_event.set()
+        task = self._ws_connections.pop(key, None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        logger.info("Unsubscribed from kline %s %s", symbol, timeframe)
+
+    async def _ws_kline_loop(
+        self,
+        symbol: str,
+        timeframe: str,
+        callback: Callable[[dict[str, Any]], Coroutine[Any, Any, None] | None],
+        stop_event: asyncio.Event,
+    ) -> None:
+        """Internal loop: maintain kline WS and dispatch on candle close."""
+        # Binance stream: e.g. "ethusdt@kline_4h"
+        stream_symbol = symbol.replace("/", "").replace(":", "").lower()
+        stream_name = f"{stream_symbol}@kline_{timeframe}"
+        ws_base = self.TESTNET_WS_URL if self._testnet else self.PRODUCTION_WS_URL
+        url = f"{ws_base}/{stream_name}"
+
+        while not stop_event.is_set():
+            try:
+                async with websockets.connect(url) as ws:  # type: ignore[arg-type]
+                    logger.info("Kline WS connected for %s %s at %s", symbol, timeframe, url)
+                    while not stop_event.is_set():
+                        try:
+                            raw_msg = await asyncio.wait_for(ws.recv(), timeout=30.0)
+                        except asyncio.TimeoutError:
+                            continue
+
+                        data = json.loads(raw_msg)
+                        kline = data.get("k", {})
+
+                        # Only fire on candle close (k.x == True)
+                        if not kline.get("x", False):
+                            continue
+
+                        try:
+                            candle = {
+                                "symbol": symbol,
+                                "timeframe": timeframe,
+                                "open": float(kline.get("o", 0)),
+                                "high": float(kline.get("h", 0)),
+                                "low": float(kline.get("l", 0)),
+                                "close": float(kline.get("c", 0)),
+                                "volume": float(kline.get("v", 0)),
+                                "timestamp": self._utc_from_ms(kline.get("T")),
+                            }
+                        except (ValueError, KeyError) as exc:
+                            logger.warning("Failed to parse kline message: %s", exc)
+                            continue
+
+                        logger.info(
+                            "4H candle closed: %s %s close=%.4f",
+                            symbol, timeframe, candle["close"],
+                        )
+
+                        try:
+                            result = callback(candle)
+                            if asyncio.iscoroutine(result):
+                                await result
+                        except Exception:
+                            logger.exception("Kline callback raised for %s %s", symbol, timeframe)
+
+            except asyncio.CancelledError:
+                logger.info("Kline WS task cancelled for %s %s", symbol, timeframe)
+                return
+            except Exception:
+                if stop_event.is_set():
+                    return
+                logger.exception(
+                    "Kline WS error for %s %s. Reconnecting in 5s ...",
+                    symbol, timeframe,
                 )
                 await asyncio.sleep(5.0)

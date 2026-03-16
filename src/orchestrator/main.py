@@ -192,6 +192,15 @@ class Orchestrator:
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
             return
 
+        # Subscribe to 4H kline close events for all pairs
+        for pair in TRADING_PAIRS:
+            try:
+                await self.market_data.subscribe_kline_close(
+                    pair, TIMEFRAME_DIRECTION, self._on_4h_close,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to subscribe to 4H kline for {pair}: {e}")
+
         # Main loop
         while not self._shutdown_event.is_set():
             try:
@@ -801,6 +810,205 @@ class Orchestrator:
 
                 except Exception as e:
                     logger.error(f"Failed to close {pos.symbol} on trailing stop: {e}")
+
+    # ------------------------------------------------------------------
+    # Event-driven 4H candle close handler
+    # ------------------------------------------------------------------
+
+    async def _on_4h_close(self, candle: dict) -> None:
+        """Triggered by WebSocket on every 4H candle close.
+
+        Immediately re-runs signal generation + trailing stop check for the
+        pair that closed, eliminating up to 59 minutes of entry delay
+        compared to the hourly polling cycle.
+        """
+        symbol = candle["symbol"]
+        logger.info(
+            f"4H candle closed for {symbol}: close={candle['close']:.4f} "
+            f"at {candle['timestamp']}"
+        )
+
+        try:
+            # Quick CB gate — skip heavy work if trading is halted
+            balance = self.state.current_balance
+            if balance < Decimal("30"):
+                return
+
+            # Fetch fresh data for this pair
+            raw_4h = await self.market_data.fetch_ohlcv(symbol, TIMEFRAME_DIRECTION, limit=200)
+            if not raw_4h or len(raw_4h) < 100:
+                return
+            df_4h = pd.DataFrame(raw_4h)
+            df_4h = self.indicator_engine.calculate_all(df_4h)
+
+            raw_1h = await self.market_data.fetch_ohlcv(symbol, TIMEFRAME_ENTRY, limit=200)
+            if not raw_1h or len(raw_1h) < 100:
+                return
+            df_1h = pd.DataFrame(raw_1h)
+            df_1h = self.indicator_engine.calculate_all(df_1h)
+
+            pair_data_4h = {symbol: df_4h}
+            pair_data_1h = {symbol: df_1h}
+
+            # Check Supertrend reversal exits for this pair
+            mini_result = CycleResult(
+                cycle_number=self.state.cycle_count,
+                timestamp=datetime.now(timezone.utc),
+                circuit_breaker_level=self.state.circuit_breaker_level,
+            )
+            await self._check_supertrend_reversal_exits(pair_data_4h, mini_result, balance)
+
+            # Check trailing stops for this pair
+            await self._manage_trailing_stops(pair_data_4h, pair_data_1h, mini_result)
+
+            # Attempt signal generation for this pair
+            signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h)
+            if signal is None:
+                logger.info(f"4H close {symbol}: no signal")
+                return
+
+            logger.info(
+                f"4H close signal: {symbol} {signal.direction} "
+                f"confidence={signal.confidence}% strategy={signal.strategy_name}"
+            )
+
+            # Full risk gate (reuse same logic as _run_cycle Step 4)
+            recent_entries = self.trade_journal.get_recent_trades(10)
+            recent_trade_results = [
+                TradeResult(
+                    is_win=t.pnl is not None and t.pnl > 0,
+                    closed_at=t.timestamp,
+                )
+                for t in recent_entries if t.pnl is not None
+            ]
+            cb_state = CircuitBreaker.is_trading_allowed(
+                balance=balance,
+                recent_trades=recent_trade_results,
+                start_of_day_balance=self.state.daily_start_balance,
+            )
+            if not cb_state.constraints.trading_allowed:
+                return
+
+            constraints = cb_state.constraints
+            open_positions = await self.position_tracker.get_open_positions()
+            if len(open_positions) >= constraints.max_positions:
+                return
+            for pos in open_positions:
+                if pos.symbol == symbol:
+                    return  # Already positioned
+
+            leverage_result = LeverageManager.determine_leverage(
+                confidence=signal.confidence,
+                regime=signal.regime,
+                circuit_breaker_level=cb_state.level,
+            )
+            leverage = leverage_result.leverage
+            if leverage == 0:
+                return
+
+            vol_state = self.volatility_model.forecast(df_1h)
+            if vol_state is None:
+                vol_state = self.volatility_model.forecast_simple(df_1h)
+            leverage = VolatilityModel.adjust_leverage(
+                requested_leverage=leverage,
+                vol_state=vol_state,
+                max_leverage=constraints.max_leverage,
+            )
+
+            confidence = signal.confidence
+            if confidence >= 60:
+                position_pct = Decimal("0.15")
+            elif confidence >= 45:
+                position_pct = Decimal("0.10")
+            else:
+                position_pct = Decimal("0.07")
+            position_pct *= constraints.size_multiplier
+            margin = (balance * position_pct).quantize(Decimal("0.01"))
+            max_margin = (balance * Decimal("0.15")).quantize(Decimal("0.01"))
+            if margin > max_margin:
+                margin = max_margin
+            if margin < Decimal("5"):
+                if balance < Decimal("5"):
+                    return
+                margin = Decimal("5")
+
+            notional = float(margin) * leverage
+
+            liq_buffer = LeverageManager.calculate_liquidation_buffer(
+                entry_price=signal.entry_price,
+                leverage=leverage,
+                direction=signal.direction.value,
+            )
+            if not liq_buffer.is_safe:
+                return
+
+            # Execute trade
+            await self.order_manager.set_leverage(symbol, leverage)
+            order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
+            side = "buy" if signal.direction.value == "long" else "sell"
+            order_result = await self.order_manager.place_market_order(
+                symbol=symbol, side=side, amount=order_qty,
+            )
+
+            order_status = await self.order_manager.get_order_status(
+                symbol, order_result.order_id
+            )
+            if order_status.status not in (OrderState.CLOSED,):
+                return
+
+            sl_side = "sell" if signal.direction.value == "long" else "buy"
+            await self.order_manager.place_stop_loss(
+                symbol=symbol, side=sl_side, amount=order_result.filled,
+                stop_price=Decimal(str(signal.stop_loss)),
+            )
+            try:
+                await self.order_manager.place_take_profit(
+                    symbol=symbol, side=sl_side, amount=order_result.filled,
+                    stop_price=Decimal(str(signal.take_profit)),
+                )
+            except Exception as tp_err:
+                logger.warning(f"4H close TP order failed (non-blocking): {tp_err}")
+
+            fill_price = order_result.average_fill_price or Decimal(str(signal.entry_price))
+            atr_4h = float(df_4h["atr"].dropna().iloc[-1]) if "atr" in df_4h.columns else 0.0
+
+            self._trailing_stops[symbol] = TrailingStopState(
+                symbol=symbol,
+                direction=signal.direction.value,
+                entry_price=float(fill_price),
+                best_price=float(fill_price),
+                atr_4h=atr_4h,
+                strategy_name=signal.strategy_name,
+            )
+
+            logger.info(
+                f"4H CLOSE TRADE: {symbol} {signal.direction.value} "
+                f"@ {fill_price} x{leverage} (event-driven entry)"
+            )
+
+            await self.alert_system.send_alert(
+                f"4H Close Trade: {symbol} {signal.direction.value} "
+                f"@ {fill_price} x{leverage}",
+                level="info",
+            )
+
+            if self.trade_journal:
+                self.trade_journal.record_trade_entry({
+                    "pair": symbol,
+                    "direction": signal.direction.value,
+                    "entry_price": float(fill_price),
+                    "size": float(order_result.filled),
+                    "leverage": leverage,
+                    "margin": float(margin),
+                    "stop_loss": signal.stop_loss,
+                    "take_profit": signal.take_profit,
+                    "strategy": signal.strategy_name,
+                    "confidence": signal.confidence,
+                    "trigger": "4h_candle_close",
+                })
+
+        except Exception as e:
+            logger.error(f"4H close handler error for {symbol}: {e}", exc_info=True)
 
     # ------------------------------------------------------------------
     # Daily report / state persistence

@@ -1,6 +1,6 @@
 ---
 name: watchdog
-description: Real-time trading bot monitor — detects mistakes, tracks 1% daily target, suggests fixes
+description: Real-time trading bot monitor — detects regressions, tracks 0.628% validated ceiling, suggests fixes
 model: sonnet
 ---
 
