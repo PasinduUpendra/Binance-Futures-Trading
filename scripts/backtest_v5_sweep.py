@@ -9,7 +9,7 @@ Sweep axes:
   1. Supertrend period:     [7, 8, 9, 10, 12, 14]
   2. Supertrend multiplier: [2.0, 2.5, 3.0, 3.5]
   3. MAX_HOLD_BARS:         [90, 120, 150, 180, 240]
-  4. ST_REV exit mode:      ["immediate", "tighten_to_breakeven", "ignore"]
+  4. ST_REV exit mode:      ["immediate", "tighten_to_breakeven"]
 
 Uses same production classes as v4:
   - AdaptiveStrategy.get_signal_multi_tf()
@@ -163,8 +163,6 @@ def run_single_backtest(
                     else:
                         pos["sl"] = min(pos["sl"], pos["entry"])
                     # st_exit stays False — let SL/TP/TIME handle it
-                elif st_rev_mode == "ignore":
-                    pass  # Completely ignore — let other exits handle it
 
             # ─── Trailing stop logic ───
             if pos["direction"] == "long":

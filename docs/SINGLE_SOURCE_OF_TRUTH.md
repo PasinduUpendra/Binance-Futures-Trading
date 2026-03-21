@@ -310,7 +310,7 @@ All calculated via TA-Lib:
 | ADX | 14 | adx, plus_di, minus_di |
 | Bollinger Bands | 20, 2.0 | bb_upper, bb_lower, bb_middle, bb_width |
 | ATR | 14 | atr |
-| Supertrend | 10, 3.0 | supertrend, supertrend_direction |
+| Supertrend | 8, 2.0 | supertrend, supertrend_direction |
 | Volume SMA | 20 | volume_sma |
 | Z-Score | 20 | zscore |
 

@@ -828,7 +828,7 @@ class Orchestrator:
         self,
         result: CycleResult,
     ) -> None:
-        """Close positions held longer than MAX_HOLD_BARS hours.
+        """Close positions held longer than MAX_HOLD_BARS 1H bars.
 
         v5 sweep validated MAX_HOLD_BARS=150 (6.25 days): TIME exits were
         100% win rate in backtest, recovering capital from slow-moving trades.
@@ -837,13 +837,13 @@ class Orchestrator:
         now = datetime.now(tz=timezone.utc)
 
         for pos in open_positions:
-            hours_held = (now - pos.timestamp).total_seconds() / 3600.0
-            if hours_held < MAX_HOLD_BARS:
+            bars_held = (now - pos.timestamp).total_seconds() / 3600.0
+            if bars_held < MAX_HOLD_BARS:
                 continue
 
             logger.info(
-                f"TIME EXIT: {pos.symbol} {pos.side} held {hours_held:.0f}h "
-                f"(max={MAX_HOLD_BARS}h), closing at market"
+                f"TIME EXIT: {pos.symbol} {pos.side} held {bars_held:.0f} bars "
+                f"(max={MAX_HOLD_BARS}), closing at market"
             )
 
             try:
@@ -863,12 +863,12 @@ class Orchestrator:
                     "direction": pos.side,
                     "entry_price": float(pos.entry_price),
                     "exit_price": float(pos.current_price),
-                    "hours_held": round(hours_held, 1),
+                    "bars_held": round(bars_held, 1),
                     "pnl": float(pos.unrealized_pnl),
                 })
 
                 await self.alert_system.send_alert(
-                    f"Time Exit: {pos.symbol} {pos.side} held {hours_held:.0f}h "
+                    f"Time Exit: {pos.symbol} {pos.side} held {bars_held:.0f} bars "
                     f"PnL={pos.unrealized_pnl}",
                     level="info",
                 )

@@ -32,12 +32,7 @@ def setup_logging() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Console handler
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(formatter)
-
-    # File handler
+    # File handler (always present)
     file_handler = logging.FileHandler(
         log_dir / "bot.log", encoding="utf-8",
     )
@@ -46,8 +41,15 @@ def setup_logging() -> None:
 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
-    root.addHandler(console)
     root.addHandler(file_handler)
+
+    # Console handler only when running interactively (avoids double-write
+    # when stderr is redirected to the same log file via nohup/2>&1).
+    if sys.stderr.isatty():
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        console.setFormatter(formatter)
+        root.addHandler(console)
 
     # Reduce noise
     logging.getLogger("ccxt").setLevel(logging.WARNING)

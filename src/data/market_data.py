@@ -527,7 +527,9 @@ class MarketDataClient:
     ) -> None:
         """Internal loop: maintain kline WS and dispatch on candle close."""
         # Binance stream: e.g. "ethusdt@kline_4h"
-        stream_symbol = symbol.replace("/", "").replace(":", "").lower()
+        # ETH/USDT:USDT → ethusdt (strip settlement part after ':')
+        base_symbol = symbol.split(":")[0]  # ETH/USDT:USDT → ETH/USDT
+        stream_symbol = base_symbol.replace("/", "").lower()  # ETH/USDT → ethusdt
         stream_name = f"{stream_symbol}@kline_{timeframe}"
         ws_base = self.TESTNET_WS_URL if self._testnet else self.PRODUCTION_WS_URL
         url = f"{ws_base}/{stream_name}"
