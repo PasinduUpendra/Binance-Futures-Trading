@@ -105,15 +105,28 @@ class CycleResult(BaseModel):
     duration_seconds: float = 0.0
 
 
-# Symbols to trade — verified via live Binance API data (2026-03-13):
-# BTCUSDT eliminated: $100 min notional too tight for $75 account.
-# Selected for: liquidity >$100M/day, spread <0.02%, min notional $5-$20,
-# volatility 3.5-5% daily range, manageable funding rates.
+# Symbols to trade — expanded from 3 to 9 pairs (2026-03-24).
+# v6 backtest evidence: 9 pairs → +855% return (vs +540% with 3 pairs),
+# Sharpe 6.98 (vs 5.83), 0.69 trades/day (vs 0.44). All metrics improved.
+# BTC re-added: $100 min notional easily met with $5,102 balance.
 TRADING_PAIRS = [
-    "ETH/USDT:USDT",   # $13B vol, 0.0002% spread, $20 min notional, 3.68% volatility
-    "SOL/USDT:USDT",   # $405M vol, 0.0011% spread, $5 min notional, 4.32% volatility
-    "DOGE/USDT:USDT",  # $798M vol, 0.0100% spread, $5 min notional, 4.89% volatility
+    "BTC/USDT:USDT",   # $100 min notional — re-added with $5K+ balance
+    "ETH/USDT:USDT",   # $20 min notional
+    "SOL/USDT:USDT",   # $5 min notional
+    "DOGE/USDT:USDT",  # $5 min notional
+    "XRP/USDT:USDT",   # $5 min notional
+    "LINK/USDT:USDT",  # $5 min notional
+    "AVAX/USDT:USDT",  # $5 min notional
+    "SUI/USDT:USDT",   # $5 min notional
+    "ADA/USDT:USDT",   # $5 min notional
 ]
+
+# Per-pair minimum notional (from Binance API)
+MIN_NOTIONAL: dict[str, float] = {
+    "BTC/USDT:USDT": 100.0,
+    "ETH/USDT:USDT": 20.0,
+}
+DEFAULT_MIN_NOTIONAL: float = 5.0
 
 # Multi-timeframe: 4H for trend direction, 1H for entry timing.
 # Evidence: 4H+ shows 75-85% success rates in trending markets (Cointester study).
@@ -192,6 +205,12 @@ class Orchestrator:
             logger.error(f"Failed to get initial balance: {e}")
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
             return
+
+        # Detect pre-existing positions and warn if unprotected
+        try:
+            await self._detect_preexisting_positions()
+        except Exception as e:
+            logger.warning(f"Pre-existing position detection failed: {e}")
 
         # Subscribe to 4H kline close events for all pairs
         for pair in TRADING_PAIRS:
@@ -345,6 +364,13 @@ class Orchestrator:
                 logger.error(f"Data fetch failed for {pair}: {e}")
                 errors.append(f"Data {pair}: {e}")
 
+        # ─── Step 1c: Position Reconciliation & Orphan Order Cleanup ───
+        try:
+            await self._reconcile_positions_and_orders()
+        except Exception as e:
+            logger.error(f"Position reconciliation failed: {e}")
+            errors.append(f"Reconciliation: {e}")
+
         # ─── Step 2: Supertrend Reversal Exit (before new signals) ───
         try:
             await self._check_supertrend_reversal_exits(
@@ -468,20 +494,26 @@ class Orchestrator:
             # regardless of conviction.  v3's confidence-based sizing produced
             # +94% return: 15% for conf>=60, 10% for conf>=45, 7% otherwise.
             confidence = best_signal.confidence
+
+            # Confidence-based position sizing — aligned with v6 backtest.
+            # v6 evidence: 60/45 thresholds with 15% cap → +855%, Sharpe 6.98.
+            # Previous 85/70/50 thresholds were too conservative (never hit 25%)
+            # and the 25% tier violated Immutable Rule #4 (15% max per trade).
             if confidence >= 60:
                 position_pct = Decimal("0.15")
             elif confidence >= 45:
                 position_pct = Decimal("0.10")
             else:
                 position_pct = Decimal("0.07")
+            max_cap = Decimal("0.15")  # Immutable Rule #4: 15% max per trade
 
             # Apply CB size multiplier
             position_pct *= constraints.size_multiplier
 
             margin = (balance * position_pct).quantize(Decimal("0.01"))
 
-            # Hard cap: 15% of balance (immutable rule)
-            max_margin = (balance * Decimal("0.15")).quantize(Decimal("0.01"))
+            # Dynamic hard cap based on signal quality
+            max_margin = (balance * max_cap).quantize(Decimal("0.01"))
             if margin > max_margin:
                 margin = max_margin
 
@@ -493,7 +525,17 @@ class Orchestrator:
                     return result
                 margin = Decimal("5")
 
-            notional = float(margin) * leverage
+            notional = margin * Decimal(str(leverage))
+
+            # Check minimum notional for this pair
+            pair_min_notional = MIN_NOTIONAL.get(best_pair, DEFAULT_MIN_NOTIONAL)
+            if float(notional) < pair_min_notional:
+                logger.info(
+                    f"Notional ${notional:.2f} below minimum ${pair_min_notional} "
+                    f"for {best_pair} — skipping trade"
+                )
+                return result
+
             logger.info(
                 f"Position sized: ${margin} ({float(position_pct)*100:.0f}% of ${balance}) "
                 f"x{leverage} = ${notional:.2f} notional (confidence={confidence:.0f}%)"
@@ -501,7 +543,8 @@ class Orchestrator:
 
             # Sanity check position math
             valid, details = SanityChecker.check_position_math(
-                Decimal(str(balance)), margin, leverage, Decimal(str(notional))
+                Decimal(str(balance)), margin, leverage, notional,
+                max_position_pct=max_cap,
             )
             if not valid:
                 logger.error(f"Position math sanity failed: {details}")
@@ -531,19 +574,25 @@ class Orchestrator:
         # ─── Step 5: Audit Decision ───
         try:
             regime = self.regime_detector.detect(pair_data_4h[best_pair])
+            signal_dict = best_signal.model_dump() if hasattr(best_signal, "model_dump") else dict(best_signal)
+            regime_dict = regime.model_dump() if hasattr(regime, "model_dump") else dict(regime)
+            # Map Signal field names to what the auditor expects
+            signal_dict.setdefault("symbol", best_pair)
+            signal_dict.setdefault("strategy", signal_dict.get("strategy_name", ""))
             audit = self.decision_auditor.audit_decision(
-                signal=best_signal,
-                regime=regime,
+                signal=signal_dict,
+                regime=regime_dict,
                 risk_approval={
-                    "position_usd": float(margin),
+                    "position_size_usd": float(margin),
                     "leverage": leverage,
                     "notional": notional,
                     "confidence": confidence,
                     "position_pct": float(position_pct),
+                    "approved": True,
                 },
                 market_data={"pair": best_pair, "balance": float(balance)},
             )
-            logger.info(f"Audit: {len(audit.devils_advocate)} counter-arguments logged")
+            logger.info(f"Audit: {len(audit.reasons_against)} counter-arguments logged")
         except Exception as e:
             logger.warning(f"Audit failed (non-blocking): {e}")
 
@@ -879,6 +928,105 @@ class Orchestrator:
                 )
 
     # ------------------------------------------------------------------
+    # Position Reconciliation & Orphan Order Cleanup
+    # ------------------------------------------------------------------
+
+    async def _reconcile_positions_and_orders(self) -> None:
+        """Detect positions closed by exchange-side SL/TP and cancel orphans.
+
+        When Binance fires a STOP_MARKET or TAKE_PROFIT_MARKET, the
+        counterpart conditional order remains active.  Without reduceOnly
+        (fixed in order_manager.py), an orphan TP could open a reverse
+        position.  Even WITH reduceOnly, orphan orders waste margin and
+        confuse the position tracker.
+
+        Also cleans up trailing stop state for positions that no longer
+        exist on the exchange.
+        """
+        open_positions = await self.position_tracker.get_open_positions()
+        open_symbols = {pos.symbol for pos in open_positions}
+
+        # 1. For every symbol we THINK we have a trailing stop on,
+        #    check if position still exists. If not, cancel stale orders.
+        stale_symbols = [
+            sym for sym in list(self._trailing_stops.keys())
+            if sym not in open_symbols
+        ]
+        for sym in stale_symbols:
+            logger.warning(
+                "RECONCILE: Position for %s closed externally (SL/TP fire). "
+                "Cancelling orphan orders and cleaning trailing state.", sym
+            )
+            try:
+                cancelled = await self.order_manager.cancel_open_orders(sym)
+                if cancelled > 0:
+                    logger.info(
+                        "RECONCILE: Cancelled %d orphan orders for %s",
+                        cancelled, sym,
+                    )
+            except Exception as e:
+                logger.error("RECONCILE: Failed to cancel orders for %s: %s", sym, e)
+            self._trailing_stops.pop(sym, None)
+
+        # 2. For every open position, ensure it has at least one
+        #    conditional order (SL or TP). If zero orders, log a warning.
+        for pos in open_positions:
+            try:
+                open_orders = await self.order_manager.get_open_orders(pos.symbol)
+                if len(open_orders) == 0 and pos.symbol in self._trailing_stops:
+                    logger.warning(
+                        "RECONCILE: %s has open position but ZERO conditional "
+                        "orders. Trailing stop may be sole protection.", pos.symbol
+                    )
+            except Exception as e:
+                logger.error(
+                    "RECONCILE: Failed to check orders for %s: %s", pos.symbol, e
+                )
+
+    async def _detect_preexisting_positions(self) -> None:
+        """On startup, detect positions already on exchange and register them.
+
+        Creates TrailingStopState entries for positions that existed before
+        the bot started, so they benefit from trailing stop management and
+        reconciliation. Also logs warnings for unprotected positions.
+        """
+        open_positions = await self.position_tracker.get_open_positions()
+        if not open_positions:
+            logger.info("STARTUP: No pre-existing positions found")
+            return
+
+        logger.info(
+            "STARTUP: Found %d pre-existing position(s): %s",
+            len(open_positions),
+            [f"{p.symbol} {p.side}" for p in open_positions],
+        )
+
+        for pos in open_positions:
+            # Register in trailing stops so reconciliation can track them
+            if pos.symbol not in self._trailing_stops:
+                self._trailing_stops[pos.symbol] = TrailingStopState(
+                    symbol=pos.symbol,
+                    direction=pos.side,
+                    entry_price=float(pos.entry_price),
+                    best_price=float(pos.current_price),
+                    atr_4h=0.0,  # Will be updated on first cycle with data
+                    strategy_name="pre_existing",
+                )
+
+            # Check if position has any conditional orders
+            try:
+                open_orders = await self.order_manager.get_open_orders(pos.symbol)
+                if len(open_orders) == 0:
+                    logger.warning(
+                        "STARTUP: %s %s position has ZERO orders (no SL/TP). "
+                        "Position is UNPROTECTED.", pos.symbol, pos.side
+                    )
+            except Exception as e:
+                logger.error(
+                    "STARTUP: Failed to check orders for %s: %s", pos.symbol, e
+                )
+
+    # ------------------------------------------------------------------
     # Event-driven 4H candle close handler
     # ------------------------------------------------------------------
 
@@ -983,15 +1131,19 @@ class Orchestrator:
             )
 
             confidence = signal.confidence
+
+            # Confidence-based position sizing — aligned with v6 backtest
             if confidence >= 60:
                 position_pct = Decimal("0.15")
             elif confidence >= 45:
                 position_pct = Decimal("0.10")
             else:
                 position_pct = Decimal("0.07")
+            max_cap = Decimal("0.15")  # Immutable Rule #4
+
             position_pct *= constraints.size_multiplier
             margin = (balance * position_pct).quantize(Decimal("0.01"))
-            max_margin = (balance * Decimal("0.15")).quantize(Decimal("0.01"))
+            max_margin = (balance * max_cap).quantize(Decimal("0.01"))
             if margin > max_margin:
                 margin = max_margin
             if margin < Decimal("5"):
@@ -999,7 +1151,25 @@ class Orchestrator:
                     return
                 margin = Decimal("5")
 
-            notional = float(margin) * leverage
+            notional = margin * Decimal(str(leverage))
+
+            # Check minimum notional for this pair
+            pair_min_notional = MIN_NOTIONAL.get(symbol, DEFAULT_MIN_NOTIONAL)
+            if float(notional) < pair_min_notional:
+                logger.info(
+                    f"4H close: Notional ${notional:.2f} below minimum "
+                    f"${pair_min_notional} for {symbol} — skipping"
+                )
+                return
+
+            # Sanity check position math
+            valid, details = SanityChecker.check_position_math(
+                Decimal(str(balance)), margin, leverage, notional,
+                max_position_pct=max_cap,
+            )
+            if not valid:
+                logger.error(f"4H close position math sanity failed: {details}")
+                return
 
             liq_buffer = LeverageManager.calculate_liquidation_buffer(
                 entry_price=signal.entry_price,
@@ -1011,7 +1181,7 @@ class Orchestrator:
 
             # Execute trade
             await self.order_manager.set_leverage(symbol, leverage)
-            order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
+            order_qty = notional / Decimal(str(signal.entry_price))
             side = "buy" if signal.direction.value == "long" else "sell"
             order_result = await self.order_manager.place_market_order(
                 symbol=symbol, side=side, amount=order_qty,
@@ -1082,13 +1252,21 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     async def _check_daily_report(self) -> None:
-        """Generate daily report at UTC midnight."""
+        """Generate daily report and reset daily_start_balance at UTC midnight.
+
+        Uses date-based comparison (not minute-of-hour) to ensure the reset
+        fires regardless of cycle timing.  The ``last_daily_report`` guard
+        at the top prevents duplicate reports within the same UTC day.
+        """
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if self.state.last_daily_report == today:
             return
 
         now = datetime.now(timezone.utc)
-        if now.hour == 0 and now.minute < 10:
+        # Only generate the report during the first cycle of the new UTC day
+        # (hour 0, any minute). The last_daily_report guard above prevents
+        # duplicate execution even if the cycle runs multiple times at hour 0.
+        if now.hour == 0:
             try:
                 logger.info("Generating daily report for %s...", today)
 

@@ -226,6 +226,22 @@ class PositionTracker:
             margin_type = "cross"
         collateral = _to_decimal(raw.get("collateral", raw.get("initialMargin", 0)))
 
+        # Use exchange-reported timestamp (entry time) if available,
+        # otherwise fall back to current time.  This is critical for
+        # MAX_HOLD_BARS time-based exit calculation.
+        ts = raw.get("timestamp")  # epoch ms from ccxt
+        if ts and isinstance(ts, (int, float)) and ts > 0:
+            position_time = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+        else:
+            dt_str = raw.get("datetime")  # ISO-8601 string from ccxt
+            if dt_str and isinstance(dt_str, str):
+                try:
+                    position_time = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                except (ValueError, TypeError):
+                    position_time = datetime.now(tz=timezone.utc)
+            else:
+                position_time = datetime.now(tz=timezone.utc)
+
         return Position(
             symbol=raw.get("symbol", ""),
             side=side_raw,
@@ -238,7 +254,7 @@ class PositionTracker:
             margin_type=str(margin_type).lower(),
             notional_value=notional,
             margin=collateral,
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=position_time,
         )
 
     # -- public API ----------------------------------------------------------

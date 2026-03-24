@@ -87,10 +87,6 @@ class AdaptiveStrategy:
         Returns ``None`` when the regime is QUIET (no-trade zone) or
         when no strategy is suitable.
         """
-        # ── v4 FIX: Only SupertrendTrend is profitable (71.1% WR, +$36.88).
-        # MeanReversion (5.3% WR, -$7.65) and BreakoutTrader (23.9% WR, -$1.13)
-        # DESTROY capital.  Disabled until thresholds are aligned with v3 backtest.
-        # TrendFollower (30% WR, +$0.35) is marginal — disabled.
 
         if regime.regime == MarketRegime.QUIET:
             self.logger.info(
@@ -109,21 +105,23 @@ class AdaptiveStrategy:
                 return self._supertrend_trend
             else:
                 self.logger.info(
-                    "Regime TRENDING but ADX=%.1f < 18 -> NO TRADE (TrendFollower disabled, 30%% WR)",
+                    "Regime TRENDING but ADX=%.1f < 18 -> NO TRADE (weak trend)",
                     regime.adx,
                 )
                 return None
 
         if regime.regime == MarketRegime.RANGING:
             self.logger.info(
-                "Regime RANGING (ADX=%.1f) -> NO TRADE (MeanReversion disabled, 5.3%% WR)",
+                "Regime RANGING (ADX=%.1f) -> NO TRADE "
+                "(MeanReversion disabled: 25%% WR in paper trading, 5.3%% WR historical)",
                 regime.adx,
             )
             return None
 
         if regime.regime == MarketRegime.VOLATILE:
             self.logger.info(
-                "Regime VOLATILE (BBw=%.2f) -> NO TRADE (BreakoutTrader disabled, 23.9%% WR)",
+                "Regime VOLATILE (BBw=%.2f) -> NO TRADE "
+                "(BreakoutTrader disabled: 23.9%% WR, negative EV)",
                 regime.bb_width_ratio,
             )
             return None

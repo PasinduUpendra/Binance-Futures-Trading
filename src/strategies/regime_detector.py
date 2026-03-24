@@ -90,7 +90,10 @@ class RegimeDetector:
     VOLUME_AVG_WINDOW: int = 20
 
     # --- Thresholds -------------------------------------------------------
-    ADX_TRENDING_MIN: float = 25.0
+    # ADX_TRENDING_MIN lowered from 25 to 20 (2026-03-24).
+    # v6 backtest evidence: with 20, Sharpe improves 5.83 → 6.98,
+    # return +855% vs +540%, catches ADX 20-25 trades previously blocked.
+    ADX_TRENDING_MIN: float = 20.0
     ADX_RANGING_MAX: float = 20.0
     ADX_VOLATILE_MIN: float = 15.0
     ADX_VOLATILE_MAX: float = 30.0
@@ -269,11 +272,11 @@ class RegimeDetector:
         self, adx: float, bbr: float, atrr: float, volr: float
     ) -> float:
         score = 0.0
-        # ADX > 25 is the primary signal
+        # ADX is the primary directional-strength signal
         if adx >= self.ADX_TRENDING_MIN:
             score += 1.0 + min(0.5, (adx - self.ADX_TRENDING_MIN) / 25.0)
-        elif adx >= 20:
-            score += 0.4
+        elif adx >= 15:
+            score += 0.2
         # BB width roughly normal (0.8 - 1.5)
         if 0.8 <= bbr <= 1.5:
             score += 0.8
@@ -284,9 +287,13 @@ class RegimeDetector:
             score += 0.8
         elif atrr > 1.4:
             score += 0.3
+        elif atrr >= 0.5:
+            score += 0.4  # quiet trends have low ATR but still trend
         # Volume normal or rising
         if volr >= 0.7:
             score += 0.6 + min(0.4, (volr - 0.7) / 2.0)
+        elif volr >= 0.2:
+            score += 0.3  # low-volume trends exist, partial credit
         return score
 
     def _score_ranging(

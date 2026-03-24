@@ -473,20 +473,42 @@ class OrderManager:
                 verified = False
                 if self._verify_orders and order_id:
                     try:
-                        verification = await self._verify_order_exists(
-                            symbol, order_id
+                        # Conditional orders (SL/TP) need extra propagation
+                        # time on testnet before they appear in GET queries.
+                        # Use retry loop: 3s, then 5s, then give up.
+                        is_conditional = order_type in (
+                            "STOP_MARKET",
+                            "TAKE_PROFIT_MARKET",
+                            "STOP",
+                            "TAKE_PROFIT",
                         )
-                        verified = True
-                        logger.info(
-                            "%s_VERIFIED order_id=%s status=%s filled=%s",
-                            log_prefix,
-                            order_id,
-                            verification.status.value,
-                            verification.filled,
-                        )
+                        verify_delays = [3.0, 5.0] if is_conditional else [0.5]
+                        for delay in verify_delays:
+                            await asyncio.sleep(delay)
+                            try:
+                                verification = await self._verify_order_exists(
+                                    symbol, order_id
+                                )
+                                verified = True
+                                logger.info(
+                                    "%s_VERIFIED order_id=%s status=%s filled=%s",
+                                    log_prefix,
+                                    order_id,
+                                    verification.status.value,
+                                    verification.filled,
+                                )
+                                break
+                            except Exception:
+                                if delay == verify_delays[-1]:
+                                    raise  # Last attempt, propagate
+                                logger.info(
+                                    "%s_VERIFY_RETRY order_id=%s after %.1fs",
+                                    log_prefix, order_id, delay,
+                                )
                     except Exception as exc:
-                        logger.error(
-                            "%s_VERIFY_FAILED order_id=%s error=%s",
+                        logger.warning(
+                            "%s_VERIFY_FAILED order_id=%s error=%s "
+                            "(order was placed, verification timed out)",
                             log_prefix,
                             order_id,
                             exc,
@@ -698,7 +720,7 @@ class OrderManager:
             order_type="STOP_MARKET",
             side=side.lower(),
             amount=float(amount),
-            extra_params={"stopPrice": float(stop_price)},
+            extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
             log_prefix="STOP_LOSS",
         )
 
@@ -734,7 +756,7 @@ class OrderManager:
             order_type="TAKE_PROFIT_MARKET",
             side=side.lower(),
             amount=float(amount),
-            extra_params={"stopPrice": float(stop_price)},
+            extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
             log_prefix="TAKE_PROFIT",
         )
 

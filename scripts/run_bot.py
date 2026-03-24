@@ -55,6 +55,7 @@ def setup_logging() -> None:
     logging.getLogger("ccxt").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
 async def main() -> None:

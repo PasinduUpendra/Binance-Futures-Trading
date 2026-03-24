@@ -228,6 +228,25 @@ class TradeJournal:
 
     # -- public API ----------------------------------------------------------
 
+    def record_trade_entry(self, data: dict[str, Any]) -> None:
+        """Record a trade from a raw dict (as produced by the orchestrator).
+
+        Maps orchestrator keys (``pair``, ``direction``, …) to
+        :class:`TradeEntry` fields and delegates to :meth:`record_trade`.
+        """
+        entry = TradeEntry(
+            symbol=data.get("pair", data.get("symbol", "")),
+            direction=str(data.get("direction", "")),
+            entry_price=Decimal(str(data.get("entry_price", 0))),
+            size=Decimal(str(data.get("size", 0))),
+            leverage=int(data.get("leverage", 1)),
+            stop_loss=Decimal(str(data["stop_loss"])) if data.get("stop_loss") else None,
+            take_profit=Decimal(str(data["take_profit"])) if data.get("take_profit") else None,
+            strategy=str(data.get("strategy", "")),
+            confidence=Decimal(str(data.get("confidence", 0))),
+        )
+        self.record_trade(entry)
+
     def record_trade(self, entry: TradeEntry) -> None:
         """Record a trade to the journal.
 

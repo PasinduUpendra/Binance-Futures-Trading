@@ -1,11 +1,12 @@
 # Claude Quant - Single Source of Truth
 
-> **Last Updated:** 2026-03-15
-> **Status:** Paper trading ACTIVE on Binance Futures Testnet ($5000 balance)
+> **Last Updated:** 2026-03-24
+> **Status:** Paper trading — RESTARTING after 5 critical bug fixes (balance $5,102.70)
 > **Production Balance:** $68.33 USDT (as of 2026-03-13)
-> **Paper Trading Started:** 2026-03-14 12:47 UTC (v1), restarted 2026-03-15 (v2 with v4 fixes)
-> **Bot PID:** 83621 (1-hour cycle interval, v3 restart 2026-03-15)
+> **Paper Trading Started:** 2026-03-14 12:47 UTC (v1), restarted 2026-03-15 (v2), 2026-03-22 (v3), 2026-03-24 (v4 — post-audit)
+> **Bot PID:** 32036 (restarted 2026-03-24, 5 bug fixes + log noise fix — see CHANGELOG 2026-03-24)
 > **Watchdog:** Claude agent monitoring bot in real-time
+> **Tests:** 393 passing (1.39s)
 
 ---
 
@@ -188,7 +189,7 @@ Claude Quant/
 │   ├── LEARNINGS.md                    # 12 learnings (LRN-001 through LRN-012)
 │   └── ERRORS.md                       # 4 resolved errors (ERR-001 through ERR-004)
 │
-├── tests/                              # 294 tests, all passing (1.24s)
+├── tests/                              # 393 tests, all passing (1.39s)
 │   ├── conftest.py                     # Fixtures, markers
 │   ├── test_strategies/
 │   │   ├── test_regime_detector.py     # 5 tests — regime classification
@@ -681,7 +682,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 294 tests passing (1.24s) — as of 2026-03-16
+**Current status:** 393 tests passing (1.39s) — as of 2026-03-24
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -723,7 +724,7 @@ lookback:
 6. ~~**Taker fee discrepancy**~~ - RESOLVED: Code updated to 0.05% matching API-verified rate.
 7. **Freqtrade integration** - ClaudeQuantAdaptive.py exists but outdated for v3. Freqtrade is optional (primary is direct ccxt via orchestrator).
 8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1), restarted 2026-03-15 (v2 with v4 fixes). Bot PID 83621. Target end: 2026-03-21.
-9. **Test coverage** - 294 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
+9. **Test coverage** - 393 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
 11. **Avg daily return 1.149%** - This is the VALIDATED PERFORMANCE CEILING from v5 sweep (240-combo parameter sweep, production-code backtest). Winner: ST(8,2.0), MAX_HOLD_BARS=150, tighten_to_breakeven. +539.8% over 172 days, 75 trades, Sharpe 5.83, PF 52.34, MaxDD 1.2%. EXCEEDS the 1% aspirational target. Previous ceiling was 0.628% from v4. All 6 gate checks passed. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).

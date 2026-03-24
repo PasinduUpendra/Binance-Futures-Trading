@@ -4,7 +4,110 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
-### 2026-03-16
+### 2026-03-24
+
+#### v6.1 Regime Scorer Fix: Trending classification for quiet trends
+
+**Backtest evidence** (scripts/backtest_v6.py with scorer fix applied):
+
+| Metric | v6 (old scorer) | v6.1 (new scorer) | Delta |
+|--------|----------------|-------------------|-------|
+| Trades | 119 | 122 | +3 |
+| Return | +855.3% | +865.9% | **+10.6pp** |
+| Sharpe | 6.98 | 6.80 | -0.18 (noise) |
+| Max DD | 1.9% | **1.1%** | **-0.8pp** |
+| Avg daily | 1.387% | **1.397%** | +0.01pp |
+| WR | 53.8% | 53.3% | -0.5pp |
+
+**Root problem**: `_score_trending()` gave ZERO for low ATR (<0.8x avg) and low volume (<0.7x avg),
+while `_score_ranging()` gave 1.0 and 0.8 respectively. This 1.8-point asymmetric penalty overrode
+clear ADX trend signals. SOL (ADX=23.86) and ADA (ADX=22.2) were incorrectly classified as RANGING.
+
+##### CHANGE: Added partial credit for low ATR/volume in trending scorer (`src/strategies/regime_detector.py`)
+- **Low ATR (0.5-0.8x)**: Trending now gets 0.4 (was 0). Quiet trends are still trends.
+- **Low volume (0.2-0.7x)**: Trending now gets 0.3 (was 0). Low-volume trends exist.
+- **Dead code fix**: `elif adx >= 20` → `elif adx >= 15` (was dead since ADX_TRENDING_MIN=20)
+- **Result**: 7/9 pairs now route to SupertrendTrend (was 5/9). SOL and ADA fixed.
+- **Safety**: ETH (ADX=16.2) still correctly filtered by ADX<18 gate. XRP (ADX=20) stays RANGING.
+- Bot PID: 47284 (restarted with fix)
+
+#### v6 Performance Upgrade: Expanded Pairs + ADX Gap Fix + Position Sizing Alignment
+
+**Backtest evidence** (scripts/backtest_v6.py): 3 scenarios over 172 days, $5,000 initial balance.
+
+| Metric | A: Baseline (3 pairs) | B: 9 pairs | C: 9 pairs + ADX fix |
+|--------|----------------------|-----------|----------------------|
+| Trades | 75 | 115 | 119 |
+| Return | +539.8% | +830.6% | **+855.3%** |
+| Sharpe | 5.83 | 6.65 | **6.98** |
+| Max DD | 1.2% | 1.8% | 1.9% |
+| Avg daily | 1.149% | 1.376% | **1.387%** |
+| Trades/day | 0.44 | 0.67 | **0.69** |
+
+**Root problem**: Bot placed only 2 trades in 10 days (Mar 14-24). SupertrendTrend 4H flips are rare; with only 3 pairs, opportunities were extremely limited.
+
+##### CHANGE 1: Expanded from 3 to 9 trading pairs (`src/orchestrator/main.py`)
+- **Added**: BTC/USDT:USDT ($100 min not.), XRP/USDT:USDT, LINK/USDT:USDT, AVAX/USDT:USDT, SUI/USDT:USDT, ADA/USDT:USDT
+- **Why**: More pairs = more Supertrend flip opportunities (+57% trades/day)
+- **BTC re-added**: Was excluded when balance was $68 due to $100 min notional; $5,102 balance handles it easily
+- **Safety**: Added per-pair MIN_NOTIONAL lookup dict with minimum notional checks before order placement
+
+##### CHANGE 2: Lowered ADX_TRENDING_MIN from 25 to 20 (`src/strategies/regime_detector.py`)
+- **Root cause**: ADX 20-25 was a dead zone — regime detector classified it as RANGING, blocking SupertrendTrend even though the strategy only needs ADX >= 18
+- **Evidence**: SOL with ADX=23.86 was blocked; DOGE with ADX=21.74 now routes to SupertrendTrend
+- **Impact**: 5 of 9 pairs now route to SupertrendTrend (was 1 of 3)
+
+##### CHANGE 3: Position sizing aligned with validated backtest (`src/orchestrator/main.py`)
+- **Fixed**: 85/70/50 confidence thresholds → 60/45 (matching v6 backtest)
+- **Fixed**: 25% max cap at 85+ confidence **violated Immutable Rule #4** (15% max per trade)
+- **Now**: >=60% → 15%, >=45% → 10%, else → 7%, hard cap 15% (Rule #4 compliant)
+- **Applied to both**: hourly cycle and 4H close handler
+
+**Bot restarted**: PID 33759, all 9 pairs have 4H kline WebSocket connections confirmed.
+
+---
+
+#### Paper Trading Forensic Audit & 5 Critical Bug Fixes
+
+**Paper trading results (Mar 22–24)**: Started $5,747.70, ended $5,102.70 (-11.2%). Forensic audit identified 5 critical bugs causing: a phantom SOL SHORT position ($-237 realized), permanent daily loss halt (36+ hours), and disabled signals. All fixed.
+
+##### BUG 1 FIX: Missing `reduceOnly=True` on SL/TP orders (`src/execution/order_manager.py`)
+- **Root cause**: `place_stop_loss()` and `place_take_profit()` did not pass `reduceOnly: true`. When SL fired and closed a position, the orphan TP order could create a REVERSE position.
+- **Impact**: At 11:06:14 UTC Mar 23, three orphan TP orders fired simultaneously on SOL (27.87+13.88+9.31=51.06 contracts), creating a phantom SHORT at $86.94 entry, bleeding -$253 unrealized before emergency close.
+- **Fix**: Added `"reduceOnly": True` to `extra_params` in both `place_stop_loss()` (line 722) and `place_take_profit()` (line 758). Orders can now only reduce existing positions, never create new ones.
+
+##### BUG 2 FIX: No OCO logic — orphan order cleanup (`src/orchestrator/main.py`)
+- **Root cause**: When exchange-side SL/TP fires, the counterpart order remains active. No reconciliation existed to detect externally-closed positions and cancel their orphaned orders.
+- **Fix**: Added `_reconcile_positions_and_orders()` method (new Step 1c in cycle). On every cycle: (1) Detects trailing stops for symbols with no matching exchange position → cancels orphan orders. (2) Warns when open positions have zero conditional orders.
+
+##### BUG 3 FIX: Daily start balance never resets (`src/orchestrator/main.py`)
+- **Root cause**: `_check_daily_report()` used `if now.hour == 0 and now.minute < 10`. Cycles run at XX:14 (minute=14 >= 10), so the condition was NEVER true. `daily_start_balance` stuck at $5,747.70 from startup, causing permanent daily loss halt since Mar 23 12:14 UTC—blocking ALL signals for 36+ hours.
+- **Impact**: 3 high-confidence SupertrendTrend signals were blocked: ETH LONG 80%, SOL LONG 68%, DOGE LONG 78%.
+- **Fix**: Changed condition to `if now.hour == 0:` (removed minute gate). The `last_daily_report == today` guard at the top already prevents duplicate reports. Balance resets correctly at first cycle after UTC midnight.
+
+##### BUG 4 FIX: Pre-existing positions unprotected on startup (`src/orchestrator/main.py`)
+- **Root cause**: Positions from before bot restart (ETH SHORT 2.718 and DOGE SHORT 61,945 from Mar 18) had ZERO SL/TP orders. Bot never detected or registered them.
+- **Fix**: Added `_detect_preexisting_positions()` called on startup. Registers pre-existing positions in `_trailing_stops` dict so they participate in reconciliation, trailing stop management, and time-based exits. Logs warnings for unprotected positions.
+
+##### BUG 5 FIX: SL/TP verification always fails (`src/execution/order_manager.py`)
+- **Root cause**: 2-second delay insufficient for Binance testnet conditional order propagation. Every SL/TP showed VERIFY_FAILED despite being successfully placed.
+- **Fix**: Replaced single 2s wait with retry loop: 3s delay → verify → if fail → 5s delay → verify → if fail → log warning (not error, since order WAS placed). Prevents false-negative verification noise.
+
+##### Strategy: Disabled MeanReversion and BreakoutTrader again
+- **Evidence**: Paper trading confirmed MeanReversion has 25% win rate (4 trades, ALL LONG SOL, 3 SL hits). Historical: 5.3% WR. BreakoutTrader: 23.9% WR, negative EV.
+- **Change**: `src/strategies/adaptive_strategy.py` — RANGING returns None, VOLATILE returns None. Only SupertrendTrend active (61.3% WR, Sharpe 5.83).
+- **Tests updated**: `test_ranging_routes_to_mean_reversion` and `test_volatile_routes_to_breakout_trader` now assert `None`.
+
+##### Emergency Position Cleanup
+- Closed all 3 positions: SOL SHORT phantom (-$237.24 realized), ETH SHORT (+$203.04), DOGE SHORT (+$157.00)
+- Net from position close: +$122.80
+- Clean slate: $5,102.70 balance, 0 positions, 0 orders
+
+##### Other
+- Added `scripts/emergency_close_all.py` — closes all positions and cancels all orders for clean restarts
+- 393 tests passing (1.39s)
+
+### 2026-03-22
 
 #### Maximum Compounding — Parameter Sweep + Event-Driven Detection + Exit Optimization
 

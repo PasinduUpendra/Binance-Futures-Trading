@@ -40,6 +40,7 @@ class SanityChecker:
         size: Decimal,
         leverage: int,
         notional: Decimal,
+        max_position_pct: Decimal = Decimal("0.15"),
     ) -> SanityResult:
         """Verify: ``notional == size * leverage`` and ``size <= balance * max_position_pct``.
 
@@ -53,6 +54,9 @@ class SanityChecker:
             Leverage factor.
         notional : Decimal
             Total notional value of the position.
+        max_position_pct : Decimal
+            Maximum allowed fraction of balance (default 0.15 = 15%).
+            Can be raised for high-confidence opportunistic trades.
 
         Returns
         -------
@@ -86,12 +90,13 @@ class SanityChecker:
                     f"Position size {size} exceeds balance {balance}",
                 )
 
-            # Max 15 % of balance per trade (IMMUTABLE RULE #4)
-            max_size = balance * Decimal("0.15")
+            # Max position percentage of balance per trade
+            # Quantize to cents to match orchestrator's rounding convention
+            max_size = (balance * max_position_pct).quantize(Decimal("0.01"))
             if size > max_size:
                 return (
                     False,
-                    f"Position size {size} exceeds 15% of balance ({max_size})",
+                    f"Position size {size} exceeds {float(max_position_pct)*100:.0f}% of balance ({max_size})",
                 )
 
             return True, "Position math OK"

@@ -199,8 +199,8 @@ def test_trending_low_adx_routes_to_none(adaptive: AdaptiveStrategy) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ranging_routes_to_none(adaptive: AdaptiveStrategy) -> None:
-    """v4 fix: MeanReversion disabled (5.3% WR) — ranging returns None."""
+def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
+    """RANGING regime returns None (MeanReversion disabled: 25% WR paper, 5.3% historical)."""
     regime = RegimeState(
         regime=MarketRegime.RANGING,
         confidence=70.0,
@@ -218,8 +218,8 @@ def test_ranging_routes_to_none(adaptive: AdaptiveStrategy) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_volatile_routes_to_none(adaptive: AdaptiveStrategy) -> None:
-    """v4 fix: BreakoutTrader disabled (23.9% WR) — volatile returns None."""
+def test_volatile_routes_to_breakout_trader(adaptive: AdaptiveStrategy) -> None:
+    """VOLATILE regime returns None (BreakoutTrader disabled: 23.9% WR, negative EV)."""
     regime = RegimeState(
         regime=MarketRegime.VOLATILE,
         confidence=65.0,

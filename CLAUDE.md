@@ -38,21 +38,21 @@ Step 5: Build a "Source of Truth Map":
 | **Stack** | Python 3.11+ · ccxt async · Claude API · Binance WebSocket | SSOT §13 |
 | **Phase** | Paper Trading on Testnet ($5000 balance) | SSOT §1 |
 | **Production Balance** | $68.33 USDT (as of 2026-03-13) | SSOT §2, verified via API |
-| **Bot PID** | 83621 (v3, restarted 2026-03-15) | CHANGELOG 2026-03-15 |
-| **Pairs** | ETH/USDT:USDT, SOL/USDT:USDT, DOGE/USDT:USDT | SSOT §6 |
+| **Bot PID** | 47284 (v6.1, restarted 2026-03-24) | CHANGELOG 2026-03-24 |
+| **Pairs** | BTC, ETH, SOL, DOGE, XRP, LINK, AVAX, SUI, ADA /USDT:USDT | SSOT §6, v6 backtest |
 
 ### Performance Reality
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **Validated avg daily return** | **1.149%** | v5 sweep winner, CHANGELOG 2026-03-16 |
-| **Previous validated ceiling** | 0.628% (ST 10/3.0, immediate rev) | v4 backtest, CHANGELOG 2026-03-15 |
+| **Validated avg daily return** | **1.397%** | v6.1 9-pair + scorer fix, CHANGELOG 2026-03-24 |
+| **Previous validated ceiling** | 1.149% (v5 sweep, 3 pairs) | v5 backtest, CHANGELOG 2026-03-16 |
 | **Aspirational target** | **1.0% daily compound** | SSOT §1 — **NOW EXCEEDED** |
-| **v5 backtest return** | +539.8% over 172 days, 75 trades | CHANGELOG 2026-03-16 |
-| **v5 win rate** | 61.3% | CHANGELOG 2026-03-16 |
-| **v5 Sharpe** | 5.83 | CHANGELOG 2026-03-16 |
-| **v5 profit factor** | 52.34 | CHANGELOG 2026-03-16 |
-| **v5 max drawdown** | 1.2% | CHANGELOG 2026-03-16 |
+| **v6.1 backtest return** | +865.9% over 172 days, 122 trades | CHANGELOG 2026-03-24 |
+| **v6.1 win rate** | 53.3% | CHANGELOG 2026-03-24 |
+| **v6.1 Sharpe** | 6.80 | CHANGELOG 2026-03-24 |
+| **v6.1 profit factor** | 44.67 | CHANGELOG 2026-03-24 |
+| **v6.1 max drawdown** | 1.1% | CHANGELOG 2026-03-24 |
 
 > **CRITICAL FRAMING**: 1.149% daily is the VALIDATED PERFORMANCE CEILING from production-code backtesting via 240-combo parameter sweep (v5). This EXCEEDS the 1% aspirational target. The previous ceiling (0.628%) was raised by optimizing Supertrend parameters (10/3.0 → 8/2.0), extending max hold time (120 → 150 bars), and changing ST reversal behavior (immediate close → tighten SL to breakeven). All 6 gate checks passed vs baseline. Any further changes MUST still go through the full strategy versioning pipeline (Section 8) with backtest evidence.
 
@@ -309,6 +309,7 @@ margin = balance × position_pct
 margin = max(margin, $5)              # Binance minimum notional
 margin = min(margin, balance × 15%)   # Hard cap (Immutable Rule #4)
 notional = margin × leverage
+# Per-pair minimum notional check: BTC=$100, ETH=$20, others=$5
 ```
 
 **Note**: Half-Kelly code in `kelly_criterion.py` is retained but NOT used in the orchestrator.
@@ -366,8 +367,8 @@ GARCH volatility model adjusts leverage downward during vol spikes (Step 4 of or
 
 | Regime | ADX | Action |
 |--------|-----|--------|
-| TRENDING (ADX ≥ 18) | > 25 | SupertrendTrend (4H) — only active route |
-| TRENDING (ADX < 18) | > 25 | NO TRADE (TrendFollower disabled) |
+| TRENDING (ADX ≥ 18) | > 20 | SupertrendTrend (4H) — only active route |
+| TRENDING (ADX < 18) | > 20 | NO TRADE (TrendFollower disabled) |
 | RANGING | < 20 | NO TRADE (MeanReversion disabled) |
 | VOLATILE | 15-30 | NO TRADE (BreakoutTrader disabled) |
 | QUIET | < 15 | NO TRADE |
@@ -604,7 +605,7 @@ Minimal patch plan with rollback procedure.
 # SECTION 11: TEST COVERAGE STATUS & PRIORITY
 # ═══════════════════════════════════════════════════════════════════
 
-**Current**: 294 tests passing (~1.24s) — SSOT §14
+**Current**: 401 tests passing (~1.45s) — SSOT §14
 
 ### Covered Modules (with test counts)
 
@@ -713,7 +714,7 @@ Minimal patch plan with rollback procedure.
 | `src/risk/position_sizer.py` | Position sizing | CRITICAL |
 | `scripts/backtest_v4.py` | Production-code backtest | VALIDATION |
 | `.claude/agents/watchdog.md` | Watchdog agent (9th agent) | MONITORING |
-| `tests/` | 294 tests | QUALITY |
+| `tests/` | 401 tests | QUALITY |
 | `.learnings/` | Self-improving knowledge base | LEARNING |
 | `config/` | risk_params.yaml, regime_params.yaml, circuit_breakers.yaml | CONFIG |
 

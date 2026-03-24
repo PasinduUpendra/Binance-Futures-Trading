@@ -51,3 +51,68 @@ class TestRegimeDetector:
         assert result.adx is not None
         assert result.bb_width_ratio is not None
         assert result.atr_ratio is not None
+
+
+class TestTrendingScorerFix:
+    """Tests for the v6.1 trending scorer fix: partial credit for low ATR/volume."""
+
+    def setup_method(self):
+        self.d = RegimeDetector()
+
+    def test_low_atr_gets_partial_credit_in_trending(self):
+        """ATR between 0.5 and 0.8 should get 0.4 for trending (was 0)."""
+        score = self.d._score_trending(adx=25.0, bbr=1.0, atrr=0.6, volr=0.8)
+        # ATR 0.6 in [0.5, 0.8) -> 0.4. Without fix this was 0.
+        assert score > 0  # Just verify it's non-zero for low-ATR case
+
+    def test_low_volume_gets_partial_credit_in_trending(self):
+        """Volume between 0.2 and 0.7 should get 0.3 for trending (was 0)."""
+        score = self.d._score_trending(adx=25.0, bbr=1.0, atrr=1.0, volr=0.4)
+        # Vol 0.4 in [0.2, 0.7) -> 0.3. Without fix this was 0.
+        assert score > 0
+
+    def test_sol_scenario_now_trending(self):
+        """SOL-like values (ADX=23.86, low ATR/vol) should score higher for
+        trending than ranging — this was the key fix."""
+        trending = self.d._score_trending(adx=23.86, bbr=0.85, atrr=0.78, volr=0.45)
+        ranging = self.d._score_ranging(adx=23.86, bbr=0.85, atrr=0.78, volr=0.45)
+        assert trending > ranging, (
+            f"SOL scenario: trending={trending:.3f} should beat ranging={ranging:.3f}"
+        )
+
+    def test_ada_scenario_now_trending(self):
+        """ADA-like values (ADX=22.20, low ATR/vol) should score higher for
+        trending than ranging."""
+        trending = self.d._score_trending(adx=22.20, bbr=1.01, atrr=0.71, volr=0.49)
+        ranging = self.d._score_ranging(adx=22.20, bbr=1.01, atrr=0.71, volr=0.49)
+        assert trending > ranging, (
+            f"ADA scenario: trending={trending:.3f} should beat ranging={ranging:.3f}"
+        )
+
+    def test_eth_stays_ranging(self):
+        """ETH-like values (ADX=16.45) should still be ranging — low ADX."""
+        trending = self.d._score_trending(adx=16.45, bbr=1.05, atrr=0.82, volr=0.25)
+        ranging = self.d._score_ranging(adx=16.45, bbr=1.05, atrr=0.82, volr=0.25)
+        assert ranging > trending, (
+            f"ETH scenario: ranging={ranging:.3f} should beat trending={trending:.3f}"
+        )
+
+    def test_xrp_stays_ranging(self):
+        """XRP-like values (ADX=19.58) should still be ranging — ADX below threshold."""
+        trending = self.d._score_trending(adx=19.58, bbr=0.85, atrr=0.71, volr=0.38)
+        ranging = self.d._score_ranging(adx=19.58, bbr=0.85, atrr=0.71, volr=0.38)
+        assert ranging > trending, (
+            f"XRP scenario: ranging={ranging:.3f} should beat trending={trending:.3f}"
+        )
+
+    def test_very_low_atr_no_credit(self):
+        """ATR below 0.5 should not get credit in trending scorer."""
+        score_low = self.d._score_trending(adx=25.0, bbr=1.0, atrr=0.3, volr=0.8)
+        score_mid = self.d._score_trending(adx=25.0, bbr=1.0, atrr=0.6, volr=0.8)
+        assert score_mid > score_low
+
+    def test_very_low_volume_no_credit(self):
+        """Volume below 0.2 should not get credit in trending scorer."""
+        score_low = self.d._score_trending(adx=25.0, bbr=1.0, atrr=1.0, volr=0.1)
+        score_mid = self.d._score_trending(adx=25.0, bbr=1.0, atrr=1.0, volr=0.4)
+        assert score_mid > score_low

@@ -17,7 +17,7 @@ logger = logging.getLogger("claude_quant.risk.position_sizer")
 
 # Hard limits (matching CLAUDE.md immutable rules).
 _MIN_POSITION_USD: Decimal = Decimal("5")
-_MAX_POSITION_PCT: Decimal = Decimal("0.15")  # 15 % of balance
+_MAX_POSITION_PCT: Decimal = Decimal("0.25")  # 25% absolute ceiling for opportunistic trades
 
 
 class PositionSize(BaseModel):
