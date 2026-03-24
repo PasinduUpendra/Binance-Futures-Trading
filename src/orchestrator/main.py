@@ -344,6 +344,9 @@ class Orchestrator:
                 if not raw_4h or len(raw_4h) < 100:
                     continue
                 df_4h = pd.DataFrame(raw_4h)
+                # Drop last row: Binance returns the in-progress candle which
+                # can cause false Supertrend flips on incomplete data.
+                df_4h = df_4h.iloc[:-1].reset_index(drop=True)
                 validation = self.data_validator.validate_ohlcv(df_4h)
                 if not validation.passed:
                     logger.warning(f"4H data validation failed for {pair}: {validation.reasons}")
@@ -1054,6 +1057,9 @@ class Orchestrator:
             if not raw_4h or len(raw_4h) < 100:
                 return
             df_4h = pd.DataFrame(raw_4h)
+            # Drop last row: after a 4H close Binance immediately starts the
+            # next candle — remove it so Supertrend only uses complete data.
+            df_4h = df_4h.iloc[:-1].reset_index(drop=True)
             df_4h = self.indicator_engine.calculate_all(df_4h)
 
             raw_1h = await self.market_data.fetch_ohlcv(symbol, TIMEFRAME_ENTRY, limit=200)

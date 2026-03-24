@@ -6,6 +6,20 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-24
 
+#### v6.2 Fix: Drop incomplete 4H candle from analysis
+
+**Problem**: Binance `fetch_ohlcv` returns the in-progress (incomplete) 4H candle as the last row.
+The hourly cycle calculated Supertrend direction on this incomplete data, meaning a temporary price
+dip could cause a **false Supertrend flip signal** that reverses before the candle closes. This made
+live behavior diverge from the backtest (which uses only complete candles).
+
+**Fix** (`src/orchestrator/main.py`):
+- Drop last row (`df_4h = df_4h.iloc[:-1]`) from 4H data in BOTH the hourly cycle and `_on_4h_close()` handler
+- 1H data unchanged (used for entry price, where recency is desirable)
+- DataFrame now (199, 26) for 4H vs (200, 26) for 1H — confirms fix active
+- Backtest results unchanged (already uses complete candles)
+- Bot restarted as PID 53698
+
 #### v6.1 Regime Scorer Fix: Trending classification for quiet trends
 
 **Backtest evidence** (scripts/backtest_v6.py with scorer fix applied):
