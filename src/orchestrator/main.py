@@ -85,6 +85,7 @@ class TrailingStopState(BaseModel):
     atr_4h: float  # ATR(4H) at time of entry
     activated: bool = False  # True once price moved 2.0 ATR favorable
     strategy_name: str = ""
+    take_profit: float = 0.0  # Original TP price for re-placement after ST reversal
 
     # Trailing stop parameters (from v3 backtest)
     ACTIVATE_ATR_MULT: float = 2.0
@@ -144,6 +145,10 @@ class Orchestrator:
     def __init__(self) -> None:
         self.state = OrchestratorState()
         self._shutdown_event = asyncio.Event()
+
+        # Serialize position-check → execution to prevent _run_cycle and
+        # _on_4h_close from opening duplicate/excess positions concurrently.
+        self._execution_lock = asyncio.Lock()
 
         # Trailing stop state for each open position (keyed by symbol)
         self._trailing_stops: dict[str, TrailingStopState] = {}
@@ -443,41 +448,83 @@ class Orchestrator:
             f"confidence={best_signal.confidence}% strategy={best_signal.strategy_name}"
         )
 
-        # ─── Step 4: Risk Management ───
-        try:
+        # ─── Steps 4-7: Risk, Audit, Execute, Memory — delegated to shared method ───
+        trade_result = await self._execute_signal(
+            signal=best_signal,
+            symbol=best_pair,
+            df_4h=pair_data_4h[best_pair],
+            df_1h=pair_data_1h[best_pair],
+            cb_state=cb_state,
+            trigger="hourly_cycle",
+        )
+        if trade_result is not None:
+            result.trade_placed = True
+            result.trade_details = trade_result
+        else:
+            result.signal_generated = True  # signal existed, but execution rejected
+
+        result.errors = errors
+        result.duration_seconds = (datetime.now(timezone.utc) - cycle_start).total_seconds()
+        self.state.last_cycle_time = datetime.now(timezone.utc)
+        return result
+
+    # ------------------------------------------------------------------
+    # Shared execution (lock-protected) — used by _run_cycle & _on_4h_close
+    # ------------------------------------------------------------------
+
+    async def _execute_signal(
+        self,
+        signal: Any,
+        symbol: str,
+        df_4h: pd.DataFrame,
+        df_1h: pd.DataFrame,
+        cb_state: Any,
+        trigger: str = "hourly_cycle",
+    ) -> dict | None:
+        """Risk-check, size, and execute a signal under the execution lock.
+
+        Returns trade_details dict on success, or None if the trade was
+        rejected or failed.  The ``_execution_lock`` ensures only ONE
+        signal is being checked-and-executed at a time, preventing the
+        TOCTOU race between ``_run_cycle`` and ``_on_4h_close``.
+        """
+        async with self._execution_lock:
+            # Fetch FRESH balance (fixes stale-balance bug in _on_4h_close)
+            try:
+                balance = await self.market_data.get_margin_balance()
+                self.state.current_balance = balance
+            except Exception as e:
+                logger.error(f"[{trigger}] Balance fetch failed: {e}")
+                return None
+
             constraints = cb_state.constraints
 
-            # Check open positions count
+            # ── Position count gate ──
             open_positions = await self.position_tracker.get_open_positions()
             if len(open_positions) >= constraints.max_positions:
                 logger.info(
-                    f"Max positions reached ({len(open_positions)}/{constraints.max_positions})"
+                    f"[{trigger}] Max positions reached "
+                    f"({len(open_positions)}/{constraints.max_positions})"
                 )
-                result.errors.append("Max positions reached")
-                return result
+                return None
 
-            # Check if we already have a position in this pair
             for pos in open_positions:
-                if pos.symbol == best_pair:
-                    logger.info(f"Already have position in {best_pair} — skip")
-                    result.errors.append(f"Already positioned in {best_pair}")
-                    return result
+                if pos.symbol == symbol:
+                    logger.info(f"[{trigger}] Already positioned in {symbol}")
+                    return None
 
-            # Determine leverage
+            # ── Leverage ──
             leverage_result = LeverageManager.determine_leverage(
-                confidence=best_signal.confidence,
-                regime=best_signal.regime,
+                confidence=signal.confidence,
+                regime=signal.regime,
                 circuit_breaker_level=cb_state.level,
             )
             leverage = leverage_result.leverage
-
             if leverage == 0:
-                logger.info(f"Leverage manager: NO TRADE. {leverage_result.reason}")
-                result.errors.append(f"Leverage 0 - {leverage_result.reason}")
-                return result
+                logger.info(f"[{trigger}] Leverage 0: {leverage_result.reason}")
+                return None
 
             # GARCH volatility adjustment
-            df_1h = pair_data_1h[best_pair]
             vol_state = self.volatility_model.forecast(df_1h)
             if vol_state is None:
                 vol_state = self.volatility_model.forecast_simple(df_1h)
@@ -488,61 +535,47 @@ class Orchestrator:
             )
             if vol_state:
                 logger.info(
-                    f"GARCH: vol_ratio={vol_state.vol_ratio}, "
+                    f"[{trigger}] GARCH: vol_ratio={vol_state.vol_ratio}, "
                     f"leverage_scale={vol_state.leverage_scale}, "
                     f"final_leverage={leverage}x"
                 )
 
-            # Calculate position size — confidence-based (v3 proven approach)
-            # v4 backtest showed Half-Kelly gives $5 minimum on every trade
-            # regardless of conviction.  v3's confidence-based sizing produced
-            # +94% return: 15% for conf>=60, 10% for conf>=45, 7% otherwise.
-            confidence = best_signal.confidence
-
-            # Confidence-based position sizing — aligned with v6 backtest.
-            # v6 evidence: 60/45 thresholds with 15% cap → +855%, Sharpe 6.98.
-            # Previous 85/70/50 thresholds were too conservative (never hit 25%)
-            # and the 25% tier violated Immutable Rule #4 (15% max per trade).
+            # ── Confidence-based position sizing (v6 backtest) ──
+            confidence = signal.confidence
             if confidence >= 60:
                 position_pct = Decimal("0.15")
             elif confidence >= 45:
                 position_pct = Decimal("0.10")
             else:
                 position_pct = Decimal("0.07")
-            max_cap = Decimal("0.15")  # Immutable Rule #4: 15% max per trade
+            max_cap = Decimal("0.15")  # Immutable Rule #4
 
-            # Apply CB size multiplier
             position_pct *= constraints.size_multiplier
-
             margin = (balance * position_pct).quantize(Decimal("0.01"))
-
-            # Dynamic hard cap based on signal quality
             max_margin = (balance * max_cap).quantize(Decimal("0.01"))
             if margin > max_margin:
                 margin = max_margin
-
-            # Minimum $5
             if margin < Decimal("5"):
                 if balance < Decimal("5"):
-                    logger.info(f"Balance ${balance} below $5 minimum — no trade")
-                    result.errors.append("Balance below $5 minimum")
-                    return result
+                    logger.info(f"[{trigger}] Balance ${balance} below $5 minimum")
+                    return None
                 margin = Decimal("5")
 
             notional = margin * Decimal(str(leverage))
 
-            # Check minimum notional for this pair
-            pair_min_notional = MIN_NOTIONAL.get(best_pair, DEFAULT_MIN_NOTIONAL)
+            # Minimum notional per pair
+            pair_min_notional = MIN_NOTIONAL.get(symbol, DEFAULT_MIN_NOTIONAL)
             if float(notional) < pair_min_notional:
                 logger.info(
-                    f"Notional ${notional:.2f} below minimum ${pair_min_notional} "
-                    f"for {best_pair} — skipping trade"
+                    f"[{trigger}] Notional ${notional:.2f} below minimum "
+                    f"${pair_min_notional} for {symbol}"
                 )
-                return result
+                return None
 
             logger.info(
-                f"Position sized: ${margin} ({float(position_pct)*100:.0f}% of ${balance}) "
-                f"x{leverage} = ${notional:.2f} notional (confidence={confidence:.0f}%)"
+                f"[{trigger}] Sized: ${margin} ({float(position_pct)*100:.0f}% of "
+                f"${balance}) x{leverage} = ${notional:.2f} notional "
+                f"(confidence={confidence:.0f}%)"
             )
 
             # Sanity check position math
@@ -551,159 +584,140 @@ class Orchestrator:
                 max_position_pct=max_cap,
             )
             if not valid:
-                logger.error(f"Position math sanity failed: {details}")
-                result.errors.append(f"Sanity: {details}")
-                return result
+                logger.error(f"[{trigger}] Position math sanity failed: {details}")
+                return None
 
-            # Check liquidation buffer
+            # Liquidation buffer
             liq_buffer = LeverageManager.calculate_liquidation_buffer(
-                entry_price=best_signal.entry_price,
+                entry_price=signal.entry_price,
                 leverage=leverage,
-                direction=best_signal.direction.value,
+                direction=signal.direction.value,
             )
             if not liq_buffer.is_safe:
                 logger.warning(
-                    f"Liquidation buffer {float(liq_buffer.buffer_pct)*100:.1f}% < 5%"
+                    f"[{trigger}] Liquidation buffer "
+                    f"{float(liq_buffer.buffer_pct)*100:.1f}% < 5%"
                 )
-                result.errors.append(
-                    f"Liquidation buffer {float(liq_buffer.buffer_pct)*100:.1f}% < 5%"
-                )
-                return result
+                return None
 
-        except Exception as e:
-            logger.error(f"Risk management failed: {e}")
-            errors.append(f"Risk: {e}")
-            return result
-
-        # ─── Step 5: Audit Decision ───
-        try:
-            regime = self.regime_detector.detect(pair_data_4h[best_pair])
-            signal_dict = best_signal.model_dump() if hasattr(best_signal, "model_dump") else dict(best_signal)
-            regime_dict = regime.model_dump() if hasattr(regime, "model_dump") else dict(regime)
-            # Map Signal field names to what the auditor expects
-            signal_dict.setdefault("symbol", best_pair)
-            signal_dict.setdefault("strategy", signal_dict.get("strategy_name", ""))
-            audit = self.decision_auditor.audit_decision(
-                signal=signal_dict,
-                regime=regime_dict,
-                risk_approval={
-                    "position_size_usd": float(margin),
-                    "leverage": leverage,
-                    "notional": notional,
-                    "confidence": confidence,
-                    "position_pct": float(position_pct),
-                    "approved": True,
-                },
-                market_data={"pair": best_pair, "balance": float(balance)},
-            )
-            logger.info(f"Audit: {len(audit.reasons_against)} counter-arguments logged")
-        except Exception as e:
-            logger.warning(f"Audit failed (non-blocking): {e}")
-
-        # ─── Step 6: Execute Trade ───
-        try:
-            # Set leverage
-            await self.order_manager.set_leverage(best_pair, leverage)
-
-            # Calculate order quantity: notional / entry_price = base currency units
-            order_qty = Decimal(str(notional)) / Decimal(str(best_signal.entry_price))
-
-            # Place order
-            side = "buy" if best_signal.direction.value == "long" else "sell"
-            order_result = await self.order_manager.place_market_order(
-                symbol=best_pair,
-                side=side,
-                amount=order_qty,
-            )
-
-            # Verify order was placed
-            order_status = await self.order_manager.get_order_status(
-                best_pair, order_result.order_id
-            )
-
-            if order_status.status not in (OrderState.CLOSED,):
-                logger.warning(f"Order not filled: {order_status.status.value}")
-                result.errors.append(f"Order status: {order_status.status.value}")
-                return result
-
-            # Place stop-loss
-            sl_side = "sell" if best_signal.direction.value == "long" else "buy"
-            await self.order_manager.place_stop_loss(
-                symbol=best_pair,
-                side=sl_side,
-                amount=order_result.filled,
-                stop_price=Decimal(str(best_signal.stop_loss)),
-            )
-
-            # Place take-profit (v4 fix: v3 backtest relies on TP hits,
-            # production was missing this — positions could only exit via SL)
-            tp_side = sl_side  # same side as SL (close direction)
+            # ── Audit (non-blocking) ──
             try:
-                await self.order_manager.place_take_profit(
-                    symbol=best_pair,
-                    side=tp_side,
-                    amount=order_result.filled,
-                    stop_price=Decimal(str(best_signal.take_profit)),
+                regime = self.regime_detector.detect(df_4h)
+                signal_dict = signal.model_dump() if hasattr(signal, "model_dump") else dict(signal)
+                regime_dict = regime.model_dump() if hasattr(regime, "model_dump") else dict(regime)
+                signal_dict.setdefault("symbol", symbol)
+                signal_dict.setdefault("strategy", signal_dict.get("strategy_name", ""))
+                self.decision_auditor.audit_decision(
+                    signal=signal_dict,
+                    regime=regime_dict,
+                    risk_approval={
+                        "position_size_usd": float(margin),
+                        "leverage": leverage,
+                        "notional": notional,
+                        "confidence": confidence,
+                        "position_pct": float(position_pct),
+                        "approved": True,
+                    },
+                    market_data={"pair": symbol, "balance": float(balance)},
                 )
-            except Exception as tp_err:
-                # Non-blocking: trailing stop will handle TP if this fails
-                logger.warning(f"Take-profit order failed (non-blocking): {tp_err}")
+            except Exception as e:
+                logger.warning(f"[{trigger}] Audit failed (non-blocking): {e}")
 
-            fill_price = order_result.average_fill_price or Decimal(str(best_signal.entry_price))
-            result.trade_placed = True
-            result.trade_details = {
-                "pair": best_pair,
-                "direction": best_signal.direction.value,
-                "entry_price": float(fill_price),
-                "size": float(order_result.filled),
-                "leverage": leverage,
-                "margin": float(margin),
-                "stop_loss": best_signal.stop_loss,
-                "take_profit": best_signal.take_profit,
-                "strategy": best_signal.strategy_name,
-                "confidence": best_signal.confidence,
-            }
+            # ── Execute ──
+            try:
+                await self.order_manager.set_leverage(symbol, leverage)
 
-            # Initialize trailing stop state for this position
-            atr_4h = float(
-                pair_data_4h[best_pair]["atr"].dropna().iloc[-1]
-            ) if "atr" in pair_data_4h[best_pair].columns else 0.0
+                order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
+                side = "buy" if signal.direction.value == "long" else "sell"
+                order_result = await self.order_manager.place_market_order(
+                    symbol=symbol, side=side, amount=order_qty,
+                )
 
-            self._trailing_stops[best_pair] = TrailingStopState(
-                symbol=best_pair,
-                direction=best_signal.direction.value,
-                entry_price=float(fill_price),
-                best_price=float(fill_price),
-                atr_4h=atr_4h,
-                strategy_name=best_signal.strategy_name,
-            )
+                order_status = await self.order_manager.get_order_status(
+                    symbol, order_result.order_id
+                )
+                if order_status.status not in (OrderState.CLOSED,):
+                    logger.warning(
+                        f"[{trigger}] Order not filled: {order_status.status.value}"
+                    )
+                    return None
 
-            logger.info(
-                f"TRADE PLACED: {best_pair} {best_signal.direction.value} "
-                f"@ {fill_price} x{leverage} (trailing stop ATR={atr_4h:.6f})"
-            )
+                sl_side = "sell" if signal.direction.value == "long" else "buy"
+                await self.order_manager.place_stop_loss(
+                    symbol=symbol,
+                    side=sl_side,
+                    amount=order_result.filled,
+                    stop_price=Decimal(str(signal.stop_loss)),
+                )
 
-            await self.alert_system.send_alert(
-                f"Trade: {best_pair} {best_signal.direction.value} "
-                f"@ {fill_price} x{leverage} "
-                f"SL={best_signal.stop_loss}",
-                level="info",
-            )
+                try:
+                    await self.order_manager.place_take_profit(
+                        symbol=symbol,
+                        side=sl_side,
+                        amount=order_result.filled,
+                        stop_price=Decimal(str(signal.take_profit)),
+                    )
+                except Exception as tp_err:
+                    logger.warning(
+                        f"[{trigger}] TP order failed (non-blocking): {tp_err}"
+                    )
 
-        except Exception as e:
-            logger.error(f"Execution failed: {e}")
-            errors.append(f"Execution: {e}")
+                fill_price = (
+                    order_result.average_fill_price
+                    or Decimal(str(signal.entry_price))
+                )
 
-        # ─── Step 7: Memory ───
-        try:
-            if result.trade_placed and result.trade_details:
-                self.trade_journal.record_trade_entry(result.trade_details)
-        except Exception as e:
-            logger.warning(f"Memory recording failed (non-blocking): {e}")
+                trade_details: dict[str, Any] = {
+                    "pair": symbol,
+                    "direction": signal.direction.value,
+                    "entry_price": float(fill_price),
+                    "size": float(order_result.filled),
+                    "leverage": leverage,
+                    "margin": float(margin),
+                    "stop_loss": signal.stop_loss,
+                    "take_profit": signal.take_profit,
+                    "strategy": signal.strategy_name,
+                    "confidence": signal.confidence,
+                    "trigger": trigger,
+                }
 
-        result.errors = errors
-        result.duration_seconds = (datetime.now(timezone.utc) - cycle_start).total_seconds()
-        self.state.last_cycle_time = datetime.now(timezone.utc)
+                # Trailing stop state
+                atr_4h = (
+                    float(df_4h["atr"].dropna().iloc[-1])
+                    if "atr" in df_4h.columns
+                    else 0.0
+                )
+                self._trailing_stops[symbol] = TrailingStopState(
+                    symbol=symbol,
+                    direction=signal.direction.value,
+                    entry_price=float(fill_price),
+                    best_price=float(fill_price),
+                    atr_4h=atr_4h,
+                    strategy_name=signal.strategy_name,
+                    take_profit=signal.take_profit,
+                )
+
+                logger.info(
+                    f"[{trigger}] TRADE PLACED: {symbol} {signal.direction.value} "
+                    f"@ {fill_price} x{leverage} (ATR={atr_4h:.6f})"
+                )
+                await self.alert_system.send_alert(
+                    f"Trade: {symbol} {signal.direction.value} "
+                    f"@ {fill_price} x{leverage} SL={signal.stop_loss}",
+                    level="info",
+                )
+
+                # Memory
+                try:
+                    self.trade_journal.record_trade_entry(trade_details)
+                except Exception as e:
+                    logger.warning(f"[{trigger}] Memory recording failed: {e}")
+
+                return trade_details
+
+            except Exception as e:
+                logger.error(f"[{trigger}] Execution failed: {e}")
+                return None
         return result
 
     # ------------------------------------------------------------------
@@ -760,6 +774,22 @@ class Orchestrator:
                         stop_price=entry_price,
                     )
 
+                    # Re-place TP (cancel_open_orders removed it too).
+                    # Backtest keeps TP intact; production must match.
+                    if ts_state.take_profit and ts_state.take_profit > 0:
+                        try:
+                            await self.order_manager.place_take_profit(
+                                symbol=pos.symbol,
+                                side=sl_side,
+                                amount=pos.size,
+                                stop_price=Decimal(str(ts_state.take_profit)),
+                            )
+                        except Exception as tp_err:
+                            logger.warning(
+                                f"ST reversal: TP re-placement failed for "
+                                f"{pos.symbol} (non-blocking): {tp_err}"
+                            )
+
                     result.positions_closed.append({
                         "symbol": pos.symbol,
                         "reason": "supertrend_reversal_tighten",
@@ -799,7 +829,22 @@ class Orchestrator:
 
         for pos in open_positions:
             ts_state = self._trailing_stops.get(pos.symbol)
-            if ts_state is None or ts_state.atr_4h <= 0:
+            if ts_state is None:
+                continue
+
+            # Recover atr_4h for pre-existing positions (set to 0 on restart)
+            if ts_state.atr_4h <= 0 and pos.symbol in pair_data_4h:
+                df = pair_data_4h[pos.symbol]
+                if "atr" in df.columns:
+                    atr_val = float(df["atr"].dropna().iloc[-1])
+                    if atr_val > 0:
+                        ts_state.atr_4h = atr_val
+                        logger.info(
+                            "Recovered ATR(4H)=%.6f for pre-existing %s",
+                            atr_val, pos.symbol,
+                        )
+
+            if ts_state.atr_4h <= 0:
                 continue
 
             current_price = float(pos.current_price)
@@ -1040,6 +1085,9 @@ class Orchestrator:
         Immediately re-runs signal generation + trailing stop check for the
         pair that closed, eliminating up to 59 minutes of entry delay
         compared to the hourly polling cycle.
+
+        Execution delegates to ``_execute_signal()`` (lock-protected) to
+        prevent race conditions with the hourly ``_run_cycle``.
         """
         symbol = candle["symbol"]
         logger.info(
@@ -1094,7 +1142,7 @@ class Orchestrator:
                 f"confidence={signal.confidence}% strategy={signal.strategy_name}"
             )
 
-            # Full risk gate (reuse same logic as _run_cycle Step 4)
+            # CB gate (uses fresh balance fetched inside _execute_signal)
             recent_entries = self.trade_journal.get_recent_trades(10)
             recent_trade_results = [
                 TradeResult(
@@ -1112,145 +1160,15 @@ class Orchestrator:
             if not cb_state.constraints.trading_allowed:
                 return
 
-            constraints = cb_state.constraints
-            open_positions = await self.position_tracker.get_open_positions()
-            if len(open_positions) >= constraints.max_positions:
-                return
-            for pos in open_positions:
-                if pos.symbol == symbol:
-                    return  # Already positioned
-
-            leverage_result = LeverageManager.determine_leverage(
-                confidence=signal.confidence,
-                regime=signal.regime,
-                circuit_breaker_level=cb_state.level,
-            )
-            leverage = leverage_result.leverage
-            if leverage == 0:
-                return
-
-            vol_state = self.volatility_model.forecast(df_1h)
-            if vol_state is None:
-                vol_state = self.volatility_model.forecast_simple(df_1h)
-            leverage = VolatilityModel.adjust_leverage(
-                requested_leverage=leverage,
-                vol_state=vol_state,
-                max_leverage=constraints.max_leverage,
-            )
-
-            confidence = signal.confidence
-
-            # Confidence-based position sizing — aligned with v6 backtest
-            if confidence >= 60:
-                position_pct = Decimal("0.15")
-            elif confidence >= 45:
-                position_pct = Decimal("0.10")
-            else:
-                position_pct = Decimal("0.07")
-            max_cap = Decimal("0.15")  # Immutable Rule #4
-
-            position_pct *= constraints.size_multiplier
-            margin = (balance * position_pct).quantize(Decimal("0.01"))
-            max_margin = (balance * max_cap).quantize(Decimal("0.01"))
-            if margin > max_margin:
-                margin = max_margin
-            if margin < Decimal("5"):
-                if balance < Decimal("5"):
-                    return
-                margin = Decimal("5")
-
-            notional = margin * Decimal(str(leverage))
-
-            # Check minimum notional for this pair
-            pair_min_notional = MIN_NOTIONAL.get(symbol, DEFAULT_MIN_NOTIONAL)
-            if float(notional) < pair_min_notional:
-                logger.info(
-                    f"4H close: Notional ${notional:.2f} below minimum "
-                    f"${pair_min_notional} for {symbol} — skipping"
-                )
-                return
-
-            # Sanity check position math
-            valid, details = SanityChecker.check_position_math(
-                Decimal(str(balance)), margin, leverage, notional,
-                max_position_pct=max_cap,
-            )
-            if not valid:
-                logger.error(f"4H close position math sanity failed: {details}")
-                return
-
-            liq_buffer = LeverageManager.calculate_liquidation_buffer(
-                entry_price=signal.entry_price,
-                leverage=leverage,
-                direction=signal.direction.value,
-            )
-            if not liq_buffer.is_safe:
-                return
-
-            # Execute trade
-            await self.order_manager.set_leverage(symbol, leverage)
-            order_qty = notional / Decimal(str(signal.entry_price))
-            side = "buy" if signal.direction.value == "long" else "sell"
-            order_result = await self.order_manager.place_market_order(
-                symbol=symbol, side=side, amount=order_qty,
-            )
-
-            order_status = await self.order_manager.get_order_status(
-                symbol, order_result.order_id
-            )
-            if order_status.status not in (OrderState.CLOSED,):
-                return
-
-            sl_side = "sell" if signal.direction.value == "long" else "buy"
-            await self.order_manager.place_stop_loss(
-                symbol=symbol, side=sl_side, amount=order_result.filled,
-                stop_price=Decimal(str(signal.stop_loss)),
-            )
-            try:
-                await self.order_manager.place_take_profit(
-                    symbol=symbol, side=sl_side, amount=order_result.filled,
-                    stop_price=Decimal(str(signal.take_profit)),
-                )
-            except Exception as tp_err:
-                logger.warning(f"4H close TP order failed (non-blocking): {tp_err}")
-
-            fill_price = order_result.average_fill_price or Decimal(str(signal.entry_price))
-            atr_4h = float(df_4h["atr"].dropna().iloc[-1]) if "atr" in df_4h.columns else 0.0
-
-            self._trailing_stops[symbol] = TrailingStopState(
+            # Delegate to shared lock-protected execution
+            await self._execute_signal(
+                signal=signal,
                 symbol=symbol,
-                direction=signal.direction.value,
-                entry_price=float(fill_price),
-                best_price=float(fill_price),
-                atr_4h=atr_4h,
-                strategy_name=signal.strategy_name,
+                df_4h=df_4h,
+                df_1h=df_1h,
+                cb_state=cb_state,
+                trigger="4h_candle_close",
             )
-
-            logger.info(
-                f"4H CLOSE TRADE: {symbol} {signal.direction.value} "
-                f"@ {fill_price} x{leverage} (event-driven entry)"
-            )
-
-            await self.alert_system.send_alert(
-                f"4H Close Trade: {symbol} {signal.direction.value} "
-                f"@ {fill_price} x{leverage}",
-                level="info",
-            )
-
-            if self.trade_journal:
-                self.trade_journal.record_trade_entry({
-                    "pair": symbol,
-                    "direction": signal.direction.value,
-                    "entry_price": float(fill_price),
-                    "size": float(order_result.filled),
-                    "leverage": leverage,
-                    "margin": float(margin),
-                    "stop_loss": signal.stop_loss,
-                    "take_profit": signal.take_profit,
-                    "strategy": signal.strategy_name,
-                    "confidence": signal.confidence,
-                    "trigger": "4h_candle_close",
-                })
 
         except Exception as e:
             logger.error(f"4H close handler error for {symbol}: {e}", exc_info=True)
@@ -1262,82 +1180,80 @@ class Orchestrator:
     async def _check_daily_report(self) -> None:
         """Generate daily report and reset daily_start_balance at UTC midnight.
 
-        Uses date-based comparison (not minute-of-hour) to ensure the reset
-        fires regardless of cycle timing.  The ``last_daily_report`` guard
-        at the top prevents duplicate reports within the same UTC day.
+        Fires on the first cycle of each new UTC day.  The
+        ``last_daily_report`` date-guard prevents duplicate execution.
+        No hour==0 gate — if the bot was down at midnight, the report
+        and daily_start_balance reset will fire on the first cycle after
+        restart.
         """
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if self.state.last_daily_report == today:
             return
 
         now = datetime.now(timezone.utc)
-        # Only generate the report during the first cycle of the new UTC day
-        # (hour 0, any minute). The last_daily_report guard above prevents
-        # duplicate execution even if the cycle runs multiple times at hour 0.
-        if now.hour == 0:
-            try:
-                logger.info("Generating daily report for %s...", today)
+        try:
+            logger.info("Generating daily report for %s...", today)
 
-                # Get today's trades and convert to dicts for PnL calculator
-                all_trades = self.trade_journal.get_all_trades()
-                from datetime import date as date_type
-                yesterday = date_type.fromisoformat(
-                    (now.replace(hour=0, minute=0, second=0)
-                     - __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d")
+            # Get today's trades and convert to dicts for PnL calculator
+            all_trades = self.trade_journal.get_all_trades()
+            from datetime import date as date_type
+            yesterday = date_type.fromisoformat(
+                (now.replace(hour=0, minute=0, second=0)
+                 - __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d")
+            )
+            today_trades = [
+                {
+                    "pnl": t.pnl or Decimal("0"),
+                    "fees": t.fees,
+                    "strategy": t.strategy,
+                }
+                for t in all_trades
+                if t.timestamp.date() == yesterday and t.pnl is not None
+            ]
+
+            daily_pnl = self.pnl_calculator.calculate_daily_pnl(
+                trades=today_trades,
+                start_balance=self.state.daily_start_balance,
+                end_balance=self.state.current_balance,
+                report_date=yesterday,
+            )
+
+            # Store in consolidated database
+            self.db.store_daily_report(DailyReportRow(
+                report_date=daily_pnl.date,
+                start_balance=daily_pnl.start_balance,
+                end_balance=daily_pnl.end_balance,
+                realized_pnl=daily_pnl.realized_pnl,
+                unrealized_pnl=daily_pnl.unrealized_pnl,
+                fees=daily_pnl.fees,
+                net_pnl=daily_pnl.net_pnl,
+                pnl_pct=daily_pnl.pnl_pct,
+                trades_count=daily_pnl.trades_count,
+                wins=daily_pnl.wins,
+                losses=daily_pnl.losses,
+                strategies_used=",".join(daily_pnl.strategies_used),
+            ))
+
+            # Generate markdown report
+            report_dir = PROJECT_ROOT / "docs" / "reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report_path = report_dir / f"{yesterday}.md"
+            self._write_daily_report_md(daily_pnl, report_path)
+
+            # Alert if daily loss > 5%
+            if daily_pnl.pnl_pct < Decimal("-5"):
+                await self.alert_system.send_alert(
+                    f"DAILY LOSS ALERT: {daily_pnl.pnl_pct:.2f}% on {yesterday}",
+                    level="critical",
                 )
-                today_trades = [
-                    {
-                        "pnl": t.pnl or Decimal("0"),
-                        "fees": t.fees,
-                        "strategy": t.strategy,
-                    }
-                    for t in all_trades
-                    if t.timestamp.date() == yesterday and t.pnl is not None
-                ]
 
-                daily_pnl = self.pnl_calculator.calculate_daily_pnl(
-                    trades=today_trades,
-                    start_balance=self.state.daily_start_balance,
-                    end_balance=self.state.current_balance,
-                    report_date=yesterday,
-                )
+            self.state.last_daily_report = today
+            self.state.daily_start_balance = self.state.current_balance
 
-                # Store in consolidated database
-                self.db.store_daily_report(DailyReportRow(
-                    report_date=daily_pnl.date,
-                    start_balance=daily_pnl.start_balance,
-                    end_balance=daily_pnl.end_balance,
-                    realized_pnl=daily_pnl.realized_pnl,
-                    unrealized_pnl=daily_pnl.unrealized_pnl,
-                    fees=daily_pnl.fees,
-                    net_pnl=daily_pnl.net_pnl,
-                    pnl_pct=daily_pnl.pnl_pct,
-                    trades_count=daily_pnl.trades_count,
-                    wins=daily_pnl.wins,
-                    losses=daily_pnl.losses,
-                    strategies_used=",".join(daily_pnl.strategies_used),
-                ))
-
-                # Generate markdown report
-                report_dir = PROJECT_ROOT / "docs" / "reports"
-                report_dir.mkdir(parents=True, exist_ok=True)
-                report_path = report_dir / f"{yesterday}.md"
-                self._write_daily_report_md(daily_pnl, report_path)
-
-                # Alert if daily loss > 5%
-                if daily_pnl.pnl_pct < Decimal("-5"):
-                    await self.alert_system.send_alert(
-                        f"DAILY LOSS ALERT: {daily_pnl.pnl_pct:.2f}% on {yesterday}",
-                        level="critical",
-                    )
-
-                self.state.last_daily_report = today
-                self.state.daily_start_balance = self.state.current_balance
-
-                logger.info("Daily report saved for %s (P&L: %s%%)",
-                            yesterday, daily_pnl.pnl_pct)
-            except Exception as e:
-                logger.error(f"Daily report failed: {e}", exc_info=True)
+            logger.info("Daily report saved for %s (P&L: %s%%)",
+                        yesterday, daily_pnl.pnl_pct)
+        except Exception as e:
+            logger.error(f"Daily report failed: {e}", exc_info=True)
 
     def _write_daily_report_md(self, pnl, report_path: Path) -> None:
         """Write a markdown daily report file."""

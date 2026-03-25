@@ -6,6 +6,39 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-25
 
+#### v6.4 Second Audit Fixes: Race condition, stale balance, TP loss, trailing stop recovery
+
+**Origin**: Triple-check audit of orchestrator `main.py`. 10 claims verified
+independently by reading every referenced file. 6 confirmed, 2 already known/moot,
+2 false positive.
+
+**Fixes applied** (all 401 tests passing):
+
+| # | Issue | Fix | Severity |
+|---|-------|-----|----------|
+| 1 | **Race condition**: `_on_4h_close` and `_run_cycle` could both check position count then open, exceeding max positions or doubling same symbol | Extracted `_execute_signal()` method protected by `asyncio.Lock`. All position-check → execute now serialized. Both paths use this shared method. | CRITICAL |
+| 2 | **Stale balance in `_on_4h_close`**: used cached `self.state.current_balance` for sizing; could be hours old | `_execute_signal()` fetches fresh `get_margin_balance()` under the lock, before every execution | HIGH |
+| 3 | **ST reversal drops TP**: `cancel_open_orders` removed both SL and TP but only re-placed SL at breakeven. Backtest keeps TP intact → production/backtest divergence | Now re-places TP after placing breakeven SL. `TrailingStopState` stores `take_profit` price for re-placement. | HIGH |
+| 4 | **Pre-existing positions lose trailing stop**: `atr_4h=0.0` at startup caused `_manage_trailing_stops` to skip forever | Now computes `atr_4h` from current 4H data on first cycle. Only skips if data still unavailable. | HIGH |
+| 5 | **Daily report misses midnight**: `now.hour == 0` gate meant report + `daily_start_balance` reset were skipped if bot was down at midnight UTC | Removed `hour == 0` guard. `last_daily_report` date-string comparison already prevents duplicates. Report fires on first cycle of each new UTC day. | MEDIUM |
+| 6 | **~150 lines duplicated execution logic**: `_on_4h_close` had copy-pasted risk + sizing + execution from `_run_cycle`. Led to Bug #2 and future divergence risk | Both paths now call shared `_execute_signal()`. ~150 lines of duplicated code eliminated. | MEDIUM |
+
+**Claims verified as FALSE POSITIVE or MOOT**:
+- **Bug #5 — Trailing stop cancel order race**: FALSE POSITIVE. Both SL and TP use `reduceOnly: True`. Orphan orders can't open reverse positions. Market-first-then-cancel is actually safer than cancel-first.
+- **Bug #3 — PositionSizer dead code**: Already documented in v6.3 as MOOT.
+- **Finding #3 — Only 1 active strategy**: Already documented. By design.
+- **Medium #2 — `closed_at` uses entry time**: CONFIRMED in principle, but currently moot: PnL is never populated on trade close, so `recent_trade_results` is always empty. The consecutive loss pause mechanism is non-functional (separate P1 issue).
+
+**Extra finding**: Trade journal only records entries (`pnl=None`). No code updates PnL when trades close → CB consecutive loss pause is completely non-functional. Filed as P1 for future fix.
+
+**Architecture change**: New `_execute_signal()` method in `Orchestrator`:
+- Protected by `asyncio.Lock` (`_execution_lock`)
+- Fetches fresh balance, checks positions, calculates sizing, executes, records
+- Called by both `_run_cycle()` (Step 4-7) and `_on_4h_close()`
+- Single source of truth for trade execution logic
+
+**Tests**: 401/401 passing — no test changes required.
+
 #### v6.3 Audit Fixes: 8 verified defects corrected
 
 **Origin**: Comprehensive code audit against production codebase. Each claim
