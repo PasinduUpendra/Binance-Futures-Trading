@@ -115,6 +115,8 @@ class FeeCalculator:
         leverage: int = 1,
         entry_is_maker: bool = False,
         exit_is_maker: bool = False,
+        funding_rate: Decimal = Decimal("0"),
+        funding_periods: int = 0,
     ) -> dict[str, Decimal]:
         """Calculate total cost of a round-trip trade including fees.
 
@@ -132,6 +134,11 @@ class FeeCalculator:
             Whether the entry order is a maker order.
         exit_is_maker : bool
             Whether the exit order is a maker order.
+        funding_rate : Decimal
+            Per-period funding rate (e.g. 0.0001 for 0.01%).  Positive
+            means longs pay shorts; negative means shorts pay longs.
+        funding_periods : int
+            Number of 8-hour funding intervals the position was held.
 
         Returns
         -------
@@ -141,9 +148,10 @@ class FeeCalculator:
             - ``exit_notional``: Exit notional value
             - ``entry_fee``: Fee on entry trade
             - ``exit_fee``: Fee on exit trade
-            - ``total_fees``: Sum of entry + exit fees
+            - ``total_fees``: Sum of entry + exit fees + funding cost
+            - ``funding_cost``: Cumulative funding paid (positive = cost)
             - ``gross_pnl``: PnL before fees
-            - ``net_pnl``: PnL after fees
+            - ``net_pnl``: PnL after all costs
             - ``margin_used``: Margin required (notional / leverage)
             - ``net_roi``: Net return on margin (net_pnl / margin_used)
         """
@@ -152,7 +160,13 @@ class FeeCalculator:
 
         entry_fee = self.calculate_fees(entry_notional, is_maker=entry_is_maker)
         exit_fee = self.calculate_fees(exit_notional, is_maker=exit_is_maker)
-        total_fees = entry_fee + exit_fee
+
+        # Funding cost: rate × notional × periods.
+        # Positive funding_rate + long position = cost (paid by longs).
+        # The caller is responsible for sign convention: pass positive
+        # funding_rate when the position pays funding.
+        funding_cost = abs(funding_rate * entry_notional * Decimal(str(funding_periods)))
+        total_fees = entry_fee + exit_fee + funding_cost
 
         gross_pnl = (exit_price - entry_price) * size
         net_pnl = gross_pnl - total_fees
@@ -173,6 +187,7 @@ class FeeCalculator:
             "exit_notional": exit_notional,
             "entry_fee": entry_fee,
             "exit_fee": exit_fee,
+            "funding_cost": funding_cost,
             "total_fees": total_fees,
             "gross_pnl": gross_pnl,
             "net_pnl": net_pnl,

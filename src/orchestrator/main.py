@@ -288,7 +288,7 @@ class Orchestrator:
 
         # ─── Step 1: Sentinel Check (Circuit Breaker) ───
         try:
-            balance = await self.market_data.get_account_balance()
+            balance = await self.market_data.get_margin_balance()
             self.state.current_balance = balance
 
             # Update drawdown monitor
@@ -310,6 +310,7 @@ class Orchestrator:
                 balance=balance,
                 recent_trades=recent_trade_results,
                 start_of_day_balance=self.state.daily_start_balance,
+                peak_balance=self.drawdown_monitor.peak_balance,
             )
             result.circuit_breaker_level = cb_state.level.value
             self.state.circuit_breaker_level = cb_state.level.value
@@ -1106,6 +1107,7 @@ class Orchestrator:
                 balance=balance,
                 recent_trades=recent_trade_results,
                 start_of_day_balance=self.state.daily_start_balance,
+                peak_balance=self.drawdown_monitor.peak_balance,
             )
             if not cb_state.constraints.trading_allowed:
                 return

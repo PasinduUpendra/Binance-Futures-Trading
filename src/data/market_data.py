@@ -310,6 +310,32 @@ class MarketDataClient:
         return balance
 
     @_retry
+    async def get_margin_balance(self) -> Decimal:
+        """Fetch the total margin balance (equity) including unrealized PnL.
+
+        For Binance USDM Futures, ``totalMarginBalance`` = wallet balance
+        + unrealized PnL.  This reflects true account equity and should be
+        used for circuit-breaker checks.
+
+        Falls back to wallet balance if the raw field is unavailable.
+        """
+        exchange = self._require_exchange()
+        raw = await exchange.fetch_balance()
+        info = raw.get("info", {})
+        margin_bal = info.get("totalMarginBalance")
+        if margin_bal is not None:
+            balance = self._to_decimal(margin_bal)
+        else:
+            # Fallback: use wallet balance
+            usdt_info = raw.get("USDT", {})
+            balance = self._to_decimal(usdt_info.get("total", 0))
+            logger.warning(
+                "totalMarginBalance not available; falling back to wallet balance"
+            )
+        logger.info("Margin balance (equity): %s USDT", balance)
+        return balance
+
+    @_retry
     async def get_current_price(self, symbol: str) -> Decimal:
         """Return the last traded price for *symbol* as a Decimal."""
         ticker = await self.fetch_ticker(symbol)

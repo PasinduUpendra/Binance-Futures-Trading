@@ -205,16 +205,19 @@ class LeverageManager:
         entry_price: Decimal | float | str,
         leverage: int,
         direction: str = "long",
+        maintenance_margin_rate: float = 0.004,
     ) -> LiquidationBuffer:
         """
         Estimate the liquidation price and verify the buffer is >5 %.
 
-        This uses a simplified exchange model:
-            Long  liq = entry * (1 - 1/leverage)
-            Short liq = entry * (1 + 1/leverage)
+        The formula accounts for maintenance margin rate (mmr):
+            Long  liq = entry * (1 - 1/leverage + mmr)
+            Short liq = entry * (1 + 1/leverage - mmr)
 
-        Real exchange liquidation engines include funding, fees, and
-        maintenance margin — this intentionally overestimates risk.
+        ``mmr`` defaults to 0.004 (0.4 %), the Binance USDM maintenance
+        margin rate for notional ≤ 50 BTC (Tier 1).  This makes the
+        estimated liquidation price CLOSER to entry than the naive
+        ``1/leverage`` heuristic, correctly reflecting higher risk.
 
         Parameters
         ----------
@@ -224,6 +227,8 @@ class LeverageManager:
             Integer leverage.
         direction:
             ``"long"`` or ``"short"``.
+        maintenance_margin_rate:
+            Binance maintenance margin rate (default 0.4 % for Tier 1).
 
         Returns
         -------
@@ -231,6 +236,7 @@ class LeverageManager:
         """
         entry = Decimal(str(entry_price))
         direction = direction.strip().lower()
+        mmr = Decimal(str(maintenance_margin_rate))
 
         if leverage <= 0:
             # No leverage → no liquidation risk.
@@ -245,11 +251,14 @@ class LeverageManager:
         inverse_lev = Decimal("1") / Decimal(leverage)
 
         if direction == "long":
-            liq_price = (entry * (Decimal("1") - inverse_lev)).quantize(
+            # Long: liquidation fires when equity = maintenance margin
+            # liq = entry * (1 - 1/leverage + mmr)
+            liq_price = (entry * (Decimal("1") - inverse_lev + mmr)).quantize(
                 Decimal("0.00000001")
             )
         elif direction == "short":
-            liq_price = (entry * (Decimal("1") + inverse_lev)).quantize(
+            # Short: liq = entry * (1 + 1/leverage - mmr)
+            liq_price = (entry * (Decimal("1") + inverse_lev - mmr)).quantize(
                 Decimal("0.00000001")
             )
         else:

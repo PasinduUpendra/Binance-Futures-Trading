@@ -108,6 +108,11 @@ class DrawdownMonitor:
             max_drawdown_balance=self._max_drawdown_balance,
         )
 
+    @property
+    def peak_balance(self) -> Decimal:
+        """The all-time high balance tracked by this monitor."""
+        return self._peak_balance
+
     def get_drawdown_pct(self) -> Decimal:
         """Return the current drawdown percentage as a fraction (0-1)."""
         return self._compute_drawdown(self._peak_balance, self._current_balance)
@@ -141,7 +146,7 @@ class DrawdownMonitor:
     # Persistence
     # ------------------------------------------------------------------
     def _persist_state(self) -> None:
-        """Write current tracking data to disk."""
+        """Write current tracking data to disk atomically."""
         data = {
             "peak_balance": str(self._peak_balance),
             "current_balance": str(self._current_balance),
@@ -151,9 +156,11 @@ class DrawdownMonitor:
         }
         try:
             self._state_path.parent.mkdir(parents=True, exist_ok=True)
-            self._state_path.write_text(
+            tmp_path = self._state_path.with_suffix(".tmp")
+            tmp_path.write_text(
                 json.dumps(data, indent=2), encoding="utf-8"
             )
+            tmp_path.rename(self._state_path)  # atomic on POSIX
         except OSError as exc:
             logger.error("Failed to persist drawdown state: %s", exc)
 

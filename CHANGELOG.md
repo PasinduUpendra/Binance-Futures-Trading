@@ -4,6 +4,40 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-25
+
+#### v6.3 Audit Fixes: 8 verified defects corrected
+
+**Origin**: Comprehensive code audit against production codebase. Each claim
+verified at 10/10 confidence by reading every referenced source file.
+
+**Fixes applied** (all 401 tests passing):
+
+| # | Module | Fix | Severity |
+|---|--------|-----|----------|
+| 1 | `position_sizer.py` | `_MAX_POSITION_PCT` corrected from 0.25 → 0.15 to match Immutable Rule #4. Log message now truthful. (Latent — orchestrator bypasses PositionSizer via inline 15% cap.) | HIGH |
+| 2 | `drawdown_monitor.py` | `_persist_state()` now writes to `.tmp` then `Path.rename()` — atomic on POSIX. Prevents silent peak reset on crash-during-write. | HIGH |
+| 3 | `leverage_manager.py` | Liquidation formula now includes maintenance margin rate (0.4% Tier 1): `entry * (1 - 1/lev + mmr)` for longs, `entry * (1 + 1/lev - mmr)` for shorts. Old formula UNDERESTIMATED risk (comment incorrectly claimed "overestimates"). New default param `maintenance_margin_rate=0.004`. | HIGH |
+| 4 | `order_manager.py` | Retry backoff now includes random jitter: `base + uniform(0, 0.5*base)`. Prevents synchronized retries / thundering herd. | MEDIUM |
+| 5 | `position_tracker.py` | Same jitter fix as order_manager. | MEDIUM |
+| 6 | `fee_calculator.py` | `calculate_total_cost()` now accepts `funding_rate` and `funding_periods` params. Funding cost = `|rate × notional × periods|`. Result dict includes `funding_cost` key. Backward-compatible (defaults to 0). | HIGH |
+| 7 | `market_data.py` | New `get_margin_balance()` method returns `totalMarginBalance` (equity = wallet + unrealized PnL). Falls back to wallet balance if field unavailable. | HIGH |
+| 8 | `circuit_breaker.py` | Drawdown-from-peak thresholds added (≥15% → YELLOW, ≥30% → RED, ≥50% → DEAD). Only TIGHTENS the CB level, never loosens. Absolute USD thresholds ($60/$45/$30) remain immutable. Orchestrator now passes `peak_balance` from drawdown monitor. | HIGH |
+
+**Orchestrator changes**:
+- `_run_cycle()` Step 1 now calls `get_margin_balance()` instead of `get_account_balance()` — CB checks use equity (wallet + unrealized PnL)
+- Both `_run_cycle()` and `_on_4h_close()` pass `peak_balance` to `CircuitBreaker.is_trading_allowed()`
+- `drawdown_monitor.py` exposes `peak_balance` property
+
+**Claims verified as FALSE POSITIVE or MOOT**:
+- set_leverage bypasses CB: **FALSE** — orchestrator calls LeverageManager first (applies CB caps), then passes capped value
+- Scalper max hold not enforced: **TRUE but dead code** — Scalper not imported by AdaptiveStrategy; `_check_time_based_exits()` works for SupertrendTrend
+- Kelly static win_rate: **MOOT** — Kelly/PositionSizer not used in active trading path
+- ADX backtest artifact missing: **FALSE** — backtest_v4.py and backtest_v6.py both exist with evidence
+- Consecutive loss not persisted: **FALSE** — trade journal is SQLite-backed; orchestrator loads from journal each cycle
+
+**Tests**: 3 liquidation buffer tests updated for new formula. 401/401 passing.
+
 ### 2026-03-24
 
 #### v6.2 Fix: Drop incomplete 4H candle from analysis

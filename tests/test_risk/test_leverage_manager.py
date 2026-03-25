@@ -266,43 +266,43 @@ class TestLiquidationBuffer:
     """Verify liquidation price estimation and safety classification."""
 
     def test_liquidation_buffer_long_safe(self) -> None:
-        """5x long from 3000 -> buffer = 20%, should be safe."""
+        """5x long from 3000 -> buffer ~19.6%, should be safe."""
         buf = LeverageManager.calculate_liquidation_buffer(
             entry_price=Decimal("3000"),
             leverage=5,
             direction="long",
         )
         assert buf.entry_price == Decimal("3000")
-        # liq = 3000 * (1 - 1/5) = 3000 * 0.8 = 2400
-        assert buf.estimated_liquidation_price == Decimal("2400.00000000")
-        # buffer = (3000 - 2400) / 3000 = 0.2
-        assert buf.buffer_pct == Decimal("0.2000")
+        # liq = 3000 * (1 - 1/5 + 0.004) = 3000 * 0.804 = 2412
+        assert buf.estimated_liquidation_price == Decimal("2412.00000000")
+        # buffer = (3000 - 2412) / 3000 = 0.196
+        assert buf.buffer_pct == Decimal("0.1960")
         assert buf.is_safe is True
         assert buf.leverage == 5
 
     def test_liquidation_buffer_long_unsafe(self) -> None:
-        """25x long from 3000 -> buffer = 4%, should be unsafe."""
+        """25x long from 3000 -> buffer ~3.6%, should be unsafe."""
         buf = LeverageManager.calculate_liquidation_buffer(
             entry_price=Decimal("3000"),
             leverage=25,
             direction="long",
         )
-        # liq = 3000 * (1 - 1/25) = 3000 * 0.96 = 2880
-        assert buf.estimated_liquidation_price == Decimal("2880.00000000")
-        # buffer = 120 / 3000 = 0.04
-        assert buf.buffer_pct == Decimal("0.0400")
+        # liq = 3000 * (1 - 1/25 + 0.004) = 3000 * 0.964 = 2892
+        assert buf.estimated_liquidation_price == Decimal("2892.00000000")
+        # buffer = 108 / 3000 = 0.036
+        assert buf.buffer_pct == Decimal("0.0360")
         assert buf.is_safe is False
 
     def test_liquidation_buffer_short(self) -> None:
-        """5x short from 3000 -> liq = 3600, buffer 20%, safe."""
+        """5x short from 3000 -> liq = 3588, buffer ~19.6%, safe."""
         buf = LeverageManager.calculate_liquidation_buffer(
             entry_price=Decimal("3000"),
             leverage=5,
             direction="short",
         )
-        # liq = 3000 * (1 + 1/5) = 3000 * 1.2 = 3600
-        assert buf.estimated_liquidation_price == Decimal("3600.00000000")
-        assert buf.buffer_pct == Decimal("0.2000")
+        # liq = 3000 * (1 + 1/5 - 0.004) = 3000 * 1.196 = 3588
+        assert buf.estimated_liquidation_price == Decimal("3588.00000000")
+        assert buf.buffer_pct == Decimal("0.1960")
         assert buf.is_safe is True
 
     def test_liquidation_buffer_zero_leverage(self) -> None:

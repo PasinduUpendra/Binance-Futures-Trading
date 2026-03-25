@@ -43,6 +43,13 @@ _DAILY_LOSS_HALT_PCT: Final[Decimal] = Decimal("0.10")
 _CONSECUTIVE_LOSS_PAUSE_THRESHOLD: Final[int] = 5
 _CONSECUTIVE_LOSS_PAUSE_SECONDS: Final[int] = 7200  # 2 hours
 
+# Drawdown-from-peak thresholds — additional layer that can only
+# TIGHTEN the CB level, never loosen it.  Absolute USD thresholds
+# above remain the immutable floor.
+_DRAWDOWN_YELLOW_PCT: Final[Decimal] = Decimal("0.15")  # >= 15% from peak
+_DRAWDOWN_RED_PCT: Final[Decimal] = Decimal("0.30")     # >= 30% from peak
+_DRAWDOWN_DEAD_PCT: Final[Decimal] = Decimal("0.50")    # >= 50% from peak
+
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -143,6 +150,26 @@ class CircuitBreaker:
         if balance >= _RED_BALANCE_MIN:
             return CircuitBreakerLevel.RED
         return CircuitBreakerLevel.DEAD
+
+    @staticmethod
+    def _drawdown_level_override(
+        balance: Decimal, peak_balance: Decimal,
+    ) -> CircuitBreakerLevel:
+        """Compute the CB level implied by drawdown from peak.
+
+        Returns the most-restrictive level justified by the drawdown.
+        Always returns GREEN when peak is zero or balance >= peak.
+        """
+        if peak_balance <= Decimal("0") or balance >= peak_balance:
+            return CircuitBreakerLevel.GREEN
+        dd_pct = (peak_balance - balance) / peak_balance
+        if dd_pct >= _DRAWDOWN_DEAD_PCT:
+            return CircuitBreakerLevel.DEAD
+        if dd_pct >= _DRAWDOWN_RED_PCT:
+            return CircuitBreakerLevel.RED
+        if dd_pct >= _DRAWDOWN_YELLOW_PCT:
+            return CircuitBreakerLevel.YELLOW
+        return CircuitBreakerLevel.GREEN
 
     @staticmethod
     def get_constraints(balance: Decimal) -> CircuitBreakerConstraints:
@@ -263,6 +290,7 @@ class CircuitBreaker:
         recent_trades: list[TradeResult] | None = None,
         start_of_day_balance: Decimal | None = None,
         now: datetime | None = None,
+        peak_balance: Decimal | None = None,
     ) -> CircuitBreakerState:
         """
         The single authoritative gate for whether a new trade may be opened.
@@ -277,6 +305,10 @@ class CircuitBreaker:
             Balance at UTC midnight for daily-loss computation.
         now:
             Override for current UTC time (useful in tests).
+        peak_balance:
+            All-time high balance for drawdown-based level escalation.
+            When provided, drawdown from peak can tighten the CB level
+            (never loosen it).
 
         Returns
         -------
@@ -287,6 +319,33 @@ class CircuitBreaker:
         now = now or datetime.now(timezone.utc)
         recent_trades = recent_trades or []
         constraints = CircuitBreaker.get_constraints(balance)
+
+        # --- 0. Drawdown-based level tightening (only if peak provided) ---
+        if peak_balance is not None:
+            dd_level = CircuitBreaker._drawdown_level_override(
+                balance, Decimal(str(peak_balance)),
+            )
+            _level_order = {
+                CircuitBreakerLevel.GREEN: 0,
+                CircuitBreakerLevel.YELLOW: 1,
+                CircuitBreakerLevel.RED: 2,
+                CircuitBreakerLevel.DEAD: 3,
+            }
+            if _level_order[dd_level] > _level_order[constraints.level]:
+                logger.warning(
+                    "Drawdown override: balance-based=%s, drawdown-based=%s "
+                    "(peak=$%.2f, current=$%.2f). Using stricter level.",
+                    constraints.level.value,
+                    dd_level.value,
+                    peak_balance,
+                    balance,
+                )
+                constraints = CircuitBreaker.get_constraints(
+                    # Synthesise a balance that maps to the drawdown-derived level
+                    _YELLOW_BALANCE_MIN if dd_level == CircuitBreakerLevel.YELLOW
+                    else _RED_BALANCE_MIN if dd_level == CircuitBreakerLevel.RED
+                    else Decimal("0"),  # DEAD
+                )
 
         # --- 1. DEAD check (overrides everything) --------------------------
         if constraints.level == CircuitBreakerLevel.DEAD:

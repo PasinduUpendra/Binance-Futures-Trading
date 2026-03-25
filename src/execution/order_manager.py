@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import random
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -45,7 +46,8 @@ def _retry(func: Any) -> Any:
                 ccxt_async.DDoSProtection,
             ) as exc:
                 last_exc = exc
-                wait = _BACKOFF_BASE * (2 ** (attempt - 1))
+                base_wait = _BACKOFF_BASE * (2 ** (attempt - 1))
+                wait = base_wait + random.uniform(0, base_wait * 0.5)
                 logger.warning(
                     "Attempt %d/%d for %s failed (%s). Retrying in %.1fs ...",
                     attempt,
