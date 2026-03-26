@@ -459,3 +459,160 @@ def test_decimal_precision_round_trip(journal: TradeJournal) -> None:
     assert retrieved.slippage == precise_slippage
     assert retrieved.exit_price == Decimal("2345.67890123456790")
     assert retrieved.confidence == Decimal("0.99999")
+
+
+# ---------------------------------------------------------------------------
+# 21. update_trade_exit — basic success
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_basic(journal: TradeJournal) -> None:
+    """update_trade_exit fills in exit fields on the most recent open trade."""
+    # Entry with no exit data (as produced by the orchestrator)
+    entry = make_trade(symbol="BTC/USDT:USDT")
+    journal.record_trade(entry)
+
+    # Verify pnl is initially None
+    trade_before = journal.get_all_trades()[0]
+    assert trade_before.pnl is None
+    assert trade_before.exit_price is None
+
+    # Record exit
+    result = journal.update_trade_exit(
+        symbol="BTC/USDT:USDT",
+        exit_price=Decimal("21000"),
+        pnl=Decimal("50.0"),
+        pnl_pct=Decimal("2.5"),
+        duration=24.5,
+        reason="trailing_stop",
+    )
+    assert result is True
+
+    # Verify fields updated
+    trade_after = journal.get_all_trades()[0]
+    assert trade_after.exit_price == Decimal("21000")
+    assert trade_after.pnl == Decimal("50.0")
+    assert trade_after.pnl_pct == Decimal("2.5")
+    assert trade_after.duration == 24.5
+    assert trade_after.lessons == "trailing_stop"
+
+
+# ---------------------------------------------------------------------------
+# 22. update_trade_exit — no matching trade
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_no_match(journal: TradeJournal) -> None:
+    """Returns False when no open trade exists for the symbol."""
+    result = journal.update_trade_exit(
+        symbol="DOGE/USDT:USDT",
+        exit_price=Decimal("0.15"),
+        pnl=Decimal("-1.0"),
+        pnl_pct=Decimal("-0.5"),
+    )
+    assert result is False
+
+
+# ---------------------------------------------------------------------------
+# 23. update_trade_exit — targets the most recent open trade
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_targets_most_recent_open(journal: TradeJournal) -> None:
+    """When multiple trades exist for a symbol, updates the most recent one
+    that still has no exit_price."""
+    # Older trade (already closed via record_trade)
+    older = make_trade(
+        symbol="ETH/USDT:USDT",
+        pnl=Decimal("10"),
+        exit_price=Decimal("2100"),
+        timestamp=datetime(2026, 3, 1, tzinfo=timezone.utc),
+    )
+    journal.record_trade(older)
+
+    # Newer trade (still open — no exit_price/pnl)
+    newer = make_trade(
+        symbol="ETH/USDT:USDT",
+        timestamp=datetime(2026, 3, 15, tzinfo=timezone.utc),
+    )
+    journal.record_trade(newer)
+
+    # update_trade_exit should fill in the NEWER one
+    result = journal.update_trade_exit(
+        symbol="ETH/USDT:USDT",
+        exit_price=Decimal("2200"),
+        pnl=Decimal("25.0"),
+        pnl_pct=Decimal("1.25"),
+        reason="time_exit",
+    )
+    assert result is True
+
+    trades = journal.get_all_trades()
+    # Most recent (newer) should have exit data
+    assert trades[0].exit_price == Decimal("2200")
+    assert trades[0].pnl == Decimal("25.0")
+    assert trades[0].lessons == "time_exit"
+
+    # Older trade untouched
+    assert trades[1].exit_price == Decimal("2100")
+    assert trades[1].pnl == Decimal("10")
+
+
+# ---------------------------------------------------------------------------
+# 24. update_trade_exit — consecutive losses now tracked
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_enables_consecutive_loss_tracking(
+    journal: TradeJournal,
+) -> None:
+    """After update_trade_exit is called, get_consecutive_losses returns
+    accurate data (previously always 0 because exits were never recorded)."""
+    # Record 3 trades with no exit
+    for i in range(3):
+        entry = make_trade(
+            symbol="SOL/USDT:USDT",
+            trade_id=f"trade_{i}",
+            timestamp=datetime(2026, 3, 10 + i, tzinfo=timezone.utc),
+        )
+        journal.record_trade(entry)
+
+    # Close each trade as a loss
+    for i in range(3):
+        journal.update_trade_exit(
+            symbol="SOL/USDT:USDT",
+            exit_price=Decimal("150"),
+            pnl=Decimal(f"-{i + 1}.0"),
+            pnl_pct=Decimal("-0.5"),
+            reason="sl_tp_fire",
+        )
+
+    assert journal.get_consecutive_losses() == 3
+
+
+# ---------------------------------------------------------------------------
+# 25. update_trade_exit — win rate after exit
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_win_rate(journal: TradeJournal) -> None:
+    """Win rate reflects exits recorded via update_trade_exit."""
+    for i in range(4):
+        entry = make_trade(
+            symbol="BTC/USDT:USDT",
+            trade_id=f"wr_{i}",
+            timestamp=datetime(2026, 3, 10 + i, tzinfo=timezone.utc),
+        )
+        journal.record_trade(entry)
+
+    # 3 wins, 1 loss
+    pnls = [Decimal("10"), Decimal("20"), Decimal("5"), Decimal("-8")]
+    for i, pnl_val in enumerate(pnls):
+        journal.update_trade_exit(
+            symbol="BTC/USDT:USDT",
+            exit_price=Decimal("21000"),
+            pnl=pnl_val,
+            pnl_pct=Decimal("1.0") if pnl_val > 0 else Decimal("-0.5"),
+        )
+
+    assert journal.get_win_rate() == pytest.approx(0.75)

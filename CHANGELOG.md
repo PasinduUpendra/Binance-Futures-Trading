@@ -6,6 +6,25 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-25
 
+#### v6.6 Critical Fixes: Balance mismatch, trade exit recording, stale daily state
+
+**Paper trading log review** revealed 7 issues; 3 critical code bugs fixed in this release.
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 1 | **Balance method mismatch**: `start()` used `get_account_balance()` (wallet only) while `_run_cycle()` used `get_margin_balance()` (equity incl. UPnL). `daily_start_balance` was seeded with wallet but compared against equity — distorting daily loss circuit breaker by the unrealized PnL delta. Now both use `get_margin_balance()`. | HIGH | Daily loss halt could trigger too aggressively (when UPnL negative) or too late (when UPnL positive). |
+| 2 | **Trade journal never recorded exits**: `record_trade_entry()` was called on execution but NO position close handler ever updated the journal with exit data. `get_consecutive_losses()` always returned 0, making the 5-consecutive-loss 2h pause completely inert. The $645 untracked balance drop was invisible because of this. Added `TradeJournal.update_trade_exit()` method + wired it into all 3 close handlers (trailing stop, time exit, SL/TP fire reconciliation). | CRITICAL | Win/loss tracking, consecutive loss pause, and per-trade P&L audit trail now functional. |
+| 3 | **Stale daily_state.json**: File contained `{"start_of_day_balance": 68.33}` — the production mainnet balance ($68.33), not testnet ($5,100). Cleared to `{}` so v6.5 `_load_daily_state()` correctly falls back to current exchange balance on next startup. | MEDIUM | Eliminated stale data poisoning daily loss calculation. |
+
+**New code:**
+- `TradeJournal.update_trade_exit(symbol, exit_price, pnl, pnl_pct, duration, fees, reason)` — finds most recent open trade for symbol (no exit_price) and fills exit fields via SQL UPDATE.
+- `TradingOrchestrator._record_trade_exit()` — helper that wraps journal update; failures logged but never propagate (exit recording must not block position management).
+- Exit recording wired into: trailing stop close, time exit close, reconciliation (SL/TP fire detection).
+
+**Files changed**: `src/orchestrator/main.py`, `src/memory/trade_journal.py`, `user_data/agent_state/daily_state.json`, `tests/test_memory/test_trade_journal.py`.
+
+**Tests**: 406 passed (+5 new for `update_trade_exit`), 0 failures.
+
 #### v6.5 Third Audit Fixes: BNB discount, daily state persistence
 
 **Audit claims verified**: 3 total — 1 partially confirmed, 1 confirmed, 1 false positive.

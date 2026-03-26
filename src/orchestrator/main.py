@@ -200,11 +200,12 @@ class Orchestrator:
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
             return
 
-        # Get initial balance
+        # Get initial balance — use margin balance (equity) for consistency
+        # with _run_cycle() which also uses get_margin_balance().
         try:
-            balance = await self.market_data.get_account_balance()
+            balance = await self.market_data.get_margin_balance()
             self.state.current_balance = balance
-            logger.info(f"Initial balance: ${balance}")
+            logger.info(f"Initial balance (equity): ${balance}")
         except Exception as e:
             logger.error(f"Failed to get initial balance: {e}")
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
@@ -723,6 +724,41 @@ class Orchestrator:
         return result
 
     # ------------------------------------------------------------------
+    # Trade Exit Recording Helper
+    # ------------------------------------------------------------------
+
+    def _record_trade_exit(
+        self,
+        symbol: str,
+        exit_price: float,
+        pnl: float,
+        entry_price: float,
+        reason: str,
+        duration_hours: float | None = None,
+    ) -> None:
+        """Record trade exit in journal so win/loss tracking works.
+
+        Computes pnl_pct from pnl / (entry_price * size) and delegates to
+        ``TradeJournal.update_trade_exit()``.  Failures are logged but
+        never propagate — exit recording must not block position management.
+        """
+        try:
+            # pnl_pct: approximate as pnl / margin (entry_price is a proxy)
+            pnl_pct = (pnl / entry_price * 100) if entry_price else 0.0
+            self.trade_journal.update_trade_exit(
+                symbol=symbol,
+                exit_price=Decimal(str(exit_price)),
+                pnl=Decimal(str(pnl)),
+                pnl_pct=Decimal(str(round(pnl_pct, 4))),
+                duration=duration_hours,
+                reason=reason,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to record trade exit for %s: %s", symbol, e
+            )
+
+    # ------------------------------------------------------------------
     # Supertrend Reversal Exit
     # ------------------------------------------------------------------
 
@@ -917,6 +953,15 @@ class Orchestrator:
                         level="info",
                     )
 
+                    # Record exit in trade journal for win/loss tracking
+                    self._record_trade_exit(
+                        symbol=pos.symbol,
+                        exit_price=current_price,
+                        pnl=float(pos.unrealized_pnl),
+                        entry_price=ts_state.entry_price,
+                        reason="trailing_stop",
+                    )
+
                 except Exception as e:
                     logger.error(f"Failed to close {pos.symbol} on trailing stop: {e}")
 
@@ -973,6 +1018,16 @@ class Orchestrator:
                     level="info",
                 )
 
+                # Record exit in trade journal for win/loss tracking
+                self._record_trade_exit(
+                    symbol=pos.symbol,
+                    exit_price=float(pos.current_price),
+                    pnl=float(pos.unrealized_pnl),
+                    entry_price=float(pos.entry_price),
+                    reason="time_exit",
+                    duration_hours=bars_held,
+                )
+
             except Exception as e:
                 logger.error(
                     f"Failed to close {pos.symbol} on time exit: {e}"
@@ -1004,6 +1059,7 @@ class Orchestrator:
             if sym not in open_symbols
         ]
         for sym in stale_symbols:
+            ts_state = self._trailing_stops.get(sym)
             logger.warning(
                 "RECONCILE: Position for %s closed externally (SL/TP fire). "
                 "Cancelling orphan orders and cleaning trailing state.", sym
@@ -1017,6 +1073,32 @@ class Orchestrator:
                     )
             except Exception as e:
                 logger.error("RECONCILE: Failed to cancel orders for %s: %s", sym, e)
+
+            # Record exit in trade journal — use last known price from
+            # trailing state. Exact fill comes from exchange trade history
+            # but this is sufficient for win/loss streak tracking.
+            if ts_state is not None:
+                try:
+                    current_price = await self.market_data.get_current_price(sym)
+                    exit_px = float(current_price)
+                    entry_px = ts_state.entry_price
+                    direction = ts_state.direction
+                    if direction == "long":
+                        pnl_approx = exit_px - entry_px
+                    else:
+                        pnl_approx = entry_px - exit_px
+                    self._record_trade_exit(
+                        symbol=sym,
+                        exit_price=exit_px,
+                        pnl=pnl_approx,
+                        entry_price=entry_px,
+                        reason="sl_tp_fire",
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "RECONCILE: Failed to record exit for %s: %s", sym, e
+                    )
+
             self._trailing_stops.pop(sym, None)
 
         # 2. For every open position, ensure it has at least one

@@ -449,3 +449,93 @@ class TradeJournal:
         cursor = conn.execute("SELECT COUNT(*) as cnt FROM trades")
         row = cursor.fetchone()
         return row["cnt"] if row else 0
+
+    def update_trade_exit(
+        self,
+        symbol: str,
+        exit_price: Decimal,
+        pnl: Decimal,
+        pnl_pct: Decimal,
+        duration: float | None = None,
+        fees: Decimal = Decimal("0"),
+        reason: str = "",
+    ) -> bool:
+        """Update the most recent open trade for *symbol* with exit data.
+
+        Finds the most recent trade for the symbol that has no ``exit_price``
+        and fills in the exit fields.  This links trade entries (placed by
+        the orchestrator on execution) to their outcomes (detected on close).
+
+        Parameters
+        ----------
+        symbol : str
+            Trading pair in ccxt format (e.g. ``ETH/USDT:USDT``).
+        exit_price : Decimal
+            Price at which the position was closed.
+        pnl : Decimal
+            Realized profit/loss in USDT.
+        pnl_pct : Decimal
+            PnL as a percentage of margin.
+        duration : float | None
+            Trade duration in hours.
+        fees : Decimal
+            Total fees for the round-trip.
+        reason : str
+            Exit reason (e.g. ``trailing_stop``, ``time_exit``,
+            ``sl_tp_fire``).
+
+        Returns
+        -------
+        bool
+            True if a matching trade was found and updated.
+        """
+        conn = self._get_conn()
+
+        # Find most recent trade for this symbol with no exit
+        cursor = conn.execute(
+            """
+            SELECT trade_id FROM trades
+            WHERE symbol = ? AND exit_price IS NULL
+            ORDER BY timestamp DESC
+            LIMIT 1
+            """,
+            (symbol,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            logger.warning(
+                "UPDATE_TRADE_EXIT: No open trade found for %s — "
+                "exit data will be lost", symbol,
+            )
+            return False
+
+        trade_id = row["trade_id"]
+
+        conn.execute(
+            """
+            UPDATE trades
+            SET exit_price = ?,
+                pnl = ?,
+                pnl_pct = ?,
+                duration = ?,
+                fees = ?,
+                lessons = ?
+            WHERE trade_id = ?
+            """,
+            (
+                str(exit_price),
+                str(pnl),
+                str(pnl_pct),
+                duration,
+                str(fees),
+                reason,
+                trade_id,
+            ),
+        )
+        conn.commit()
+
+        logger.info(
+            "TRADE_EXIT_RECORDED trade_id=%s symbol=%s exit=%s pnl=%s reason=%s",
+            trade_id, symbol, exit_price, pnl, reason,
+        )
+        return True
