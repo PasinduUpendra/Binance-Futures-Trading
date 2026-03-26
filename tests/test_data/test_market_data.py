@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.data.market_data import (
+    AssetBalance,
     MarketDataClient,
     OrderBookData,
     TickerData,
@@ -321,3 +322,130 @@ class TestLifecycle:
     ) -> None:
         with pytest.raises(RuntimeError, match="not connected"):
             client._require_exchange()
+
+
+# ---------------------------------------------------------------------------
+# get_all_assets
+# ---------------------------------------------------------------------------
+
+
+class TestGetAllAssets:
+    """Tests for the multi-asset balance method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_all_nonzero_assets(
+        self, client: MarketDataClient,
+    ) -> None:
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_balance = AsyncMock(return_value={
+            "info": {
+                "assets": [
+                    {
+                        "asset": "USDT",
+                        "walletBalance": "5099.92",
+                        "unrealizedProfit": "45.72",
+                        "marginBalance": "5145.64",
+                        "availableBalance": "4800.00",
+                    },
+                    {
+                        "asset": "USDC",
+                        "walletBalance": "5000.00",
+                        "unrealizedProfit": "0.00",
+                        "marginBalance": "5000.00",
+                        "availableBalance": "5000.00",
+                    },
+                    {
+                        "asset": "BTC",
+                        "walletBalance": "0.01",
+                        "unrealizedProfit": "0.00",
+                        "marginBalance": "0.01",
+                        "availableBalance": "0.01",
+                    },
+                    {
+                        "asset": "ETH",
+                        "walletBalance": "0",
+                        "unrealizedProfit": "0",
+                        "marginBalance": "0",
+                        "availableBalance": "0",
+                    },
+                ],
+            },
+        })
+        client._exchange = mock_exchange
+
+        assets = await client.get_all_assets()
+
+        assert len(assets) == 3
+        names = [a.asset for a in assets]
+        assert "USDT" in names
+        assert "USDC" in names
+        assert "BTC" in names
+        assert "ETH" not in names  # zero balance filtered out
+
+    @pytest.mark.asyncio
+    async def test_usdt_values_correct(
+        self, client: MarketDataClient,
+    ) -> None:
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_balance = AsyncMock(return_value={
+            "info": {
+                "assets": [
+                    {
+                        "asset": "USDT",
+                        "walletBalance": "5099.92",
+                        "unrealizedProfit": "45.72",
+                        "marginBalance": "5145.64",
+                        "availableBalance": "4800.00",
+                    },
+                ],
+            },
+        })
+        client._exchange = mock_exchange
+
+        assets = await client.get_all_assets()
+
+        assert len(assets) == 1
+        usdt = assets[0]
+        assert usdt.asset == "USDT"
+        assert usdt.wallet_balance == Decimal("5099.92")
+        assert usdt.unrealized_pnl == Decimal("45.72")
+        assert usdt.margin_balance == Decimal("5145.64")
+        assert usdt.available_balance == Decimal("4800.00")
+
+    @pytest.mark.asyncio
+    async def test_empty_assets_returns_empty(
+        self, client: MarketDataClient,
+    ) -> None:
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_balance = AsyncMock(return_value={
+            "info": {"assets": []},
+        })
+        client._exchange = mock_exchange
+
+        assets = await client.get_all_assets()
+        assert assets == []
+
+    @pytest.mark.asyncio
+    async def test_missing_assets_key_returns_empty(
+        self, client: MarketDataClient,
+    ) -> None:
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_balance = AsyncMock(return_value={
+            "info": {},
+        })
+        client._exchange = mock_exchange
+
+        assets = await client.get_all_assets()
+        assert assets == []
+
+    @pytest.mark.asyncio
+    async def test_asset_balance_is_frozen(self) -> None:
+        ab = AssetBalance(
+            asset="USDT",
+            wallet_balance=Decimal("100"),
+            unrealized_pnl=Decimal("0"),
+            margin_balance=Decimal("100"),
+            available_balance=Decimal("100"),
+        )
+        with pytest.raises(Exception):
+            ab.asset = "BTC"  # type: ignore[misc]

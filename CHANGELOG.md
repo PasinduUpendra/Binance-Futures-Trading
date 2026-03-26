@@ -4,6 +4,27 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-26
+
+#### v6.7 Multi-Asset Visibility: See ALL Binance account assets
+
+**Problem**: Bot only read USDT balance via `get_account_balance()` / `get_margin_balance()`. USDC ($5,000) and BTC (0.01) on the same demo account were completely invisible — the bot thought account equity was ~$5,143 when actual total account value was ~$10,837.
+
+**Fix**: New `get_all_assets()` method reads the full `assets` array from Binance's `/fapi/v2/account` response (via ccxt `fetch_balance()` → `raw['info']['assets']`). Returns all non-zero balances with wallet balance, unrealized PnL, margin balance, and available balance per asset.
+
+**Orchestrator wiring**: On startup, `get_all_assets()` is called and all non-zero assets are logged. Non-USDT assets are flagged with a note that they are not usable for USDT-M margin unless Multi-Asset Mode is enabled.
+
+**Note**: Only USDT is used as margin for USDT-M Futures (Multi-Asset Mode is OFF). USDC/BTC balances are now visible and logged but do NOT affect position sizing or circuit breaker calculations, which correctly use only USDT equity.
+
+**New code:**
+- `AssetBalance` — Pydantic model (`frozen=True`) with `asset`, `wallet_balance`, `unrealized_pnl`, `margin_balance`, `available_balance` fields.
+- `MarketDataClient.get_all_assets()` → `list[AssetBalance]` — fetches and filters all non-zero assets.
+- Orchestrator `start()` — logs full asset inventory on startup.
+
+**Files changed**: `src/data/market_data.py`, `src/data/__init__.py`, `src/orchestrator/main.py`, `tests/test_data/test_market_data.py`.
+
+**Tests**: 411 passed (+5 new for `get_all_assets`), 0 failures.
+
 ### 2026-03-25
 
 #### v6.6 Critical Fixes: Balance mismatch, trade exit recording, stale daily state

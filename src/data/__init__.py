@@ -21,6 +21,7 @@ from src.data.data_validator import (
 )
 from src.data.indicator_engine import IndicatorEngine
 from src.data.market_data import (
+    AssetBalance,
     MarketDataClient,
     OrderBookData,
     OrderBookEntry,
@@ -29,6 +30,7 @@ from src.data.market_data import (
 
 __all__ = [
     # market_data
+    "AssetBalance",
     "MarketDataClient",
     "TickerData",
     "OrderBookData",

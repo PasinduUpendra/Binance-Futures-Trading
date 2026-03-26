@@ -52,6 +52,16 @@ class OrderBookData(BaseModel):
     timestamp: datetime
 
 
+class AssetBalance(BaseModel, frozen=True):
+    """Balance details for a single asset on the Futures account."""
+
+    asset: str
+    wallet_balance: Decimal
+    unrealized_pnl: Decimal
+    margin_balance: Decimal
+    available_balance: Decimal
+
+
 # ---------------------------------------------------------------------------
 # Retry decorator
 # ---------------------------------------------------------------------------
@@ -334,6 +344,53 @@ class MarketDataClient:
             )
         logger.info("Margin balance (equity): %s USDT", balance)
         return balance
+
+    @_retry
+    async def get_all_assets(self) -> list[AssetBalance]:
+        """Fetch ALL non-zero asset balances from the Futures account.
+
+        Reads the ``assets`` array from the raw Binance response which
+        includes every currency held (USDT, USDC, BTC, etc.) regardless
+        of whether Multi-Asset Mode is enabled.
+
+        Returns a list of :class:`AssetBalance` for every asset with a
+        non-zero wallet balance or margin balance.
+        """
+        exchange = self._require_exchange()
+        raw = await exchange.fetch_balance()
+        info = raw.get("info", {})
+        assets_raw: list[dict[str, Any]] = info.get("assets", [])
+
+        assets: list[AssetBalance] = []
+        for item in assets_raw:
+            wallet = self._to_decimal(item.get("walletBalance", "0"))
+            margin = self._to_decimal(item.get("marginBalance", "0"))
+            if wallet == Decimal("0") and margin == Decimal("0"):
+                continue
+            assets.append(
+                AssetBalance(
+                    asset=item.get("asset", "UNKNOWN"),
+                    wallet_balance=wallet,
+                    unrealized_pnl=self._to_decimal(
+                        item.get("unrealizedProfit", "0"),
+                    ),
+                    margin_balance=margin,
+                    available_balance=self._to_decimal(
+                        item.get("availableBalance", "0"),
+                    ),
+                )
+            )
+
+        for a in assets:
+            logger.info(
+                "Asset %s: wallet=%s  upnl=%s  margin=%s  available=%s",
+                a.asset,
+                a.wallet_balance,
+                a.unrealized_pnl,
+                a.margin_balance,
+                a.available_balance,
+            )
+        return assets
 
     @_retry
     async def get_current_price(self, symbol: str) -> Decimal:

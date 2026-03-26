@@ -211,6 +211,35 @@ class Orchestrator:
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
             return
 
+        # Log ALL assets on the account (USDT, USDC, BTC, etc.)
+        try:
+            all_assets = await self.market_data.get_all_assets()
+            logger.info(
+                "=== Full Account Assets (%d non-zero) ===", len(all_assets),
+            )
+            for asset in all_assets:
+                logger.info(
+                    "  %s: wallet=%s  margin=%s  upnl=%s",
+                    asset.asset,
+                    asset.wallet_balance,
+                    asset.margin_balance,
+                    asset.unrealized_pnl,
+                )
+            # Note: Only USDT is used as margin for USDT-M Futures
+            # (Multi-Asset Mode is OFF). Other assets are visible
+            # but not tradeable without enabling Multi-Asset Mode.
+            non_usdt = [a for a in all_assets if a.asset != "USDT"]
+            if non_usdt:
+                logger.info(
+                    "Non-USDT assets detected (not usable for USDT-M margin "
+                    "unless Multi-Asset Mode is enabled): %s",
+                    ", ".join(
+                        f"{a.asset}={a.wallet_balance}" for a in non_usdt
+                    ),
+                )
+        except Exception as e:
+            logger.warning(f"Failed to fetch full asset list: {e}")
+
         # Restore persisted daily state (survives restarts)
         self._load_daily_state(balance)
 

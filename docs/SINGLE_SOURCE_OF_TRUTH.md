@@ -556,6 +556,8 @@ All servers use `json.dumps(result, default=str)` for serialization.
 |----------|------|-----------|
 | `MarketDataClient.fetch_ohlcv` | market_data.py | `(symbol, timeframe, limit) -> list[dict]` |
 | `MarketDataClient.get_account_balance` | market_data.py | `() -> Decimal` |
+| `MarketDataClient.get_margin_balance` | market_data.py | `() -> Decimal` |
+| `MarketDataClient.get_all_assets` | market_data.py | `() -> list[AssetBalance]` |
 | `MarketDataClient.fetch_ticker` | market_data.py | `(symbol) -> TickerData` |
 | `IndicatorEngine.calculate_all` | indicator_engine.py | `(df, ...) -> DataFrame` |
 | `DataValidator.validate_ohlcv` | data_validator.py | `(df) -> ValidationResult` |
@@ -583,6 +585,7 @@ All servers use `json.dumps(result, default=str)` for serialization.
 | Function | File | Signature |
 |----------|------|-----------|
 | `TradeJournal.record_trade` | trade_journal.py | `(entry: TradeEntry) -> None` |
+| `TradeJournal.update_trade_exit` | trade_journal.py | `(symbol, exit_price, pnl, ...) -> bool` |
 | `TradeJournal.get_recent_trades` | trade_journal.py | `(limit=10) -> list[TradeEntry]` |
 
 ---
@@ -604,6 +607,7 @@ All models use `frozen=True` (immutable after creation).
 | `OrderResult` | order_manager.py | order_id, symbol, side, amount, price, status, verified |
 | `ValidationResult` | data_validator.py | passed, status, details |
 | `TickerData` | market_data.py | symbol, bid, ask, last, high, low, volume |
+| `AssetBalance` | market_data.py | asset, wallet_balance, unrealized_pnl, margin_balance, available_balance |
 | `TradeEntry` | trade_journal.py | trade_id, symbol, direction, entry/exit/pnl, strategy, regime |
 | `DrawdownState` | drawdown_monitor.py | current_balance, peak_balance, current/max_drawdown_pct |
 | `DailyReportRow` | database.py | report_date, start/end_balance, net_pnl, pnl_pct, wins, losses |
@@ -682,7 +686,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 393 tests passing (1.39s) — as of 2026-03-24
+**Current status:** 411 tests passing (~20s) — as of 2026-03-26
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -698,17 +702,21 @@ lookback:
 | test_trailing_stop.py | 13 | TrailingStopState creation, activation logic, trail trigger, best price tracking |
 | test_position_sizer.py | 18 | Kelly sizing, CB multipliers, min/max caps, leverage clipping |
 | test_drawdown_monitor.py | 17 | High-water mark, persistence, reset, edge cases |
-| test_trade_journal.py | 20 | CRUD, win rate, consecutive losses, strategy/regime filters |
+| test_trade_journal.py | 25 | CRUD, win rate, consecutive losses, strategy/regime filters, exit recording |
 | test_daily_pnl.py | 18 | Daily calc, cumulative stats, Sharpe, doubling progress |
 | test_sanity_checks.py | 11 | Price validation, signal validation |
 | test_pipeline.py | 7 | End-to-end orchestrator cycle |
+| test_market_data.py | 26 | Helpers, WS stream names, subscriptions, lifecycle, get_all_assets |
+| test_order_manager.py | 33 | Idempotent submission, parsing, cancel/query, leverage |
+| test_price_validator.py | 13 | 24h range, deviation, staleness, cross-validation |
+| test_signal_validator.py | 13 | Indicator specificity, value matching, R/R, entry price |
 
 ### Test Coverage Gaps (modules without dedicated tests)
-- Execution: order_manager.py, position_tracker.py, slippage_estimator.py
-- Data: market_data.py, indicator_engine.py, data_validator.py, candle_store.py, database.py
+- Execution: position_tracker.py, slippage_estimator.py
+- Data: indicator_engine.py, data_validator.py, candle_store.py, database.py
 - Memory: performance_tracker.py, bias_detector.py, trade_memory_client.py
 - Reporting: dashboard.py, alert_system.py, report_generator.py
-- Anti-hallucination: price_validator.py, signal_validator.py, decision_auditor.py
+- Anti-hallucination: decision_auditor.py
 - Risk: correlation_monitor.py
 - Orchestrator: main.py (only integration coverage via test_pipeline.py)
 
@@ -723,8 +731,8 @@ lookback:
 5. **Manual trading** - User should stop manual trading before live bot deployment.
 6. ~~**Taker fee discrepancy**~~ - RESOLVED: Code updated to 0.05% matching API-verified rate.
 7. **Freqtrade integration** - ClaudeQuantAdaptive.py exists but outdated for v3. Freqtrade is optional (primary is direct ccxt via orchestrator).
-8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1), restarted 2026-03-15 (v2 with v4 fixes). Bot PID 83621. Target end: 2026-03-21.
-9. **Test coverage** - 393 tests passing. P0 modules now covered (order_manager 33, price_validator 13, signal_validator 13). ~27 modules still lack dedicated tests (data, memory, reporting).
+8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1). Current version: v6.7. Bot restarted 2026-03-26.
+9. **Test coverage** - 411 tests passing. P0 modules covered (order_manager 33, price_validator 13, signal_validator 13, market_data 26, trade_journal 25). ~20 modules still lack dedicated tests (data, memory, reporting).
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
 11. **Avg daily return 1.149%** - This is the VALIDATED PERFORMANCE CEILING from v5 sweep (240-combo parameter sweep, production-code backtest). Winner: ST(8,2.0), MAX_HOLD_BARS=150, tighten_to_breakeven. +539.8% over 172 days, 75 trades, Sharpe 5.83, PF 52.34, MaxDD 1.2%. EXCEEDS the 1% aspirational target. Previous ceiling was 0.628% from v4. All 6 gate checks passed. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).
