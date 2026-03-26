@@ -1,0 +1,122 @@
+[2026-03-26 14:03:18 UTC] 12-hour monitor started
+[2026-03-26 14:03:18 UTC] source_log=/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/orchestrator.log
+[2026-03-26 14:03:18 UTC] end_time=2026-03-27T02:03:18.638229+00:00
+[2026-03-26 14:03:18 UTC] sampling_interval=30s
+[2026-03-26 14:03:18 UTC] policy=observe_and_log_only; no code changes; no trading actions
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 13:53:43 [claude_quant.orchestrator] WARNING: STARTUP: AVAX/USDT:USDT short position has ZERO orders (no SL/TP). Position is UNPROTECTED.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 13:53:43 [claude_quant.orchestrator] WARNING: STARTUP: ADA/USDT:USDT short position has ZERO orders (no SL/TP). Position is UNPROTECTED.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 13:53:57 [claude_quant.orchestrator] WARNING: RECONCILE: AVAX/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 13:53:58 [claude_quant.orchestrator] WARNING: RECONCILE: ADA/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 14:16:10 [claude_quant.orchestrator] WARNING: STARTUP: AVAX/USDT:USDT short position has ZERO orders (no SL/TP). Position is UNPROTECTED.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 14:16:10 [claude_quant.orchestrator] WARNING: STARTUP: ADA/USDT:USDT short position has ZERO orders (no SL/TP). Position is UNPROTECTED.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 14:16:28 [claude_quant.orchestrator] WARNING: RECONCILE: AVAX/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:03:18 UTC] ACTIVE_RISK 2026-03-26 14:16:28 [claude_quant.orchestrator] WARNING: RECONCILE: ADA/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:03:18 UTC] POTENTIAL_MISSED_OPPORTUNITY startup_context approved_signals=2 best_signal=AVAX/USDT:USDT skipped_reason=already_positioned:AVAX/USDT:USDT
+[2026-03-26 14:03:18 UTC] HEARTBEAT log_age_s=2807.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:03:18 UTC] ISSUE log_stale age_s=2807.6
+[2026-03-26 14:03:48 UTC] HEARTBEAT log_age_s=2837.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:04:18 UTC] HEARTBEAT log_age_s=2867.8 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:04:48 UTC] HEARTBEAT log_age_s=2897.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:04:48 UTC] ISSUE log_stale age_s=2897.9
+[2026-03-26 14:05:18 UTC] HEARTBEAT log_age_s=2927.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:05:49 UTC] HEARTBEAT log_age_s=2958.0 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:06:19 UTC] HEARTBEAT log_age_s=2988.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:06:49 UTC] HEARTBEAT log_age_s=3018.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:06:49 UTC] ISSUE log_stale age_s=3018.1
+[2026-03-26 14:07:19 UTC] HEARTBEAT log_age_s=3048.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:07:49 UTC] HEARTBEAT log_age_s=3078.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:08:19 UTC] HEARTBEAT log_age_s=3108.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:08:49 UTC] HEARTBEAT log_age_s=3138.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:08:49 UTC] ISSUE log_stale age_s=3138.4
+[2026-03-26 14:09:19 UTC] HEARTBEAT log_age_s=3168.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:09:49 UTC] HEARTBEAT log_age_s=3198.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:10:19 UTC] HEARTBEAT log_age_s=3228.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:10:49 UTC] HEARTBEAT log_age_s=3258.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:10:49 UTC] ISSUE log_stale age_s=3258.7
+[2026-03-26 14:11:19 UTC] HEARTBEAT log_age_s=3288.8 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:11:50 UTC] HEARTBEAT log_age_s=3319.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:12:20 UTC] HEARTBEAT log_age_s=3349.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:12:50 UTC] HEARTBEAT log_age_s=3379.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:12:50 UTC] ISSUE log_stale age_s=3379.2
+[2026-03-26 14:13:20 UTC] HEARTBEAT log_age_s=3409.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:13:50 UTC] HEARTBEAT log_age_s=3439.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:14:20 UTC] HEARTBEAT log_age_s=3469.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:14:50 UTC] HEARTBEAT log_age_s=3499.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:14:50 UTC] ISSUE log_stale age_s=3499.4
+[2026-03-26 14:15:20 UTC] HEARTBEAT log_age_s=3529.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:15:50 UTC] HEARTBEAT log_age_s=3559.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:16:20 UTC] HEARTBEAT log_age_s=1.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 14:16:26 UTC] WARNING 2026-03-26 15:16:26 [claude_quant.orchestrator] WARNING: RECONCILE: AVAX/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:16:26 UTC] ISSUE protection_gap 2026-03-26 15:16:26 [claude_quant.orchestrator] WARNING: RECONCILE: AVAX/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:16:27 UTC] WARNING 2026-03-26 15:16:27 [claude_quant.orchestrator] WARNING: RECONCILE: ADA/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:16:27 UTC] ISSUE protection_gap 2026-03-26 15:16:27 [claude_quant.orchestrator] WARNING: RECONCILE: ADA/USDT:USDT has open position but ZERO conditional orders. Trailing stop may be sole protection.
+[2026-03-26 14:16:28 UTC] CYCLE_SUMMARY cycle=2 duration_s=18.0 approved=2 trade=0 warnings=2 errors=0
+[2026-03-26 14:16:28 UTC] POTENTIAL_MISSED_OPPORTUNITY cycle=2 approved_signals=2 best_signal=AVAX/USDT:USDT skipped_reason=already_positioned:AVAX/USDT:USDT
+[2026-03-26 14:16:51 UTC] HEARTBEAT log_age_s=23.2 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:17:21 UTC] HEARTBEAT log_age_s=53.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:17:51 UTC] HEARTBEAT log_age_s=83.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:18:22 UTC] HEARTBEAT log_age_s=113.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:18:52 UTC] HEARTBEAT log_age_s=143.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:18:52 UTC] ISSUE log_stale age_s=143.5
+[2026-03-26 14:19:22 UTC] HEARTBEAT log_age_s=173.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:19:52 UTC] HEARTBEAT log_age_s=203.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:20:22 UTC] HEARTBEAT log_age_s=233.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:20:52 UTC] HEARTBEAT log_age_s=264.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:20:52 UTC] ISSUE log_stale age_s=264.3
+[2026-03-26 14:21:23 UTC] HEARTBEAT log_age_s=294.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:21:53 UTC] HEARTBEAT log_age_s=324.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:22:25 UTC] HEARTBEAT log_age_s=355.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:22:54 UTC] HEARTBEAT log_age_s=386.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:22:54 UTC] ISSUE log_stale age_s=386.3
+[2026-03-26 14:23:24 UTC] HEARTBEAT log_age_s=416.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:23:55 UTC] HEARTBEAT log_age_s=446.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:24:25 UTC] HEARTBEAT log_age_s=476.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:24:55 UTC] HEARTBEAT log_age_s=506.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:24:55 UTC] ISSUE log_stale age_s=506.6
+[2026-03-26 14:25:25 UTC] HEARTBEAT log_age_s=536.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:25:55 UTC] HEARTBEAT log_age_s=566.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:26:25 UTC] HEARTBEAT log_age_s=597.0 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:26:55 UTC] HEARTBEAT log_age_s=627.1 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:26:55 UTC] ISSUE log_stale age_s=627.1
+[2026-03-26 14:27:25 UTC] HEARTBEAT log_age_s=657.2 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:27:55 UTC] HEARTBEAT log_age_s=687.3 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:28:26 UTC] HEARTBEAT log_age_s=717.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:28:56 UTC] HEARTBEAT log_age_s=747.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:28:56 UTC] ISSUE log_stale age_s=747.5
+[2026-03-26 14:29:26 UTC] HEARTBEAT log_age_s=777.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:29:56 UTC] HEARTBEAT log_age_s=807.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:30:26 UTC] HEARTBEAT log_age_s=837.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:30:56 UTC] HEARTBEAT log_age_s=867.7 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:30:56 UTC] ISSUE log_stale age_s=867.7
+[2026-03-26 14:31:26 UTC] HEARTBEAT log_age_s=897.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:31:56 UTC] HEARTBEAT log_age_s=927.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:32:26 UTC] HEARTBEAT log_age_s=957.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:32:56 UTC] HEARTBEAT log_age_s=988.0 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:32:56 UTC] ISSUE log_stale age_s=988.0
+[2026-03-26 14:33:26 UTC] HEARTBEAT log_age_s=1018.1 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:33:56 UTC] HEARTBEAT log_age_s=1048.2 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:34:26 UTC] HEARTBEAT log_age_s=1078.2 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:34:57 UTC] HEARTBEAT log_age_s=1108.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:34:57 UTC] ISSUE log_stale age_s=1108.4
+[2026-03-26 14:35:27 UTC] HEARTBEAT log_age_s=1138.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:35:57 UTC] HEARTBEAT log_age_s=1168.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:36:27 UTC] HEARTBEAT log_age_s=1198.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:36:57 UTC] HEARTBEAT log_age_s=1228.7 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:36:57 UTC] ISSUE log_stale age_s=1228.7
+[2026-03-26 14:37:27 UTC] HEARTBEAT log_age_s=1258.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:37:57 UTC] HEARTBEAT log_age_s=1288.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:38:27 UTC] HEARTBEAT log_age_s=1319.1 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:38:57 UTC] HEARTBEAT log_age_s=1349.1 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:38:57 UTC] ISSUE log_stale age_s=1349.1
+[2026-03-26 14:39:28 UTC] HEARTBEAT log_age_s=1379.4 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:39:58 UTC] HEARTBEAT log_age_s=1410.1 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:40:29 UTC] HEARTBEAT log_age_s=1440.5 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:40:29 UTC] ISSUE log_stale age_s=1440.5
+[2026-03-26 14:40:59 UTC] HEARTBEAT log_age_s=1470.6 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:41:29 UTC] HEARTBEAT log_age_s=1500.7 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:41:59 UTC] HEARTBEAT log_age_s=1530.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:42:29 UTC] HEARTBEAT log_age_s=1560.8 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:42:29 UTC] ISSUE log_stale age_s=1560.8
+[2026-03-26 14:42:59 UTC] HEARTBEAT log_age_s=1590.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:43:29 UTC] HEARTBEAT log_age_s=1620.9 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1
+[2026-03-26 14:43:59 UTC] HEARTBEAT log_age_s=1651.0 cycles=1 trades=0 warnings=2 errors=0 missed_opportunities=1

@@ -6,6 +6,26 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-26
 
+#### v6.8 Safety Fixes: trailing-state persistence, verified BNB discount, latent return bug
+
+**Verified defects fixed**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 1 | **Removed latent unreachable `return result`** from `Orchestrator._execute_signal()`. The name `result` was out of scope in that method and would have raised `NameError` if any future refactor ever reached the line. | HIGH | Eliminates a latent execution crash path in the trade entry method. |
+| 2 | **Trailing stop state now persists across restarts** via `user_data/agent_state/trailing_stops.json`. `best_price`, `activated`, `atr_4h`, `strategy_name`, and `take_profit` are restored on startup and reused for pre-existing positions instead of resetting to `current_price` / `activated=False`. | CRITICAL | Prevents restart-induced loss of trailing-stop progress and avoids missed protective exits after a restart. |
+| 3 | **BNB discount now requires verified BNB balance**. The orchestrator no longer hardcodes `use_bnb_discount=True`; startup inspects account assets and enables the discount only if a positive BNB balance is present. Failure to verify falls back to conservative full-fee pricing. | MEDIUM | Prevents silent underestimation of fee drag when the account has no BNB. |
+| 4 | **Scalper TP is now fee-adjusted** by calling `FeeCalculator.adjust_tp_for_fees()` before emitting the signal. This strategy is not active in the current router, but its signal math is now internally consistent if re-enabled later. | MEDIUM | Removes fee-blind TP targets from the dormant scalping strategy. |
+
+**New code:**
+- `Orchestrator._configure_fee_calculator(all_assets)` — verifies BNB before enabling discounted fee assumptions.
+- `Orchestrator._load_trailing_stop_state()` / `_persist_trailing_stop_state()` — atomic persistence for trailing-stop progress.
+- `Scalper.generate_signal()` — fee-adjusted take-profit target.
+
+**Files changed**: `src/orchestrator/main.py`, `src/strategies/scalper.py`, `tests/test_integration/test_orchestrator_state.py`, `tests/test_strategies/test_scalper.py`.
+
+**Tests**: 416 passed (+5 new), 0 failures.
+
 #### v6.7 Multi-Asset Visibility: See ALL Binance account assets
 
 **Problem**: Bot only read USDT balance via `get_account_balance()` / `get_margin_balance()`. USDC ($5,000) and BTC (0.01) on the same demo account were completely invisible — the bot thought account equity was ~$5,143 when actual total account value was ~$10,837.

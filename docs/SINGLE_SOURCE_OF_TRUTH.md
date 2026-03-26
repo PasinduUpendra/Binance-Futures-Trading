@@ -6,7 +6,7 @@
 > **Paper Trading Started:** 2026-03-14 12:47 UTC (v1), restarted 2026-03-15 (v2), 2026-03-22 (v3), 2026-03-24 (v4 — post-audit)
 > **Bot PID:** 32036 (restarted 2026-03-24, 5 bug fixes + log noise fix — see CHANGELOG 2026-03-24)
 > **Watchdog:** Claude agent monitoring bot in real-time
-> **Tests:** 393 passing (1.39s)
+> **Tests:** 416 passing (5.02s)
 
 ---
 
@@ -189,7 +189,7 @@ Claude Quant/
 │   ├── LEARNINGS.md                    # 12 learnings (LRN-001 through LRN-012)
 │   └── ERRORS.md                       # 4 resolved errors (ERR-001 through ERR-004)
 │
-├── tests/                              # 393 tests, all passing (1.39s)
+├── tests/                              # 416 tests, all passing (5.02s)
 │   ├── conftest.py                     # Fixtures, markers
 │   ├── test_strategies/
 │   │   ├── test_regime_detector.py     # 5 tests — regime classification
@@ -263,7 +263,7 @@ Claude Quant/
 - **Entry SHORT:** 4H Supertrend flips from bullish to bearish AND ADX >= 18
 - **SL:** 3.0x ATR(4H) from entry
 - **TP:** 6.0x ATR(4H) from entry (R/R = 2.0)
-- **Trailing stop:** Activate after 2.0 ATR(4H) favorable move, trail at 2.5 ATR(4H)
+- **Trailing stop:** Activate after 2.0 ATR(4H) favorable move, trail at 2.5 ATR(4H); state persists across restarts (`best_price`, `activated`, `atr_4h`, `take_profit`)
 - **Reversal exit:** Tighten SL to breakeven when 4H Supertrend flips against direction (v5 sweep: beats immediate close)
 - **Max hold time:** 150 bars (6.25 days) — force close after (v5 sweep)
 - **Confidence factors:** Base flip (40pts), ADX strength (20pts), EMA alignment (20pts), RSI position (10pts), flip quality (10pts)
@@ -392,7 +392,7 @@ notional = $10.25 * 6 = $61.50
 ### 5.6 Fee Impact (`src/execution/fee_calculator.py`)
 - Maker: 0.02% (Decimal 0.0002)
 - Taker: 0.05% (Decimal 0.0005) -- verified via API 2026-03-13
-- BNB Burn: ENABLED on account (10% discount available)
+- BNB Burn: Enabled only when a positive BNB balance is verified on startup
 - Round-trip (taker both sides): 0.10% of notional
 - Round-trip (with BNB discount): 0.09% of notional
 - TP targets adjusted to be net-of-fees profitable
@@ -686,7 +686,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 411 tests passing (~20s) — as of 2026-03-26
+**Current status:** 416 tests passing (5.02s) — as of 2026-03-26
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -706,6 +706,8 @@ lookback:
 | test_daily_pnl.py | 18 | Daily calc, cumulative stats, Sharpe, doubling progress |
 | test_sanity_checks.py | 11 | Price validation, signal validation |
 | test_pipeline.py | 7 | End-to-end orchestrator cycle |
+| test_orchestrator_state.py | 4 | Trailing-stop persistence, pre-existing state restore, BNB fee verification |
+| test_scalper.py | 1 | Fee-adjusted take-profit hook |
 | test_market_data.py | 26 | Helpers, WS stream names, subscriptions, lifecycle, get_all_assets |
 | test_order_manager.py | 33 | Idempotent submission, parsing, cancel/query, leverage |
 | test_price_validator.py | 13 | 24h range, deviation, staleness, cross-validation |
@@ -731,8 +733,8 @@ lookback:
 5. **Manual trading** - User should stop manual trading before live bot deployment.
 6. ~~**Taker fee discrepancy**~~ - RESOLVED: Code updated to 0.05% matching API-verified rate.
 7. **Freqtrade integration** - ClaudeQuantAdaptive.py exists but outdated for v3. Freqtrade is optional (primary is direct ccxt via orchestrator).
-8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1). Current version: v6.7. Bot restarted 2026-03-26.
-9. **Test coverage** - 411 tests passing. P0 modules covered (order_manager 33, price_validator 13, signal_validator 13, market_data 26, trade_journal 25). ~20 modules still lack dedicated tests (data, memory, reporting).
+8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1). Current version: v6.8. Bot will be restarted after each fix batch.
+9. **Test coverage** - 416 tests passing. P0 modules covered (order_manager 33, price_validator 13, signal_validator 13, market_data 26, trade_journal 25). Additional coverage now includes trailing-stop persistence and scalper fee-adjusted TP.
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
 11. **Avg daily return 1.149%** - This is the VALIDATED PERFORMANCE CEILING from v5 sweep (240-combo parameter sweep, production-code backtest). Winner: ST(8,2.0), MAX_HOLD_BARS=150, tighten_to_breakeven. +539.8% over 172 days, 75 trades, Sharpe 5.83, PF 52.34, MaxDD 1.2%. EXCEEDS the 1% aspirational target. Previous ceiling was 0.628% from v4. All 6 gate checks passed. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).

@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
 
+from src.execution.fee_calculator import FeeCalculator
 from src.strategies.base_strategy import (
     BaseStrategy,
     Signal,
@@ -32,6 +34,7 @@ from src.strategies.base_strategy import (
 )
 
 logger = logging.getLogger(__name__)
+_FEE_CALCULATOR = FeeCalculator(use_bnb_discount=False)
 
 
 class Scalper(BaseStrategy):
@@ -184,6 +187,16 @@ class Scalper(BaseStrategy):
             rr = calculate_rr_ratio(entry_price, stop_loss, take_profit)
             if rr < 2.0 or take_profit <= 0:
                 return self._no_signal(f"Cannot achieve 2.0 R/R for scalp (best: {rr:.2f})")
+
+        take_profit = float(
+            _FEE_CALCULATOR.adjust_tp_for_fees(
+                entry_price=Decimal(str(entry_price)),
+                raw_tp=Decimal(str(take_profit)),
+                size=Decimal("1"),
+                leverage=1,
+                is_long=direction == SignalDirection.LONG,
+            )
+        )
 
         # --- Confidence scoring ------------------------------------------
         confidence = self._compute_confidence(

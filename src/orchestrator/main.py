@@ -78,6 +78,8 @@ class OrchestratorState(BaseModel):
 
 class TrailingStopState(BaseModel):
     """Trailing stop state for an open position."""
+    model_config = {"frozen": False}
+
     symbol: str
     direction: str  # 'long' or 'short'
     entry_price: float
@@ -166,7 +168,7 @@ class Orchestrator:
         self.drawdown_monitor = DrawdownMonitor()
         self.order_manager = OrderManager()
         self.position_tracker = PositionTracker()
-        self.fee_calculator = FeeCalculator(use_bnb_discount=True)
+        self.fee_calculator = FeeCalculator(use_bnb_discount=False)
         self.trade_journal = TradeJournal()
         self.performance_tracker = PerformanceTracker(journal=self.trade_journal)
         self.bias_detector = BiasDetector()
@@ -214,6 +216,7 @@ class Orchestrator:
         # Log ALL assets on the account (USDT, USDC, BTC, etc.)
         try:
             all_assets = await self.market_data.get_all_assets()
+            self._configure_fee_calculator(all_assets)
             logger.info(
                 "=== Full Account Assets (%d non-zero) ===", len(all_assets),
             )
@@ -242,6 +245,7 @@ class Orchestrator:
 
         # Restore persisted daily state (survives restarts)
         self._load_daily_state(balance)
+        self._load_trailing_stop_state()
 
         # Detect pre-existing positions and warn if unprotected
         try:
@@ -300,6 +304,8 @@ class Orchestrator:
         logger.info("Stopping orchestrator...")
         self.state.is_running = False
         self._shutdown_event.set()
+        self._persist_trailing_stop_state()
+        self._persist_daily_state()
 
         # Close exchange connections and database
         try:
@@ -750,11 +756,26 @@ class Orchestrator:
             except Exception as e:
                 logger.error(f"[{trigger}] Execution failed: {e}")
                 return None
-        return result
 
     # ------------------------------------------------------------------
     # Trade Exit Recording Helper
     # ------------------------------------------------------------------
+
+    def _configure_fee_calculator(self, all_assets: list[Any]) -> None:
+        """Enable BNB fee discount only when a positive BNB balance is verified."""
+        bnb_asset = next((asset for asset in all_assets if asset.asset == "BNB"), None)
+        use_bnb_discount = bool(bnb_asset and bnb_asset.wallet_balance > Decimal("0"))
+        self.fee_calculator = FeeCalculator(use_bnb_discount=use_bnb_discount)
+
+        if use_bnb_discount:
+            logger.info(
+                "BNB fee discount verified from account assets: BNB=%s",
+                bnb_asset.wallet_balance,
+            )
+        else:
+            logger.warning(
+                "BNB fee discount disabled: no positive BNB balance verified on account"
+            )
 
     def _record_trade_exit(
         self,
@@ -899,6 +920,8 @@ class Orchestrator:
             if ts_state is None:
                 continue
 
+            state_changed = False
+
             # Recover atr_4h for pre-existing positions (set to 0 on restart)
             if ts_state.atr_4h <= 0 and pos.symbol in pair_data_4h:
                 df = pair_data_4h[pos.symbol]
@@ -906,6 +929,7 @@ class Orchestrator:
                     atr_val = float(df["atr"].dropna().iloc[-1])
                     if atr_val > 0:
                         ts_state.atr_4h = atr_val
+                        state_changed = True
                         logger.info(
                             "Recovered ATR(4H)=%.6f for pre-existing %s",
                             atr_val, pos.symbol,
@@ -920,9 +944,11 @@ class Orchestrator:
             if ts_state.direction == "long":
                 if current_price > ts_state.best_price:
                     ts_state.best_price = current_price
+                    state_changed = True
             else:
                 if current_price < ts_state.best_price or ts_state.best_price == ts_state.entry_price:
                     ts_state.best_price = current_price
+                    state_changed = True
 
             # Check activation: has price moved 2.0 ATR favorable from entry?
             favorable_move = (
@@ -933,10 +959,17 @@ class Orchestrator:
 
             activate_threshold = ts_state.atr_4h * ts_state.ACTIVATE_ATR_MULT
             if favorable_move >= activate_threshold:
-                ts_state.activated = True
+                if not ts_state.activated:
+                    ts_state.activated = True
+                    state_changed = True
 
             if not ts_state.activated:
+                if state_changed:
+                    self._persist_trailing_stop_state()
                 continue
+
+            if state_changed:
+                self._persist_trailing_stop_state()
 
             # Check trailing stop: has price pulled back 2.5 ATR from best?
             trail_distance = ts_state.atr_4h * ts_state.TRAIL_ATR_MULT
@@ -964,6 +997,7 @@ class Orchestrator:
 
                     await self.order_manager.cancel_open_orders(pos.symbol)
                     self._trailing_stops.pop(pos.symbol, None)
+                    self._persist_trailing_stop_state()
 
                     result.positions_closed.append({
                         "symbol": pos.symbol,
@@ -1030,6 +1064,7 @@ class Orchestrator:
 
                 await self.order_manager.cancel_open_orders(pos.symbol)
                 self._trailing_stops.pop(pos.symbol, None)
+                self._persist_trailing_stop_state()
 
                 result.positions_closed.append({
                     "symbol": pos.symbol,
@@ -1129,6 +1164,7 @@ class Orchestrator:
                     )
 
             self._trailing_stops.pop(sym, None)
+            self._persist_trailing_stop_state()
 
         # 2. For every open position, ensure it has at least one
         #    conditional order (SL or TP). If zero orders, log a warning.
@@ -1163,6 +1199,14 @@ class Orchestrator:
             [f"{p.symbol} {p.side}" for p in open_positions],
         )
 
+        open_symbols = {pos.symbol for pos in open_positions}
+        stale_symbols = [
+            symbol for symbol in list(self._trailing_stops.keys())
+            if symbol not in open_symbols
+        ]
+        for symbol in stale_symbols:
+            self._trailing_stops.pop(symbol, None)
+
         for pos in open_positions:
             # Register in trailing stops so reconciliation can track them
             if pos.symbol not in self._trailing_stops:
@@ -1174,6 +1218,12 @@ class Orchestrator:
                     atr_4h=0.0,  # Will be updated on first cycle with data
                     strategy_name="pre_existing",
                 )
+            else:
+                ts_state = self._trailing_stops[pos.symbol]
+                ts_state.direction = pos.side
+                ts_state.entry_price = float(pos.entry_price)
+                if ts_state.best_price <= 0:
+                    ts_state.best_price = float(pos.current_price)
 
             # Check if position has any conditional orders
             try:
@@ -1187,6 +1237,8 @@ class Orchestrator:
                 logger.error(
                     "STARTUP: Failed to check orders for %s: %s", pos.symbol, e
                 )
+
+        self._persist_trailing_stop_state()
 
     # ------------------------------------------------------------------
     # Event-driven 4H candle close handler
@@ -1452,6 +1504,7 @@ class Orchestrator:
     # Daily state persistence (survives restarts)
     # ------------------------------------------------------------------
     _DAILY_STATE_FILE = AGENT_STATE_DIR / "daily_state.json"
+    _TRAILING_STATE_FILE = AGENT_STATE_DIR / "trailing_stops.json"
 
     def _load_daily_state(self, current_balance: Decimal) -> None:
         """Restore daily_start_balance and last_daily_report from disk.
@@ -1506,6 +1559,39 @@ class Orchestrator:
             tmp.rename(self._DAILY_STATE_FILE)  # atomic on POSIX
         except OSError as exc:
             logger.error("Failed to persist daily state: %s", exc)
+
+    def _load_trailing_stop_state(self) -> None:
+        """Restore trailing stop state from disk so restarts keep progress."""
+        try:
+            if not self._TRAILING_STATE_FILE.exists():
+                return
+
+            raw = json.loads(
+                self._TRAILING_STATE_FILE.read_text(encoding="utf-8")
+            )
+            loaded: dict[str, TrailingStopState] = {}
+            for symbol, state in raw.items():
+                loaded[symbol] = TrailingStopState(**state)
+            self._trailing_stops = loaded
+            logger.info(
+                "Restored %d trailing stop state(s) from disk",
+                len(self._trailing_stops),
+            )
+        except (json.JSONDecodeError, TypeError, ValueError, OSError) as exc:
+            logger.warning("Could not load trailing stop state: %s", exc)
+
+    def _persist_trailing_stop_state(self) -> None:
+        """Atomically write trailing stop state so restarts preserve progress."""
+        try:
+            serialized = {
+                symbol: state.model_dump()
+                for symbol, state in self._trailing_stops.items()
+            }
+            tmp = self._TRAILING_STATE_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
+            tmp.rename(self._TRAILING_STATE_FILE)
+        except OSError as exc:
+            logger.error("Failed to persist trailing stop state: %s", exc)
 
 
 async def main() -> None:
