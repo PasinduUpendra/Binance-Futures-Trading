@@ -6,6 +6,25 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-26
 
+#### v6.9 Conditional Order Fix: Binance trigger/algo orders are now treated as protection, not missed orders
+
+**Root cause fixed**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 1 | **Conditional SL/TP orders are now fetched from Binance's trigger/algo endpoints**. `OrderManager.get_open_orders()` now includes futures conditional orders (`trigger=True`) instead of only regular open orders. | CRITICAL | Eliminates false `ZERO orders (no SL/TP)` warnings for positions that were actually protected on the exchange. |
+| 2 | **Conditional order verification/query now uses the correct Binance algo-order path**. Stop-loss/take-profit verification and idempotent lookup use the conditional order endpoint and `clientAlgoId` instead of only the regular order endpoint / `origClientOrderId`. | HIGH | Prevents false verification failures and aligns live protection checks with Binance USDT-M conditional order semantics. |
+| 3 | **`cancel_open_orders()` now cancels both regular and conditional orders**. Conditional orders are detected and canceled with `trigger=True` instead of being silently left behind. | HIGH | Ensures reversal exits, cleanup, and reconciliation can actually remove exchange-side SL/TP algo orders. |
+| 4 | **Startup and reconciliation protection checks now inspect conditional orders specifically** instead of using only regular `fetch_open_orders()` results. | HIGH | Stops the orchestrator from misclassifying protected positions as unprotected during restart and periodic reconciliation. |
+
+**Live verification**:
+- Binance testnet confirmed that AVAX, ADA, and LINK protection was being held as conditional/algo orders, not regular open orders.
+- The original warnings were therefore an exchange-query bug, not evidence that the positions had no protection.
+
+**Files changed**: `src/execution/order_manager.py`, `src/orchestrator/main.py`, `tests/test_execution/test_order_manager.py`.
+
+**Tests**: 418 passed (+2 new), 0 failures.
+
 #### v6.8 Safety Fixes: trailing-state persistence, verified BNB discount, latent return bug
 
 **Verified defects fixed**:

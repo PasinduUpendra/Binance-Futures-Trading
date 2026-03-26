@@ -136,6 +136,7 @@ class OrderStatus(BaseModel):
     fee_currency: str | None = None
     timestamp: datetime
     last_trade_timestamp: datetime | None = None
+    is_conditional: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +268,7 @@ class OrderManager:
     # -- order verification (anti-hallucination) ----------------------------
 
     async def _verify_order_exists(
-        self, symbol: str, order_id: str
+        self, symbol: str, order_id: str, conditional: bool = False
     ) -> OrderStatus:
         """Fetch order from exchange to confirm it actually exists.
 
@@ -281,7 +282,8 @@ class OrderManager:
             order_id,
             symbol,
         )
-        raw = await exchange.fetch_order(order_id, symbol)
+        params = {"trigger": True} if conditional else {}
+        raw = await exchange.fetch_order(order_id, symbol, params=params)
         status = self._parse_order_status(raw)
         logger.info(
             "VERIFIED order_id=%s status=%s filled=%s/%s",
@@ -327,6 +329,7 @@ class OrderManager:
     def _parse_order_status(self, raw: dict[str, Any]) -> OrderStatus:
         """Parse a ccxt order response into an OrderStatus model."""
         fee_info = raw.get("fee") or {}
+        info = raw.get("info") or {}
         return OrderStatus(
             order_id=str(raw.get("id", "")),
             symbol=raw.get("symbol", ""),
@@ -350,12 +353,17 @@ class OrderManager:
                 if raw.get("lastTradeTimestamp")
                 else None
             ),
+            is_conditional=bool(
+                info.get("algoId")
+                or info.get("algoType")
+                or info.get("clientAlgoId")
+            ),
         )
 
     # -- idempotent order submission -----------------------------------------
 
     async def _query_by_client_order_id(
-        self, symbol: str, client_oid: str
+        self, symbol: str, client_oid: str, conditional: bool = False
     ) -> OrderStatus | None:
         """Query exchange for an order by its client order ID.
 
@@ -366,12 +374,20 @@ class OrderManager:
         await asyncio.sleep(2)  # Brief wait for exchange-side propagation
         try:
             market = exchange.market(symbol)
-            response = await exchange.fapiPrivateGetOrder(
-                {
-                    "symbol": market["id"],
-                    "origClientOrderId": client_oid,
-                }
-            )
+            if conditional:
+                response = await exchange.fapiPrivateGetAlgoOrder(
+                    {
+                        "symbol": market["id"],
+                        "clientAlgoId": client_oid,
+                    }
+                )
+            else:
+                response = await exchange.fapiPrivateGetOrder(
+                    {
+                        "symbol": market["id"],
+                        "origClientOrderId": client_oid,
+                    }
+                )
             parsed = exchange.parse_order(response, market)
             return self._parse_order_status(parsed)
         except Exception as exc:
@@ -415,6 +431,7 @@ class OrderManager:
         price: float | None = None,
         extra_params: dict[str, Any] | None = None,
         log_prefix: str = "ORDER",
+        conditional: bool = False,
     ) -> OrderResult | None:
         """Submit an order with idempotent retry logic.
 
@@ -478,7 +495,7 @@ class OrderManager:
                         # Conditional orders (SL/TP) need extra propagation
                         # time on testnet before they appear in GET queries.
                         # Use retry loop: 3s, then 5s, then give up.
-                        is_conditional = order_type in (
+                        is_conditional = conditional or order_type in (
                             "STOP_MARKET",
                             "TAKE_PROFIT_MARKET",
                             "STOP",
@@ -489,7 +506,7 @@ class OrderManager:
                             await asyncio.sleep(delay)
                             try:
                                 verification = await self._verify_order_exists(
-                                    symbol, order_id
+                                    symbol, order_id, conditional=is_conditional
                                 )
                                 verified = True
                                 logger.info(
@@ -533,7 +550,11 @@ class OrderManager:
                 )
 
                 # Query by client order ID to check if it was placed
-                existing = await self._query_by_client_order_id(symbol, client_oid)
+                existing = await self._query_by_client_order_id(
+                    symbol,
+                    client_oid,
+                    conditional=conditional,
+                )
                 if existing is not None:
                     logger.info(
                         "%s_FOUND_EXISTING client_oid=%s order_id=%s status=%s "
@@ -724,6 +745,7 @@ class OrderManager:
             amount=float(amount),
             extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
             log_prefix="STOP_LOSS",
+            conditional=True,
         )
 
     # -- take-profit order ---------------------------------------------------
@@ -760,12 +782,18 @@ class OrderManager:
             amount=float(amount),
             extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
             log_prefix="TAKE_PROFIT",
+            conditional=True,
         )
 
     # -- cancel order --------------------------------------------------------
 
     @_retry
-    async def cancel_order(self, symbol: str, order_id: str) -> None:
+    async def cancel_order(
+        self,
+        symbol: str,
+        order_id: str,
+        conditional: bool = False,
+    ) -> None:
         """Cancel an open order on Binance Futures.
 
         Parameters
@@ -778,7 +806,8 @@ class OrderManager:
         exchange = self._require_exchange()
         logger.info("CANCEL_ORDER symbol=%s order_id=%s", symbol, order_id)
 
-        await exchange.cancel_order(order_id, symbol)
+        params = {"trigger": True} if conditional else {}
+        await exchange.cancel_order(order_id, symbol, params=params)
         logger.info(
             "CANCEL_ORDER_OK symbol=%s order_id=%s cancelled", symbol, order_id
         )
@@ -786,7 +815,11 @@ class OrderManager:
         # Verify cancellation
         if self._verify_orders:
             try:
-                status = await self._verify_order_exists(symbol, order_id)
+                status = await self._verify_order_exists(
+                    symbol,
+                    order_id,
+                    conditional=conditional,
+                )
                 if status.status != OrderState.CANCELED:
                     logger.warning(
                         "CANCEL_ORDER_VERIFY_MISMATCH order_id=%s "
@@ -810,7 +843,10 @@ class OrderManager:
 
     @_retry
     async def get_order_status(
-        self, symbol: str, order_id: str
+        self,
+        symbol: str,
+        order_id: str,
+        conditional: bool = False,
     ) -> OrderStatus:
         """Fetch the current status of an order from the exchange.
 
@@ -830,7 +866,8 @@ class OrderManager:
         logger.info(
             "GET_ORDER_STATUS symbol=%s order_id=%s", symbol, order_id
         )
-        raw = await exchange.fetch_order(order_id, symbol)
+        params = {"trigger": True} if conditional else {}
+        raw = await exchange.fetch_order(order_id, symbol, params=params)
         status = self._parse_order_status(raw)
         logger.info(
             "GET_ORDER_STATUS_OK order_id=%s status=%s filled=%s/%s",
@@ -844,8 +881,13 @@ class OrderManager:
     # -- open orders ---------------------------------------------------------
 
     @_retry
-    async def get_open_orders(self, symbol: str | None = None) -> list[OrderStatus]:
-        """Fetch all open orders, optionally filtered by symbol.
+    async def get_open_orders(
+        self,
+        symbol: str | None = None,
+        include_conditional: bool = True,
+        conditional_only: bool = False,
+    ) -> list[OrderStatus]:
+        """Fetch open orders, including conditional futures orders by default.
 
         Parameters
         ----------
@@ -858,8 +900,19 @@ class OrderManager:
             List of open order statuses.
         """
         exchange = self._require_exchange()
-        logger.info("GET_OPEN_ORDERS symbol=%s", symbol or "ALL")
-        raw_orders = await exchange.fetch_open_orders(symbol)
+        logger.info(
+            "GET_OPEN_ORDERS symbol=%s include_conditional=%s conditional_only=%s",
+            symbol or "ALL",
+            include_conditional,
+            conditional_only,
+        )
+        raw_orders: list[dict[str, Any]] = []
+        if not conditional_only:
+            raw_orders.extend(await exchange.fetch_open_orders(symbol))
+        if include_conditional or conditional_only:
+            raw_orders.extend(
+                await exchange.fetch_open_orders(symbol, params={"trigger": True})
+            )
         orders = [self._parse_order_status(raw) for raw in raw_orders]
         logger.info(
             "GET_OPEN_ORDERS_OK count=%d symbol=%s",
@@ -885,7 +938,11 @@ class OrderManager:
         cancelled = 0
         for order in open_orders:
             try:
-                await self.cancel_order(symbol, order.order_id)
+                await self.cancel_order(
+                    symbol,
+                    order.order_id,
+                    conditional=order.is_conditional,
+                )
                 cancelled += 1
             except Exception as exc:
                 logger.error(

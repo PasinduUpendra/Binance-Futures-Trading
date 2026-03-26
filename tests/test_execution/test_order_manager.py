@@ -199,6 +199,19 @@ class TestParsing:
         status = om._parse_order_status(raw)
         assert status.stop_price is None
 
+    def test_parse_order_status_marks_conditional_orders(self):
+        """Conditional futures orders should be flagged for cancel/fetch routing."""
+        om = OrderManager(verify_orders=False)
+        raw = _raw_order_response(
+            id="1000000034591175",
+            info={"algoId": "1000000034591175", "algoType": "CONDITIONAL"},
+            stopPrice=1800.0,
+            type="market",
+            status="open",
+        )
+        status = om._parse_order_status(raw)
+        assert status.is_conditional is True
+
 
 # =========================================================================
 # 3. TestIdempotentSubmission  (8 tests) — the CRITICAL safety mechanism
@@ -554,19 +567,33 @@ class TestCancelAndQuery:
 
         await om.cancel_order("ETH/USDT:USDT", "123456789")
 
-        mock_ex.cancel_order.assert_awaited_once_with("123456789", "ETH/USDT:USDT")
-        mock_ex.fetch_order.assert_awaited_once_with("123456789", "ETH/USDT:USDT")
+        mock_ex.cancel_order.assert_awaited_once_with(
+            "123456789",
+            "ETH/USDT:USDT",
+            params={},
+        )
+        mock_ex.fetch_order.assert_awaited_once_with(
+            "123456789",
+            "ETH/USDT:USDT",
+            params={},
+        )
 
     # ─── cancel_open_orders counts ───
 
     @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
     async def test_cancel_open_orders_counts(self, _mock_sleep: AsyncMock):
-        """cancel_open_orders should return the count of cancelled orders."""
+        """cancel_open_orders should cancel both regular and conditional orders."""
         mock_ex = MagicMock()
         mock_ex.fetch_open_orders = AsyncMock(
-            return_value=[
-                _raw_order_response(id="aaa", status="open"),
-                _raw_order_response(id="bbb", status="open"),
+            side_effect=[
+                [_raw_order_response(id="aaa", status="open")],
+                [
+                    _raw_order_response(
+                        id="bbb",
+                        status="open",
+                        info={"algoId": "bbb", "algoType": "CONDITIONAL"},
+                    )
+                ],
             ]
         )
         mock_ex.cancel_order = AsyncMock()
@@ -576,6 +603,41 @@ class TestCancelAndQuery:
         count = await om.cancel_open_orders("ETH/USDT:USDT")
         assert count == 2
         assert mock_ex.cancel_order.await_count == 2
+        cancel_calls = mock_ex.cancel_order.await_args_list
+        assert cancel_calls[0].args == ("aaa", "ETH/USDT:USDT")
+        assert cancel_calls[0].kwargs == {"params": {}}
+        assert cancel_calls[1].args == ("bbb", "ETH/USDT:USDT")
+        assert cancel_calls[1].kwargs == {"params": {"trigger": True}}
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_get_open_orders_includes_conditional_orders(
+        self, _mock_sleep: AsyncMock
+    ):
+        """get_open_orders should combine regular and trigger/conditional orders."""
+        mock_ex = MagicMock()
+        mock_ex.fetch_open_orders = AsyncMock(
+            side_effect=[
+                [_raw_order_response(id="aaa", status="open")],
+                [
+                    _raw_order_response(
+                        id="bbb",
+                        status="open",
+                        info={"algoId": "bbb", "algoType": "CONDITIONAL"},
+                    )
+                ],
+            ]
+        )
+        om = _make_connected_om(mock_ex)
+
+        orders = await om.get_open_orders("ETH/USDT:USDT")
+
+        assert [order.order_id for order in orders] == ["aaa", "bbb"]
+        assert orders[0].is_conditional is False
+        assert orders[1].is_conditional is True
+        fetch_calls = mock_ex.fetch_open_orders.await_args_list
+        assert fetch_calls[0].args == ("ETH/USDT:USDT",)
+        assert fetch_calls[1].args == ("ETH/USDT:USDT",)
+        assert fetch_calls[1].kwargs == {"params": {"trigger": True}}
 
     # ─── get_order_status returns OrderStatus ───
 

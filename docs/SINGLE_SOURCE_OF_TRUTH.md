@@ -469,6 +469,7 @@ Step 6: EXECUTION
   ├── Verify fill (separate GET call)
   ├── Place stop-loss order (STOP_MARKET)
   ├── Place take-profit order (TAKE_PROFIT_MARKET) — added v4
+  ├── Treat SL/TP as Binance conditional algo orders when fetching, verifying, or cancelling them
   ├── Initialize TrailingStopState for new position
   └── Log trade details
 
@@ -686,7 +687,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 416 tests passing (5.02s) — as of 2026-03-26
+**Current status:** 418 tests passing (2.65s) — as of 2026-03-26
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -709,7 +710,7 @@ lookback:
 | test_orchestrator_state.py | 4 | Trailing-stop persistence, pre-existing state restore, BNB fee verification |
 | test_scalper.py | 1 | Fee-adjusted take-profit hook |
 | test_market_data.py | 26 | Helpers, WS stream names, subscriptions, lifecycle, get_all_assets |
-| test_order_manager.py | 33 | Idempotent submission, parsing, cancel/query, leverage |
+| test_order_manager.py | 35 | Idempotent submission, conditional-order parsing/fetch/cancel, cancel/query, leverage |
 | test_price_validator.py | 13 | 24h range, deviation, staleness, cross-validation |
 | test_signal_validator.py | 13 | Indicator specificity, value matching, R/R, entry price |
 

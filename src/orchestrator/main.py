@@ -1170,7 +1170,10 @@ class Orchestrator:
         #    conditional order (SL or TP). If zero orders, log a warning.
         for pos in open_positions:
             try:
-                open_orders = await self.order_manager.get_open_orders(pos.symbol)
+                open_orders = await self.order_manager.get_open_orders(
+                    pos.symbol,
+                    conditional_only=True,
+                )
                 if len(open_orders) == 0 and pos.symbol in self._trailing_stops:
                     logger.warning(
                         "RECONCILE: %s has open position but ZERO conditional "
@@ -1227,7 +1230,10 @@ class Orchestrator:
 
             # Check if position has any conditional orders
             try:
-                open_orders = await self.order_manager.get_open_orders(pos.symbol)
+                open_orders = await self.order_manager.get_open_orders(
+                    pos.symbol,
+                    conditional_only=True,
+                )
                 if len(open_orders) == 0:
                     logger.warning(
                         "STARTUP: %s %s position has ZERO orders (no SL/TP). "
