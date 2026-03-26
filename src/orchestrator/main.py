@@ -166,7 +166,7 @@ class Orchestrator:
         self.drawdown_monitor = DrawdownMonitor()
         self.order_manager = OrderManager()
         self.position_tracker = PositionTracker()
-        self.fee_calculator = FeeCalculator()
+        self.fee_calculator = FeeCalculator(use_bnb_discount=True)
         self.trade_journal = TradeJournal()
         self.performance_tracker = PerformanceTracker(journal=self.trade_journal)
         self.bias_detector = BiasDetector()
@@ -204,12 +204,14 @@ class Orchestrator:
         try:
             balance = await self.market_data.get_account_balance()
             self.state.current_balance = balance
-            self.state.daily_start_balance = balance
             logger.info(f"Initial balance: ${balance}")
         except Exception as e:
             logger.error(f"Failed to get initial balance: {e}")
             self.state.halt_reason = f"Cannot connect to exchange: {e}"
             return
+
+        # Restore persisted daily state (survives restarts)
+        self._load_daily_state(balance)
 
         # Detect pre-existing positions and warn if unprotected
         try:
@@ -1249,6 +1251,7 @@ class Orchestrator:
 
             self.state.last_daily_report = today
             self.state.daily_start_balance = self.state.current_balance
+            self._persist_daily_state()
 
             logger.info("Daily report saved for %s (P&L: %s%%)",
                         yesterday, daily_pnl.pnl_pct)
@@ -1333,6 +1336,65 @@ class Orchestrator:
             state_file.write_text(result.model_dump_json(indent=2))
         except Exception as e:
             logger.warning(f"Failed to save cycle state JSON: {e}")
+
+    # ------------------------------------------------------------------
+    # Daily state persistence (survives restarts)
+    # ------------------------------------------------------------------
+    _DAILY_STATE_FILE = AGENT_STATE_DIR / "daily_state.json"
+
+    def _load_daily_state(self, current_balance: Decimal) -> None:
+        """Restore daily_start_balance and last_daily_report from disk.
+
+        If the persisted date matches today, use the persisted
+        start-of-day balance.  Otherwise fall back to current_balance
+        (new day or first-ever run).
+        """
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        try:
+            if self._DAILY_STATE_FILE.exists():
+                raw = json.loads(
+                    self._DAILY_STATE_FILE.read_text(encoding="utf-8")
+                )
+                persisted_date = raw.get("date", "")
+                if persisted_date == today:
+                    self.state.daily_start_balance = Decimal(
+                        str(raw["start_of_day_balance"])
+                    )
+                    self.state.last_daily_report = raw.get(
+                        "last_daily_report"
+                    )
+                    logger.info(
+                        "Restored daily state for %s: "
+                        "start_balance=$%.2f, last_report=%s",
+                        today,
+                        self.state.daily_start_balance,
+                        self.state.last_daily_report,
+                    )
+                    return
+        except (json.JSONDecodeError, KeyError, Exception) as exc:
+            logger.warning("Could not load daily state: %s", exc)
+
+        # Fallback: new day or missing/corrupt file
+        self.state.daily_start_balance = current_balance
+        logger.info(
+            "No persisted daily state for %s — using current balance $%.2f",
+            today, current_balance,
+        )
+
+    def _persist_daily_state(self) -> None:
+        """Atomically write daily_start_balance and last_daily_report."""
+        data = {
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "start_of_day_balance": str(self.state.daily_start_balance),
+            "last_daily_report": self.state.last_daily_report,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            tmp = self._DAILY_STATE_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            tmp.rename(self._DAILY_STATE_FILE)  # atomic on POSIX
+        except OSError as exc:
+            logger.error("Failed to persist daily state: %s", exc)
 
 
 async def main() -> None:

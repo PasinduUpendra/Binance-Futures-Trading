@@ -6,6 +6,26 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-03-25
 
+#### v6.5 Third Audit Fixes: BNB discount, daily state persistence
+
+**Audit claims verified**: 3 total — 1 partially confirmed, 1 confirmed, 1 false positive.
+
+| # | Fix | Impact |
+|---|-----|--------|
+| 1 | **BNB discount enabled**: `FeeCalculator(use_bnb_discount=True)` in orchestrator. Account has BNB burn enabled (verified via API); code was charging 10% more fees than reality. | LOW — backtest doesn't use BNB discount either, so live is now _cheaper_ than backtest assumptions (conservative gap: safe direction). |
+| 2 | **Daily state persistence**: `daily_start_balance` and `last_daily_report` now written to `user_data/agent_state/daily_state.json` (atomic tmp+rename) at each midnight reset and loaded on startup. Restart mid-day no longer resets the 10% daily-loss circuit breaker baseline. | HIGH — previously any restart wiped daily loss protection for up to 24h. |
+
+**Rejected claims:**
+
+| # | Claim | Verdict | Reasoning |
+|---|-------|---------|-----------|
+| HIGH-1 (partial) | "Funding drag ≈ 36% of margin per max-hold trade, TP set too close" | **Magnitude wrong** | At 6x, 0.01% funding, 19 periods → 1.14% of margin (not 36%). TP at 6×ATR = ~12% of price; fee+funding drag combined <2% of margin worst-case. `adjust_tp_for_fees()` deliberately NOT added — backtest validates without it; adding it to live-only would violate Section 8 (live/backtest divergence). |
+| HIGH-3 | "DrawdownMonitor non-atomic write" | **False positive** | Already fixed in v6.3: uses `tmp_path.write_text()` → `tmp_path.rename()` (atomic on POSIX). |
+
+**Files changed**: `src/orchestrator/main.py` (FeeCalculator init, `_load_daily_state()`, `_persist_daily_state()`, `start()`, `_check_daily_report()`).
+
+**Tests**: 401 passed, 0 failures.
+
 #### v6.4 Second Audit Fixes: Race condition, stale balance, TP loss, trailing stop recovery
 
 **Origin**: Triple-check audit of orchestrator `main.py`. 10 claims verified
