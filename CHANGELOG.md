@@ -4,6 +4,33 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-27
+
+#### v6.10 Audit Hardening: DB trailing stops, CB race fix, Kelly ceiling, scalper corrections
+
+**Origin**: External audit identified 7 issues (2 CRITICAL, 5 MEDIUM). All 7 verified independently at 10/10 confidence by reading every referenced source file.
+
+**Critical fixes**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 1 | **Trailing stop state moved to SQLite** (`trailing_stops` table). JSON persistence (v6.8) was non-ACID — crash mid-write could lose `best_price`, resetting trailing stop progress. New `database.py` methods: `upsert_trailing_stop()`, `get_all_trailing_stops()`, `delete_trailing_stop()`, `delete_all_trailing_stops()`. Legacy JSON kept as non-critical fallback + migration source. | CRITICAL | Eliminates trailing stop state loss on crash; WAL-mode SQLite provides ACID guarantees. |
+| 2 | **CB re-evaluation inside execution lock**. `_execute_signal()` accepted a stale `cb_state` computed before `_execution_lock` acquisition. Both `_run_cycle` and `_on_4h_close` could race: one enters lock with GREEN, balance drops during other's trade, second enters with stale GREEN. Now fetches fresh balance and re-runs `CircuitBreaker.is_trading_allowed()` inside the lock. | CRITICAL | Closes TOCTOU race where stale circuit breaker state could permit trades that current balance forbids. |
+
+**Medium fixes**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 3 | **Kelly criterion used as position size ceiling**. `self.position_sizer` was instantiated but never called. Confidence tiers (15%/10%/7%) now have Kelly-optimal fraction as upper bound when ≥10 closed trades exist. Kelly can only REDUCE size, never increase beyond tier cap. | MEDIUM | Prevents oversizing on low-edge signals; integrates historical win rate into sizing. |
+| 4 | **Scalper volume score formula fixed**. `vol_ratio / 2.0` awarded 10/20 points at average volume (ratio=1.0). Changed to `(vol_ratio - 1.0)` so average=0 points, 2× average=20 points. | MEDIUM | Removes inflated confidence scores on normal volume in dormant scalper strategy. |
+| 5 | **Scalper fee calculator now injectable**. Module-level `FeeCalculator(use_bnb_discount=False)` renamed to `_DEFAULT_FEE_CALCULATOR`. `Scalper.__init__` accepts optional `fee_calculator` param. TP adjustment uses instance calculator. Backward compatible. | MEDIUM | Allows orchestrator BNB-discount-aware fee calculator to be passed through if scalper is re-enabled. |
+| 6 | **`__import__` anti-pattern removed** from `_check_daily_report()`. Replaced `__import__("datetime").timedelta(days=1)` with clean `from datetime import timedelta as _timedelta` import. | MEDIUM | Eliminates brittle dynamic import that could break under import hooks or bundlers. |
+| 7 | **`nohup.out` removed from git tracking**. Added to `.gitignore`, ran `git rm --cached`. | MEDIUM | Prevents accidental commit of runtime output files. |
+
+**Files changed**: `src/data/database.py`, `src/orchestrator/main.py`, `src/strategies/scalper.py`, `.gitignore`, `tests/test_strategies/test_scalper.py`.
+
+**Tests**: 418 passed, 0 failures.
+
 ### 2026-03-26
 
 #### v6.9 Conditional Order Fix: Binance trigger/algo orders are now treated as protection, not missed orders

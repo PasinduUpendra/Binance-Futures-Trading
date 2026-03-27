@@ -34,7 +34,7 @@ from src.strategies.base_strategy import (
 )
 
 logger = logging.getLogger(__name__)
-_FEE_CALCULATOR = FeeCalculator(use_bnb_discount=False)
+_DEFAULT_FEE_CALCULATOR = FeeCalculator(use_bnb_discount=False)
 
 
 class Scalper(BaseStrategy):
@@ -89,6 +89,10 @@ class Scalper(BaseStrategy):
     MAX_HOLD_SECONDS: int = 900   # 15 minutes
     # Volume
     VOLUME_AVG_WINDOW: int = 20
+
+    def __init__(self, fee_calculator: FeeCalculator | None = None) -> None:
+        super().__init__()
+        self._fee_calculator = fee_calculator or _DEFAULT_FEE_CALCULATOR
 
     # ------------------------------------------------------------------
     # Strategy interface
@@ -189,7 +193,7 @@ class Scalper(BaseStrategy):
                 return self._no_signal(f"Cannot achieve 2.0 R/R for scalp (best: {rr:.2f})")
 
         take_profit = float(
-            _FEE_CALCULATOR.adjust_tp_for_fees(
+            self._fee_calculator.adjust_tp_for_fees(
                 entry_price=Decimal(str(entry_price)),
                 raw_tp=Decimal(str(take_profit)),
                 size=Decimal("1"),
@@ -430,7 +434,10 @@ class Scalper(BaseStrategy):
             vol_avg = vol_series.iloc[-self.VOLUME_AVG_WINDOW:].mean()
             if vol_avg > 0:
                 vol_ratio = volume / vol_avg
-                vol_score = min(20.0, max(0.0, vol_ratio / 2.0) * 20.0)
+                # Score above-average volume only: 0 points at average (1.0),
+                # 20 points at 2× average. Previous formula awarded 10/20 at
+                # average volume, inflating confidence on unremarkable candles.
+                vol_score = min(20.0, max(0.0, (vol_ratio - 1.0)) * 20.0)
                 score += vol_score
 
         return min(100.0, max(0.0, round(score, 2)))

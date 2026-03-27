@@ -187,6 +187,20 @@ CREATE TABLE IF NOT EXISTS strategy_metrics (
 );
 """
 
+_SCHEMA_TRAILING_STOPS = """
+CREATE TABLE IF NOT EXISTS trailing_stops (
+    symbol          TEXT PRIMARY KEY,
+    direction       TEXT NOT NULL,
+    entry_price     REAL NOT NULL,
+    best_price      REAL NOT NULL,
+    atr_4h          REAL NOT NULL DEFAULT 0.0,
+    activated       INTEGER NOT NULL DEFAULT 0,
+    strategy_name   TEXT DEFAULT '',
+    take_profit     REAL DEFAULT 0.0,
+    updated_at      TEXT NOT NULL
+);
+"""
+
 _INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
@@ -230,6 +244,7 @@ class DatabaseManager:
             + _SCHEMA_CYCLE_HISTORY
             + _SCHEMA_SYSTEM_STATE
             + _SCHEMA_STRATEGY_METRICS
+            + _SCHEMA_TRAILING_STOPS
             + _INDEXES
         )
         conn.commit()
@@ -391,6 +406,68 @@ class DatabaseManager:
             errors=row["errors"] or "[]",
             duration_seconds=row["duration_seconds"],
         )
+
+    # -----------------------------------------------------------------------
+    # Trailing Stops (ACID-safe persistence for restart survival)
+    # -----------------------------------------------------------------------
+
+    def upsert_trailing_stop(
+        self,
+        symbol: str,
+        direction: str,
+        entry_price: float,
+        best_price: float,
+        atr_4h: float,
+        activated: bool,
+        strategy_name: str = "",
+        take_profit: float = 0.0,
+    ) -> None:
+        """Insert or update a trailing stop record for *symbol*."""
+        conn = self._get_conn()
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO trailing_stops (
+                symbol, direction, entry_price, best_price, atr_4h,
+                activated, strategy_name, take_profit, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                symbol,
+                direction,
+                entry_price,
+                best_price,
+                atr_4h,
+                int(activated),
+                strategy_name,
+                take_profit,
+                now,
+            ),
+        )
+        conn.commit()
+
+    def get_all_trailing_stops(self) -> dict[str, dict]:
+        """Return all trailing stop rows as ``{symbol: {field: value, ...}}``."""
+        conn = self._get_conn()
+        cursor = conn.execute("SELECT * FROM trailing_stops")
+        result: dict[str, dict] = {}
+        for row in cursor.fetchall():
+            d = dict(row)
+            d["activated"] = bool(d["activated"])
+            result[d["symbol"]] = d
+        return result
+
+    def delete_trailing_stop(self, symbol: str) -> None:
+        """Remove a trailing stop record (position closed)."""
+        conn = self._get_conn()
+        conn.execute("DELETE FROM trailing_stops WHERE symbol = ?", (symbol,))
+        conn.commit()
+
+    def delete_all_trailing_stops(self) -> None:
+        """Remove all trailing stop records."""
+        conn = self._get_conn()
+        conn.execute("DELETE FROM trailing_stops")
+        conn.commit()
 
     # -----------------------------------------------------------------------
     # System State (key-value)

@@ -58,6 +58,9 @@ docs/reports/*.html
 docs/reports/*.md
 !docs/reports/.gitkeep
 
+# nohup output (contains API responses, balances, trade data — never commit)
+nohup.out
+
 # Secrets
 *.pem
 *.key

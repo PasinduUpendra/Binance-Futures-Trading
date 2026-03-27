@@ -22,7 +22,11 @@ def test_scalper_adjusts_take_profit_for_fees(monkeypatch):
         called.update(kwargs)
         return kwargs["raw_tp"] + 1
 
-    monkeypatch.setattr("src.strategies.scalper._FEE_CALCULATOR.adjust_tp_for_fees", fake_adjust_tp_for_fees)
+    class _FakeFeeCalc:
+        def adjust_tp_for_fees(self, **kwargs):
+            return fake_adjust_tp_for_fees(**kwargs)
+
+    monkeypatch.setattr(strategy, "_fee_calculator", _FakeFeeCalc())
 
     df = pd.DataFrame(
         {

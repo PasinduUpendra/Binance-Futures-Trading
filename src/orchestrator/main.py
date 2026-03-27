@@ -38,7 +38,7 @@ from src.data.market_data import MarketDataClient
 from src.data.indicator_engine import IndicatorEngine
 from src.data.data_validator import DataValidator
 from src.data.database import DatabaseManager, CycleHistoryRow, DailyReportRow
-from src.strategies.base_strategy import SignalDirection
+from src.strategies.base_strategy import SignalDirection, calculate_rr_ratio
 from src.strategies.regime_detector import RegimeDetector
 from src.strategies.adaptive_strategy import AdaptiveStrategy
 from src.risk.circuit_breaker import CircuitBreaker, CircuitBreakerLevel, TradeResult
@@ -535,6 +535,29 @@ class Orchestrator:
                 logger.error(f"[{trigger}] Balance fetch failed: {e}")
                 return None
 
+            # Re-evaluate circuit breaker with FRESH balance inside lock.
+            # The cb_state passed in was computed before acquiring the lock
+            # and may be stale if another signal executed between then and now.
+            recent_entries = self.trade_journal.get_recent_trades(10)
+            recent_trade_results = [
+                TradeResult(
+                    is_win=t.pnl is not None and t.pnl > 0,
+                    closed_at=t.timestamp,
+                )
+                for t in recent_entries if t.pnl is not None
+            ]
+            cb_state = CircuitBreaker.is_trading_allowed(
+                balance=balance,
+                recent_trades=recent_trade_results,
+                start_of_day_balance=self.state.daily_start_balance,
+                peak_balance=self.drawdown_monitor.peak_balance,
+            )
+            if not cb_state.constraints.trading_allowed:
+                logger.info(
+                    f"[{trigger}] CB re-check rejected: {cb_state.constraints.reason}"
+                )
+                return None
+
             constraints = cb_state.constraints
 
             # ── Position count gate ──
@@ -579,6 +602,8 @@ class Orchestrator:
                 )
 
             # ── Confidence-based position sizing (v6 backtest) ──
+            # Base tier from confidence, then optionally capped by Kelly
+            # criterion if sufficient trade history exists (R/R aware sizing).
             confidence = signal.confidence
             if confidence >= 60:
                 position_pct = Decimal("0.15")
@@ -587,6 +612,41 @@ class Orchestrator:
             else:
                 position_pct = Decimal("0.07")
             max_cap = Decimal("0.15")  # Immutable Rule #4
+
+            # R/R-aware Kelly ceiling: if trade history is sufficient,
+            # use Kelly-optimal size as an upper bound on position_pct.
+            # This rewards higher R/R signals and penalizes marginal ones.
+            try:
+                rr = calculate_rr_ratio(
+                    signal.entry_price, signal.stop_loss, signal.take_profit,
+                )
+                journal_trades = self.trade_journal.get_all_trades()
+                if len(journal_trades) >= 10:
+                    wins = sum(
+                        1 for t in journal_trades
+                        if t.pnl is not None and t.pnl > 0
+                    )
+                    closed = sum(
+                        1 for t in journal_trades if t.pnl is not None
+                    )
+                    win_rate = wins / closed if closed > 0 else 0.5
+                    kelly_size = self.position_sizer.calculate_size(
+                        balance=balance,
+                        win_rate=win_rate,
+                        rr_ratio=rr,
+                        circuit_breaker_state=cb_state,
+                        requested_leverage=leverage,
+                    )
+                    kelly_pct = kelly_size.pct_of_balance
+                    if Decimal("0") < kelly_pct < position_pct:
+                        logger.info(
+                            f"[{trigger}] Kelly ceiling: {float(kelly_pct)*100:.1f}% "
+                            f"< confidence tier {float(position_pct)*100:.0f}% "
+                            f"(WR={win_rate:.2f}, R/R={rr:.1f})"
+                        )
+                        position_pct = kelly_pct
+            except Exception as e:
+                logger.debug(f"[{trigger}] Kelly sizing skipped: {e}")
 
             position_pct *= constraints.size_multiplier
             margin = (balance * position_pct).quantize(Decimal("0.01"))
@@ -1367,11 +1427,8 @@ class Orchestrator:
 
             # Get today's trades and convert to dicts for PnL calculator
             all_trades = self.trade_journal.get_all_trades()
-            from datetime import date as date_type
-            yesterday = date_type.fromisoformat(
-                (now.replace(hour=0, minute=0, second=0)
-                 - __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d")
-            )
+            from datetime import timedelta as _timedelta
+            yesterday = (now.date() - _timedelta(days=1))
             today_trades = [
                 {
                     "pnl": t.pnl or Decimal("0"),
@@ -1567,7 +1624,36 @@ class Orchestrator:
             logger.error("Failed to persist daily state: %s", exc)
 
     def _load_trailing_stop_state(self) -> None:
-        """Restore trailing stop state from disk so restarts keep progress."""
+        """Restore trailing stop state from database so restarts keep progress.
+
+        Falls back to the legacy JSON file if the database table is empty
+        (one-time migration path from v6.8 JSON persistence).
+        """
+        try:
+            rows = self.db.get_all_trailing_stops()
+            if rows:
+                loaded: dict[str, TrailingStopState] = {}
+                for symbol, data in rows.items():
+                    loaded[symbol] = TrailingStopState(
+                        symbol=symbol,
+                        direction=data["direction"],
+                        entry_price=data["entry_price"],
+                        best_price=data["best_price"],
+                        atr_4h=data["atr_4h"],
+                        activated=data["activated"],
+                        strategy_name=data.get("strategy_name", ""),
+                        take_profit=data.get("take_profit", 0.0),
+                    )
+                self._trailing_stops = loaded
+                logger.info(
+                    "Restored %d trailing stop state(s) from database",
+                    len(self._trailing_stops),
+                )
+                return
+        except Exception as exc:
+            logger.warning("Could not load trailing stops from DB: %s", exc)
+
+        # Fallback: migrate from legacy JSON file
         try:
             if not self._TRAILING_STATE_FILE.exists():
                 return
@@ -1575,19 +1661,50 @@ class Orchestrator:
             raw = json.loads(
                 self._TRAILING_STATE_FILE.read_text(encoding="utf-8")
             )
-            loaded: dict[str, TrailingStopState] = {}
+            loaded_json: dict[str, TrailingStopState] = {}
             for symbol, state in raw.items():
-                loaded[symbol] = TrailingStopState(**state)
-            self._trailing_stops = loaded
+                loaded_json[symbol] = TrailingStopState(**state)
+            self._trailing_stops = loaded_json
+            # Migrate to DB immediately
+            self._persist_trailing_stop_state()
             logger.info(
-                "Restored %d trailing stop state(s) from disk",
+                "Migrated %d trailing stop state(s) from JSON to database",
                 len(self._trailing_stops),
             )
         except (json.JSONDecodeError, TypeError, ValueError, OSError) as exc:
-            logger.warning("Could not load trailing stop state: %s", exc)
+            logger.warning("Could not load trailing stop state from JSON: %s", exc)
 
     def _persist_trailing_stop_state(self) -> None:
-        """Atomically write trailing stop state so restarts preserve progress."""
+        """Persist trailing stop state to database (ACID-safe).
+
+        Also writes the legacy JSON file for backward compatibility.
+        """
+        try:
+            # Write each state to the database
+            current_symbols = set(self._trailing_stops.keys())
+            db_symbols = set(self.db.get_all_trailing_stops().keys())
+
+            # Upsert current states
+            for symbol, state in self._trailing_stops.items():
+                self.db.upsert_trailing_stop(
+                    symbol=symbol,
+                    direction=state.direction,
+                    entry_price=state.entry_price,
+                    best_price=state.best_price,
+                    atr_4h=state.atr_4h,
+                    activated=state.activated,
+                    strategy_name=state.strategy_name,
+                    take_profit=state.take_profit,
+                )
+
+            # Delete stale entries (positions closed since last persist)
+            for symbol in db_symbols - current_symbols:
+                self.db.delete_trailing_stop(symbol)
+
+        except Exception as exc:
+            logger.error("Failed to persist trailing stops to DB: %s", exc)
+
+        # Legacy JSON for backward compatibility
         try:
             serialized = {
                 symbol: state.model_dump()
@@ -1597,7 +1714,7 @@ class Orchestrator:
             tmp.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
             tmp.rename(self._TRAILING_STATE_FILE)
         except OSError as exc:
-            logger.error("Failed to persist trailing stop state: %s", exc)
+            logger.warning("Failed to persist trailing stop JSON (non-critical): %s", exc)
 
 
 async def main() -> None:
