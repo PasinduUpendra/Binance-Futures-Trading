@@ -13,3 +13,1790 @@
 [2026-03-26 21:01:49 UTC] HEARTBEAT log_age_s=2329.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
 [2026-03-26 21:02:19 UTC] HEARTBEAT log_age_s=2359.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
 [2026-03-26 21:02:49 UTC] HEARTBEAT log_age_s=2390.0 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:03:19 UTC] HEARTBEAT log_age_s=2420.0 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:03:19 UTC] ISSUE log_stale age_s=2420.0
+[2026-03-26 21:03:49 UTC] HEARTBEAT log_age_s=2450.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:04:19 UTC] HEARTBEAT log_age_s=2480.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:04:49 UTC] HEARTBEAT log_age_s=2510.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:05:19 UTC] HEARTBEAT log_age_s=2540.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:05:19 UTC] ISSUE log_stale age_s=2540.2
+[2026-03-26 21:05:49 UTC] HEARTBEAT log_age_s=2570.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:06:19 UTC] HEARTBEAT log_age_s=2600.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:06:49 UTC] HEARTBEAT log_age_s=2630.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:07:19 UTC] HEARTBEAT log_age_s=2660.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:07:19 UTC] ISSUE log_stale age_s=2660.4
+[2026-03-26 21:07:49 UTC] HEARTBEAT log_age_s=2690.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:08:20 UTC] HEARTBEAT log_age_s=2720.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:08:50 UTC] HEARTBEAT log_age_s=2750.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:09:20 UTC] HEARTBEAT log_age_s=2780.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:09:20 UTC] ISSUE log_stale age_s=2780.6
+[2026-03-26 21:09:50 UTC] HEARTBEAT log_age_s=2810.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:10:20 UTC] HEARTBEAT log_age_s=2840.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:10:50 UTC] HEARTBEAT log_age_s=2870.8 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:11:20 UTC] HEARTBEAT log_age_s=2900.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:11:20 UTC] ISSUE log_stale age_s=2900.9
+[2026-03-26 21:11:50 UTC] HEARTBEAT log_age_s=2930.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:12:20 UTC] HEARTBEAT log_age_s=2961.0 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:12:50 UTC] HEARTBEAT log_age_s=2991.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:13:20 UTC] HEARTBEAT log_age_s=3021.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:13:20 UTC] ISSUE log_stale age_s=3021.2
+[2026-03-26 21:13:50 UTC] HEARTBEAT log_age_s=3051.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:14:20 UTC] HEARTBEAT log_age_s=3081.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:14:50 UTC] HEARTBEAT log_age_s=3111.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:15:21 UTC] HEARTBEAT log_age_s=3141.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:15:21 UTC] ISSUE log_stale age_s=3141.5
+[2026-03-26 21:15:51 UTC] HEARTBEAT log_age_s=3171.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:16:21 UTC] HEARTBEAT log_age_s=3201.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:16:51 UTC] HEARTBEAT log_age_s=3231.8 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:17:21 UTC] HEARTBEAT log_age_s=3261.8 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:17:21 UTC] ISSUE log_stale age_s=3261.8
+[2026-03-26 21:17:51 UTC] HEARTBEAT log_age_s=3291.9 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:18:21 UTC] HEARTBEAT log_age_s=3322.0 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:18:51 UTC] HEARTBEAT log_age_s=3352.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:19:21 UTC] HEARTBEAT log_age_s=3382.2 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:19:21 UTC] ISSUE log_stale age_s=3382.2
+[2026-03-26 21:19:51 UTC] HEARTBEAT log_age_s=3412.3 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:20:21 UTC] HEARTBEAT log_age_s=3442.4 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:20:51 UTC] HEARTBEAT log_age_s=3472.5 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:21:22 UTC] HEARTBEAT log_age_s=3502.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:21:22 UTC] ISSUE log_stale age_s=3502.6
+[2026-03-26 21:21:52 UTC] HEARTBEAT log_age_s=3532.6 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:22:22 UTC] HEARTBEAT log_age_s=3562.7 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:22:52 UTC] HEARTBEAT log_age_s=0.1 cycles=0 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:23:01 UTC] CYCLE_SUMMARY cycle=3 duration_s=12.2 approved=0 trade=0 warnings=0 errors=0
+[2026-03-26 21:23:22 UTC] HEARTBEAT log_age_s=22.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:23:52 UTC] HEARTBEAT log_age_s=52.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:24:22 UTC] HEARTBEAT log_age_s=82.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:24:52 UTC] HEARTBEAT log_age_s=112.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:25:22 UTC] HEARTBEAT log_age_s=142.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:25:22 UTC] ISSUE log_stale age_s=142.3
+[2026-03-26 21:25:52 UTC] HEARTBEAT log_age_s=172.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:26:22 UTC] HEARTBEAT log_age_s=202.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:26:53 UTC] HEARTBEAT log_age_s=232.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:27:23 UTC] HEARTBEAT log_age_s=262.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:27:23 UTC] ISSUE log_stale age_s=262.7
+[2026-03-26 21:27:53 UTC] HEARTBEAT log_age_s=292.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:28:23 UTC] HEARTBEAT log_age_s=322.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:28:53 UTC] HEARTBEAT log_age_s=352.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:29:23 UTC] HEARTBEAT log_age_s=383.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:29:23 UTC] ISSUE log_stale age_s=383.0
+[2026-03-26 21:29:53 UTC] HEARTBEAT log_age_s=413.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:30:23 UTC] HEARTBEAT log_age_s=443.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:30:53 UTC] HEARTBEAT log_age_s=473.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:31:23 UTC] HEARTBEAT log_age_s=503.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:31:23 UTC] ISSUE log_stale age_s=503.3
+[2026-03-26 21:31:53 UTC] HEARTBEAT log_age_s=533.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:32:23 UTC] HEARTBEAT log_age_s=563.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:32:54 UTC] HEARTBEAT log_age_s=593.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:33:24 UTC] HEARTBEAT log_age_s=623.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:33:24 UTC] ISSUE log_stale age_s=623.7
+[2026-03-26 21:33:54 UTC] HEARTBEAT log_age_s=653.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:34:24 UTC] HEARTBEAT log_age_s=683.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:34:54 UTC] HEARTBEAT log_age_s=713.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:35:24 UTC] HEARTBEAT log_age_s=744.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:35:24 UTC] ISSUE log_stale age_s=744.0
+[2026-03-26 21:35:54 UTC] HEARTBEAT log_age_s=774.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:36:24 UTC] HEARTBEAT log_age_s=804.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:36:54 UTC] HEARTBEAT log_age_s=834.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:37:24 UTC] HEARTBEAT log_age_s=864.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:37:24 UTC] ISSUE log_stale age_s=864.4
+[2026-03-26 21:37:54 UTC] HEARTBEAT log_age_s=894.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:38:24 UTC] HEARTBEAT log_age_s=924.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:38:55 UTC] HEARTBEAT log_age_s=954.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:39:25 UTC] HEARTBEAT log_age_s=984.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:39:25 UTC] ISSUE log_stale age_s=984.7
+[2026-03-26 21:39:55 UTC] HEARTBEAT log_age_s=1014.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:40:25 UTC] HEARTBEAT log_age_s=1044.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:40:55 UTC] HEARTBEAT log_age_s=1075.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:41:25 UTC] HEARTBEAT log_age_s=1105.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:41:25 UTC] ISSUE log_stale age_s=1105.0
+[2026-03-26 21:41:55 UTC] HEARTBEAT log_age_s=1135.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:42:25 UTC] HEARTBEAT log_age_s=1165.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:42:55 UTC] HEARTBEAT log_age_s=1195.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:43:25 UTC] HEARTBEAT log_age_s=1225.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:43:25 UTC] ISSUE log_stale age_s=1225.3
+[2026-03-26 21:43:55 UTC] HEARTBEAT log_age_s=1255.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:44:25 UTC] HEARTBEAT log_age_s=1285.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:44:56 UTC] HEARTBEAT log_age_s=1315.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:45:26 UTC] HEARTBEAT log_age_s=1345.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:45:26 UTC] ISSUE log_stale age_s=1345.7
+[2026-03-26 21:45:56 UTC] HEARTBEAT log_age_s=1375.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:46:26 UTC] HEARTBEAT log_age_s=1405.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:46:56 UTC] HEARTBEAT log_age_s=1435.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:47:26 UTC] HEARTBEAT log_age_s=1466.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:47:26 UTC] ISSUE log_stale age_s=1466.0
+[2026-03-26 21:47:56 UTC] HEARTBEAT log_age_s=1496.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:48:26 UTC] HEARTBEAT log_age_s=1526.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:48:56 UTC] HEARTBEAT log_age_s=1556.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:49:26 UTC] HEARTBEAT log_age_s=1586.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:49:26 UTC] ISSUE log_stale age_s=1586.3
+[2026-03-26 21:49:56 UTC] HEARTBEAT log_age_s=1616.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:50:26 UTC] HEARTBEAT log_age_s=1646.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:50:56 UTC] HEARTBEAT log_age_s=1676.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:51:27 UTC] HEARTBEAT log_age_s=1706.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:51:27 UTC] ISSUE log_stale age_s=1706.6
+[2026-03-26 21:51:57 UTC] HEARTBEAT log_age_s=1736.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:52:27 UTC] HEARTBEAT log_age_s=1766.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:52:57 UTC] HEARTBEAT log_age_s=1796.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:53:27 UTC] HEARTBEAT log_age_s=1826.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:53:27 UTC] ISSUE log_stale age_s=1826.9
+[2026-03-26 21:53:57 UTC] HEARTBEAT log_age_s=1857.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:54:27 UTC] HEARTBEAT log_age_s=1887.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:54:57 UTC] HEARTBEAT log_age_s=1917.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:55:27 UTC] HEARTBEAT log_age_s=1947.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:55:27 UTC] ISSUE log_stale age_s=1947.3
+[2026-03-26 21:55:57 UTC] HEARTBEAT log_age_s=1977.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:56:27 UTC] HEARTBEAT log_age_s=2007.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:56:57 UTC] HEARTBEAT log_age_s=2037.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:57:28 UTC] HEARTBEAT log_age_s=2067.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:57:28 UTC] ISSUE log_stale age_s=2067.6
+[2026-03-26 21:57:58 UTC] HEARTBEAT log_age_s=2097.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:58:28 UTC] HEARTBEAT log_age_s=2127.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:58:58 UTC] HEARTBEAT log_age_s=2157.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:59:28 UTC] HEARTBEAT log_age_s=2187.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 21:59:28 UTC] ISSUE log_stale age_s=2187.9
+[2026-03-26 21:59:58 UTC] HEARTBEAT log_age_s=2218.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:00:28 UTC] HEARTBEAT log_age_s=2248.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:00:58 UTC] HEARTBEAT log_age_s=2278.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:01:28 UTC] HEARTBEAT log_age_s=2308.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:01:28 UTC] ISSUE log_stale age_s=2308.2
+[2026-03-26 22:01:58 UTC] HEARTBEAT log_age_s=2338.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:02:28 UTC] HEARTBEAT log_age_s=2368.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:02:58 UTC] HEARTBEAT log_age_s=2398.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:03:28 UTC] HEARTBEAT log_age_s=2428.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:03:28 UTC] ISSUE log_stale age_s=2428.6
+[2026-03-26 22:03:59 UTC] HEARTBEAT log_age_s=2458.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:04:29 UTC] HEARTBEAT log_age_s=2488.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:04:59 UTC] HEARTBEAT log_age_s=2518.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:05:29 UTC] HEARTBEAT log_age_s=2548.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:05:29 UTC] ISSUE log_stale age_s=2548.9
+[2026-03-26 22:05:59 UTC] HEARTBEAT log_age_s=2579.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:06:29 UTC] HEARTBEAT log_age_s=2609.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:06:59 UTC] HEARTBEAT log_age_s=2639.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:07:29 UTC] HEARTBEAT log_age_s=2669.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:07:29 UTC] ISSUE log_stale age_s=2669.2
+[2026-03-26 22:07:59 UTC] HEARTBEAT log_age_s=2699.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:08:29 UTC] HEARTBEAT log_age_s=2729.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:08:59 UTC] HEARTBEAT log_age_s=2759.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:09:29 UTC] HEARTBEAT log_age_s=2789.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:09:29 UTC] ISSUE log_stale age_s=2789.5
+[2026-03-26 22:10:00 UTC] HEARTBEAT log_age_s=2819.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:10:30 UTC] HEARTBEAT log_age_s=2849.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:11:00 UTC] HEARTBEAT log_age_s=2879.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:11:30 UTC] HEARTBEAT log_age_s=2909.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:11:30 UTC] ISSUE log_stale age_s=2909.9
+[2026-03-26 22:12:00 UTC] HEARTBEAT log_age_s=2940.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:12:30 UTC] HEARTBEAT log_age_s=2970.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:13:00 UTC] HEARTBEAT log_age_s=3000.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:13:00 UTC] ISSUE log_stale age_s=3000.1
+[2026-03-26 22:13:30 UTC] HEARTBEAT log_age_s=3030.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:14:00 UTC] HEARTBEAT log_age_s=3060.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:14:30 UTC] HEARTBEAT log_age_s=3090.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:15:00 UTC] HEARTBEAT log_age_s=3120.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:15:00 UTC] ISSUE log_stale age_s=3120.4
+[2026-03-26 22:15:30 UTC] HEARTBEAT log_age_s=3150.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:16:00 UTC] HEARTBEAT log_age_s=3180.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:16:31 UTC] HEARTBEAT log_age_s=3210.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:17:01 UTC] HEARTBEAT log_age_s=3240.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:17:01 UTC] ISSUE log_stale age_s=3240.7
+[2026-03-26 22:17:31 UTC] HEARTBEAT log_age_s=3270.8 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:18:01 UTC] HEARTBEAT log_age_s=3300.9 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:18:31 UTC] HEARTBEAT log_age_s=3331.0 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:19:01 UTC] HEARTBEAT log_age_s=3361.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:19:01 UTC] ISSUE log_stale age_s=3361.1
+[2026-03-26 22:19:31 UTC] HEARTBEAT log_age_s=3391.1 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:20:01 UTC] HEARTBEAT log_age_s=3421.2 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:20:31 UTC] HEARTBEAT log_age_s=3451.3 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:21:01 UTC] HEARTBEAT log_age_s=3481.4 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:21:01 UTC] ISSUE log_stale age_s=3481.4
+[2026-03-26 22:21:31 UTC] HEARTBEAT log_age_s=3511.5 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:22:02 UTC] HEARTBEAT log_age_s=3541.6 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:22:32 UTC] HEARTBEAT log_age_s=3571.7 cycles=1 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:23:00 UTC] CYCLE_SUMMARY cycle=4 duration_s=11.8 approved=0 trade=0 warnings=0 errors=0
+[2026-03-26 22:23:03 UTC] HEARTBEAT log_age_s=3.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:23:33 UTC] HEARTBEAT log_age_s=33.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:24:03 UTC] HEARTBEAT log_age_s=63.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:24:33 UTC] HEARTBEAT log_age_s=93.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:25:03 UTC] HEARTBEAT log_age_s=123.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:25:03 UTC] ISSUE log_stale age_s=123.5
+[2026-03-26 22:25:33 UTC] HEARTBEAT log_age_s=153.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:26:03 UTC] HEARTBEAT log_age_s=183.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:26:33 UTC] HEARTBEAT log_age_s=213.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:27:03 UTC] HEARTBEAT log_age_s=243.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:27:03 UTC] ISSUE log_stale age_s=243.8
+[2026-03-26 22:27:34 UTC] HEARTBEAT log_age_s=273.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:28:04 UTC] HEARTBEAT log_age_s=304.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:28:34 UTC] HEARTBEAT log_age_s=334.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:29:04 UTC] HEARTBEAT log_age_s=364.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:29:04 UTC] ISSUE log_stale age_s=364.1
+[2026-03-26 22:29:34 UTC] HEARTBEAT log_age_s=394.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:30:04 UTC] HEARTBEAT log_age_s=424.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:30:34 UTC] HEARTBEAT log_age_s=454.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:31:04 UTC] HEARTBEAT log_age_s=484.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:31:04 UTC] ISSUE log_stale age_s=484.5
+[2026-03-26 22:31:34 UTC] HEARTBEAT log_age_s=514.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:32:04 UTC] HEARTBEAT log_age_s=544.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:32:34 UTC] HEARTBEAT log_age_s=574.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:33:04 UTC] HEARTBEAT log_age_s=604.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:33:04 UTC] ISSUE log_stale age_s=604.8
+[2026-03-26 22:33:34 UTC] HEARTBEAT log_age_s=634.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:34:05 UTC] HEARTBEAT log_age_s=665.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:34:35 UTC] HEARTBEAT log_age_s=695.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:35:05 UTC] HEARTBEAT log_age_s=725.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:35:05 UTC] ISSUE log_stale age_s=725.2
+[2026-03-26 22:35:35 UTC] HEARTBEAT log_age_s=755.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:36:05 UTC] HEARTBEAT log_age_s=785.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:36:35 UTC] HEARTBEAT log_age_s=815.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:37:05 UTC] HEARTBEAT log_age_s=845.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:37:05 UTC] ISSUE log_stale age_s=845.5
+[2026-03-26 22:37:35 UTC] HEARTBEAT log_age_s=875.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:38:05 UTC] HEARTBEAT log_age_s=905.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:38:35 UTC] HEARTBEAT log_age_s=935.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:39:05 UTC] HEARTBEAT log_age_s=965.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:39:05 UTC] ISSUE log_stale age_s=965.8
+[2026-03-26 22:39:35 UTC] HEARTBEAT log_age_s=995.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:40:06 UTC] HEARTBEAT log_age_s=1026.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:40:36 UTC] HEARTBEAT log_age_s=1056.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:41:06 UTC] HEARTBEAT log_age_s=1086.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:41:06 UTC] ISSUE log_stale age_s=1086.1
+[2026-03-26 22:41:36 UTC] HEARTBEAT log_age_s=1116.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:42:06 UTC] HEARTBEAT log_age_s=1146.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:42:36 UTC] HEARTBEAT log_age_s=1176.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:43:06 UTC] HEARTBEAT log_age_s=1206.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:43:06 UTC] ISSUE log_stale age_s=1206.5
+[2026-03-26 22:43:36 UTC] HEARTBEAT log_age_s=1236.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:44:06 UTC] HEARTBEAT log_age_s=1266.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:44:36 UTC] HEARTBEAT log_age_s=1296.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:45:06 UTC] HEARTBEAT log_age_s=1326.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:45:06 UTC] ISSUE log_stale age_s=1326.8
+[2026-03-26 22:45:37 UTC] HEARTBEAT log_age_s=1356.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:46:07 UTC] HEARTBEAT log_age_s=1387.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:46:37 UTC] HEARTBEAT log_age_s=1417.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:47:07 UTC] HEARTBEAT log_age_s=1447.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:47:07 UTC] ISSUE log_stale age_s=1447.2
+[2026-03-26 22:47:37 UTC] HEARTBEAT log_age_s=1477.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:48:07 UTC] HEARTBEAT log_age_s=1507.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:48:37 UTC] HEARTBEAT log_age_s=1537.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:49:07 UTC] HEARTBEAT log_age_s=1567.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:49:07 UTC] ISSUE log_stale age_s=1567.5
+[2026-03-26 22:49:37 UTC] HEARTBEAT log_age_s=1597.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:50:07 UTC] HEARTBEAT log_age_s=1627.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:50:37 UTC] HEARTBEAT log_age_s=1657.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:51:07 UTC] HEARTBEAT log_age_s=1687.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:51:07 UTC] ISSUE log_stale age_s=1687.7
+[2026-03-26 22:51:37 UTC] HEARTBEAT log_age_s=1717.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:52:08 UTC] HEARTBEAT log_age_s=1747.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:52:38 UTC] HEARTBEAT log_age_s=1778.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:53:08 UTC] HEARTBEAT log_age_s=1808.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:53:08 UTC] ISSUE log_stale age_s=1808.1
+[2026-03-26 22:53:38 UTC] HEARTBEAT log_age_s=1838.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:54:08 UTC] HEARTBEAT log_age_s=1868.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:54:38 UTC] HEARTBEAT log_age_s=1898.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:55:08 UTC] HEARTBEAT log_age_s=1928.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:55:08 UTC] ISSUE log_stale age_s=1928.4
+[2026-03-26 22:55:38 UTC] HEARTBEAT log_age_s=1958.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:56:08 UTC] HEARTBEAT log_age_s=1988.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:56:38 UTC] HEARTBEAT log_age_s=2018.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:57:08 UTC] HEARTBEAT log_age_s=2048.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:57:08 UTC] ISSUE log_stale age_s=2048.7
+[2026-03-26 22:57:38 UTC] HEARTBEAT log_age_s=2078.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:58:08 UTC] HEARTBEAT log_age_s=2108.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:58:39 UTC] HEARTBEAT log_age_s=2138.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:59:09 UTC] HEARTBEAT log_age_s=2169.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 22:59:09 UTC] ISSUE log_stale age_s=2169.0
+[2026-03-26 22:59:39 UTC] HEARTBEAT log_age_s=2199.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:00:09 UTC] HEARTBEAT log_age_s=2229.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:00:39 UTC] HEARTBEAT log_age_s=2259.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:01:09 UTC] HEARTBEAT log_age_s=2289.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:01:09 UTC] ISSUE log_stale age_s=2289.4
+[2026-03-26 23:01:39 UTC] HEARTBEAT log_age_s=2319.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:02:09 UTC] HEARTBEAT log_age_s=2349.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:02:39 UTC] HEARTBEAT log_age_s=2379.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:03:09 UTC] HEARTBEAT log_age_s=2409.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:03:09 UTC] ISSUE log_stale age_s=2409.7
+[2026-03-26 23:03:39 UTC] HEARTBEAT log_age_s=2439.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:04:09 UTC] HEARTBEAT log_age_s=2469.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:04:40 UTC] HEARTBEAT log_age_s=2499.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:05:10 UTC] HEARTBEAT log_age_s=2530.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:05:10 UTC] ISSUE log_stale age_s=2530.0
+[2026-03-26 23:05:40 UTC] HEARTBEAT log_age_s=2560.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:06:10 UTC] HEARTBEAT log_age_s=2590.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:06:40 UTC] HEARTBEAT log_age_s=2620.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:07:10 UTC] HEARTBEAT log_age_s=2650.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:07:10 UTC] ISSUE log_stale age_s=2650.3
+[2026-03-26 23:07:40 UTC] HEARTBEAT log_age_s=2680.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:08:10 UTC] HEARTBEAT log_age_s=2710.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:08:40 UTC] HEARTBEAT log_age_s=2740.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:09:10 UTC] HEARTBEAT log_age_s=2770.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:09:10 UTC] ISSUE log_stale age_s=2770.6
+[2026-03-26 23:09:40 UTC] HEARTBEAT log_age_s=2800.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:10:10 UTC] HEARTBEAT log_age_s=2830.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:10:40 UTC] HEARTBEAT log_age_s=2860.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:11:11 UTC] HEARTBEAT log_age_s=2890.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:11:11 UTC] ISSUE log_stale age_s=2890.9
+[2026-03-26 23:11:41 UTC] HEARTBEAT log_age_s=2921.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:12:11 UTC] HEARTBEAT log_age_s=2951.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:12:41 UTC] HEARTBEAT log_age_s=2981.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:13:11 UTC] HEARTBEAT log_age_s=3011.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:13:11 UTC] ISSUE log_stale age_s=3011.3
+[2026-03-26 23:13:41 UTC] HEARTBEAT log_age_s=3041.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:14:11 UTC] HEARTBEAT log_age_s=3071.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:14:41 UTC] HEARTBEAT log_age_s=3101.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:15:11 UTC] HEARTBEAT log_age_s=3131.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:15:11 UTC] ISSUE log_stale age_s=3131.6
+[2026-03-26 23:15:41 UTC] HEARTBEAT log_age_s=3161.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:16:11 UTC] HEARTBEAT log_age_s=3191.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:16:41 UTC] HEARTBEAT log_age_s=3221.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:17:11 UTC] HEARTBEAT log_age_s=3251.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:17:12 UTC] ISSUE log_stale age_s=3251.9
+[2026-03-26 23:17:42 UTC] HEARTBEAT log_age_s=3282.0 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:18:12 UTC] HEARTBEAT log_age_s=3312.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:18:42 UTC] HEARTBEAT log_age_s=3342.1 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:19:12 UTC] HEARTBEAT log_age_s=3372.2 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:19:12 UTC] ISSUE log_stale age_s=3372.2
+[2026-03-26 23:19:42 UTC] HEARTBEAT log_age_s=3402.3 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:20:12 UTC] HEARTBEAT log_age_s=3432.4 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:20:42 UTC] HEARTBEAT log_age_s=3462.5 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:21:12 UTC] HEARTBEAT log_age_s=3492.6 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:21:12 UTC] ISSUE log_stale age_s=3492.6
+[2026-03-26 23:21:42 UTC] HEARTBEAT log_age_s=3522.7 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:22:12 UTC] HEARTBEAT log_age_s=3552.8 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:22:42 UTC] HEARTBEAT log_age_s=3582.9 cycles=2 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:22:59 UTC] CYCLE_SUMMARY cycle=5 duration_s=10.5 approved=0 trade=0 warnings=0 errors=0
+[2026-03-26 23:23:14 UTC] HEARTBEAT log_age_s=15.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:23:44 UTC] HEARTBEAT log_age_s=45.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:24:14 UTC] HEARTBEAT log_age_s=75.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:24:44 UTC] HEARTBEAT log_age_s=105.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:25:14 UTC] HEARTBEAT log_age_s=135.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:25:14 UTC] ISSUE log_stale age_s=135.7
+[2026-03-26 23:25:44 UTC] HEARTBEAT log_age_s=165.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:26:14 UTC] HEARTBEAT log_age_s=195.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:26:44 UTC] HEARTBEAT log_age_s=225.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:27:14 UTC] HEARTBEAT log_age_s=256.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:27:14 UTC] ISSUE log_stale age_s=256.0
+[2026-03-26 23:27:44 UTC] HEARTBEAT log_age_s=286.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:28:14 UTC] HEARTBEAT log_age_s=316.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:28:44 UTC] HEARTBEAT log_age_s=346.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:29:15 UTC] HEARTBEAT log_age_s=376.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:29:15 UTC] ISSUE log_stale age_s=376.3
+[2026-03-26 23:29:45 UTC] HEARTBEAT log_age_s=406.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:30:15 UTC] HEARTBEAT log_age_s=436.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:30:45 UTC] HEARTBEAT log_age_s=466.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:31:15 UTC] HEARTBEAT log_age_s=496.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:31:15 UTC] ISSUE log_stale age_s=496.6
+[2026-03-26 23:31:45 UTC] HEARTBEAT log_age_s=526.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:32:15 UTC] HEARTBEAT log_age_s=556.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:32:45 UTC] HEARTBEAT log_age_s=586.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:33:15 UTC] HEARTBEAT log_age_s=616.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:33:15 UTC] ISSUE log_stale age_s=616.9
+[2026-03-26 23:33:45 UTC] HEARTBEAT log_age_s=647.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:34:15 UTC] HEARTBEAT log_age_s=677.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:34:45 UTC] HEARTBEAT log_age_s=707.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:35:15 UTC] HEARTBEAT log_age_s=737.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:35:15 UTC] ISSUE log_stale age_s=737.2
+[2026-03-26 23:35:46 UTC] HEARTBEAT log_age_s=767.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:36:16 UTC] HEARTBEAT log_age_s=797.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:36:46 UTC] HEARTBEAT log_age_s=827.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:37:16 UTC] HEARTBEAT log_age_s=857.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:37:16 UTC] ISSUE log_stale age_s=857.5
+[2026-03-26 23:37:46 UTC] HEARTBEAT log_age_s=887.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:38:16 UTC] HEARTBEAT log_age_s=917.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:38:46 UTC] HEARTBEAT log_age_s=947.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:39:16 UTC] HEARTBEAT log_age_s=977.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:39:16 UTC] ISSUE log_stale age_s=977.9
+[2026-03-26 23:39:46 UTC] HEARTBEAT log_age_s=1007.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:40:16 UTC] HEARTBEAT log_age_s=1038.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:40:46 UTC] HEARTBEAT log_age_s=1068.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:41:16 UTC] HEARTBEAT log_age_s=1098.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:41:16 UTC] ISSUE log_stale age_s=1098.2
+[2026-03-26 23:41:47 UTC] HEARTBEAT log_age_s=1128.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:42:17 UTC] HEARTBEAT log_age_s=1158.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:42:47 UTC] HEARTBEAT log_age_s=1188.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:43:17 UTC] HEARTBEAT log_age_s=1218.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:43:17 UTC] ISSUE log_stale age_s=1218.6
+[2026-03-26 23:43:47 UTC] HEARTBEAT log_age_s=1248.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:44:17 UTC] HEARTBEAT log_age_s=1278.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:44:47 UTC] HEARTBEAT log_age_s=1308.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:45:17 UTC] HEARTBEAT log_age_s=1338.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:45:17 UTC] ISSUE log_stale age_s=1338.9
+[2026-03-26 23:45:47 UTC] HEARTBEAT log_age_s=1369.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:46:17 UTC] HEARTBEAT log_age_s=1399.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:46:47 UTC] HEARTBEAT log_age_s=1429.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:47:17 UTC] HEARTBEAT log_age_s=1459.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:47:17 UTC] ISSUE log_stale age_s=1459.2
+[2026-03-26 23:47:48 UTC] HEARTBEAT log_age_s=1489.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:48:18 UTC] HEARTBEAT log_age_s=1519.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:48:48 UTC] HEARTBEAT log_age_s=1549.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:49:18 UTC] HEARTBEAT log_age_s=1579.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:49:18 UTC] ISSUE log_stale age_s=1579.6
+[2026-03-26 23:49:48 UTC] HEARTBEAT log_age_s=1609.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:50:18 UTC] HEARTBEAT log_age_s=1639.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:50:48 UTC] HEARTBEAT log_age_s=1669.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:51:18 UTC] HEARTBEAT log_age_s=1699.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:51:18 UTC] ISSUE log_stale age_s=1699.9
+[2026-03-26 23:51:48 UTC] HEARTBEAT log_age_s=1730.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:52:18 UTC] HEARTBEAT log_age_s=1760.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:52:48 UTC] HEARTBEAT log_age_s=1790.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:53:18 UTC] HEARTBEAT log_age_s=1820.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:53:18 UTC] ISSUE log_stale age_s=1820.2
+[2026-03-26 23:53:49 UTC] HEARTBEAT log_age_s=1850.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:54:19 UTC] HEARTBEAT log_age_s=1880.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:54:49 UTC] HEARTBEAT log_age_s=1910.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:55:19 UTC] HEARTBEAT log_age_s=1940.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:55:19 UTC] ISSUE log_stale age_s=1940.6
+[2026-03-26 23:55:49 UTC] HEARTBEAT log_age_s=1970.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:56:19 UTC] HEARTBEAT log_age_s=2000.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:56:49 UTC] HEARTBEAT log_age_s=2030.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:57:19 UTC] HEARTBEAT log_age_s=2060.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:57:19 UTC] ISSUE log_stale age_s=2060.9
+[2026-03-26 23:57:49 UTC] HEARTBEAT log_age_s=2091.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:58:19 UTC] HEARTBEAT log_age_s=2121.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:58:49 UTC] HEARTBEAT log_age_s=2151.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:59:19 UTC] HEARTBEAT log_age_s=2181.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-26 23:59:19 UTC] ISSUE log_stale age_s=2181.2
+[2026-03-26 23:59:50 UTC] HEARTBEAT log_age_s=2211.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:00:21 UTC] HEARTBEAT log_age_s=15.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:00:51 UTC] HEARTBEAT log_age_s=45.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:01:21 UTC] HEARTBEAT log_age_s=75.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:01:51 UTC] HEARTBEAT log_age_s=105.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:02:21 UTC] HEARTBEAT log_age_s=135.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:02:21 UTC] ISSUE log_stale age_s=135.4
+[2026-03-27 00:02:51 UTC] HEARTBEAT log_age_s=165.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:03:21 UTC] HEARTBEAT log_age_s=195.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:03:51 UTC] HEARTBEAT log_age_s=225.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:04:21 UTC] HEARTBEAT log_age_s=255.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:04:21 UTC] ISSUE log_stale age_s=255.8
+[2026-03-27 00:04:51 UTC] HEARTBEAT log_age_s=285.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:05:21 UTC] HEARTBEAT log_age_s=315.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:05:52 UTC] HEARTBEAT log_age_s=346.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:06:22 UTC] HEARTBEAT log_age_s=376.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:06:22 UTC] ISSUE log_stale age_s=376.1
+[2026-03-27 00:06:52 UTC] HEARTBEAT log_age_s=406.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:07:22 UTC] HEARTBEAT log_age_s=436.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:07:52 UTC] HEARTBEAT log_age_s=466.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:08:22 UTC] HEARTBEAT log_age_s=496.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:08:22 UTC] ISSUE log_stale age_s=496.4
+[2026-03-27 00:08:52 UTC] HEARTBEAT log_age_s=526.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:09:22 UTC] HEARTBEAT log_age_s=556.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:09:52 UTC] HEARTBEAT log_age_s=586.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:10:22 UTC] HEARTBEAT log_age_s=616.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:10:22 UTC] ISSUE log_stale age_s=616.7
+[2026-03-27 00:10:52 UTC] HEARTBEAT log_age_s=646.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:11:22 UTC] HEARTBEAT log_age_s=676.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:11:53 UTC] HEARTBEAT log_age_s=707.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:12:23 UTC] HEARTBEAT log_age_s=737.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:12:23 UTC] ISSUE log_stale age_s=737.1
+[2026-03-27 00:12:53 UTC] HEARTBEAT log_age_s=767.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:13:23 UTC] HEARTBEAT log_age_s=797.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:13:53 UTC] HEARTBEAT log_age_s=827.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:14:23 UTC] HEARTBEAT log_age_s=857.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:14:23 UTC] ISSUE log_stale age_s=857.4
+[2026-03-27 00:14:53 UTC] HEARTBEAT log_age_s=887.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:15:23 UTC] HEARTBEAT log_age_s=917.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:15:53 UTC] HEARTBEAT log_age_s=947.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:16:23 UTC] HEARTBEAT log_age_s=977.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:16:23 UTC] ISSUE log_stale age_s=977.7
+[2026-03-27 00:16:53 UTC] HEARTBEAT log_age_s=1007.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:17:23 UTC] HEARTBEAT log_age_s=1037.9 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:17:54 UTC] HEARTBEAT log_age_s=1068.0 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:18:24 UTC] HEARTBEAT log_age_s=1098.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:18:24 UTC] ISSUE log_stale age_s=1098.1
+[2026-03-27 00:18:54 UTC] HEARTBEAT log_age_s=1128.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:19:24 UTC] HEARTBEAT log_age_s=1158.2 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:19:54 UTC] HEARTBEAT log_age_s=1188.3 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:20:24 UTC] HEARTBEAT log_age_s=1218.4 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:20:24 UTC] ISSUE log_stale age_s=1218.4
+[2026-03-27 00:20:54 UTC] HEARTBEAT log_age_s=1248.5 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:21:24 UTC] HEARTBEAT log_age_s=1278.6 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:21:54 UTC] HEARTBEAT log_age_s=1308.7 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:22:24 UTC] HEARTBEAT log_age_s=1338.8 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:22:24 UTC] ISSUE log_stale age_s=1338.8
+[2026-03-27 00:22:54 UTC] HEARTBEAT log_age_s=0.1 cycles=3 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:22:58 UTC] CYCLE_SUMMARY cycle=6 duration_s=10.1 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 00:23:25 UTC] HEARTBEAT log_age_s=27.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:23:56 UTC] HEARTBEAT log_age_s=57.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:24:26 UTC] HEARTBEAT log_age_s=87.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:24:56 UTC] HEARTBEAT log_age_s=117.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:25:26 UTC] HEARTBEAT log_age_s=147.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:25:26 UTC] ISSUE log_stale age_s=147.8
+[2026-03-27 00:25:56 UTC] HEARTBEAT log_age_s=177.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:26:26 UTC] HEARTBEAT log_age_s=208.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:26:56 UTC] HEARTBEAT log_age_s=238.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:27:26 UTC] HEARTBEAT log_age_s=268.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:27:26 UTC] ISSUE log_stale age_s=268.1
+[2026-03-27 00:27:56 UTC] HEARTBEAT log_age_s=298.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:28:26 UTC] HEARTBEAT log_age_s=328.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:28:56 UTC] HEARTBEAT log_age_s=358.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:29:26 UTC] HEARTBEAT log_age_s=388.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:29:26 UTC] ISSUE log_stale age_s=388.5
+[2026-03-27 00:29:57 UTC] HEARTBEAT log_age_s=418.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:30:27 UTC] HEARTBEAT log_age_s=448.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:30:57 UTC] HEARTBEAT log_age_s=478.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:31:27 UTC] HEARTBEAT log_age_s=508.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:31:27 UTC] ISSUE log_stale age_s=508.8
+[2026-03-27 00:31:57 UTC] HEARTBEAT log_age_s=538.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:32:27 UTC] HEARTBEAT log_age_s=568.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:32:57 UTC] HEARTBEAT log_age_s=599.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:33:27 UTC] HEARTBEAT log_age_s=629.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:33:27 UTC] ISSUE log_stale age_s=629.1
+[2026-03-27 00:33:57 UTC] HEARTBEAT log_age_s=659.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:34:27 UTC] HEARTBEAT log_age_s=689.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:34:57 UTC] HEARTBEAT log_age_s=719.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:35:27 UTC] HEARTBEAT log_age_s=749.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:35:27 UTC] ISSUE log_stale age_s=749.4
+[2026-03-27 00:35:57 UTC] HEARTBEAT log_age_s=779.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:36:28 UTC] HEARTBEAT log_age_s=809.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:36:58 UTC] HEARTBEAT log_age_s=839.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:37:28 UTC] HEARTBEAT log_age_s=869.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:37:28 UTC] ISSUE log_stale age_s=869.7
+[2026-03-27 00:37:58 UTC] HEARTBEAT log_age_s=899.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:38:28 UTC] HEARTBEAT log_age_s=929.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:38:58 UTC] HEARTBEAT log_age_s=960.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:39:28 UTC] HEARTBEAT log_age_s=990.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:39:28 UTC] ISSUE log_stale age_s=990.0
+[2026-03-27 00:39:58 UTC] HEARTBEAT log_age_s=1020.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:40:28 UTC] HEARTBEAT log_age_s=1050.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:40:58 UTC] HEARTBEAT log_age_s=1080.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:40:58 UTC] ISSUE log_stale age_s=1080.3
+[2026-03-27 00:41:28 UTC] HEARTBEAT log_age_s=1110.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:41:58 UTC] HEARTBEAT log_age_s=1140.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:42:28 UTC] HEARTBEAT log_age_s=1170.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:42:59 UTC] HEARTBEAT log_age_s=1200.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:42:59 UTC] ISSUE log_stale age_s=1200.6
+[2026-03-27 00:43:29 UTC] HEARTBEAT log_age_s=1230.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:43:59 UTC] HEARTBEAT log_age_s=1260.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:44:29 UTC] HEARTBEAT log_age_s=1290.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:44:59 UTC] HEARTBEAT log_age_s=1320.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:44:59 UTC] ISSUE log_stale age_s=1320.9
+[2026-03-27 00:45:29 UTC] HEARTBEAT log_age_s=1350.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:45:59 UTC] HEARTBEAT log_age_s=1381.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:46:29 UTC] HEARTBEAT log_age_s=1411.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:46:59 UTC] HEARTBEAT log_age_s=1441.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:46:59 UTC] ISSUE log_stale age_s=1441.2
+[2026-03-27 00:47:29 UTC] HEARTBEAT log_age_s=1471.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:47:59 UTC] HEARTBEAT log_age_s=1501.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:48:29 UTC] HEARTBEAT log_age_s=1531.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:49:00 UTC] HEARTBEAT log_age_s=1561.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:49:00 UTC] ISSUE log_stale age_s=1561.6
+[2026-03-27 00:49:30 UTC] HEARTBEAT log_age_s=1591.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:50:00 UTC] HEARTBEAT log_age_s=1621.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:50:30 UTC] HEARTBEAT log_age_s=1651.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:51:00 UTC] HEARTBEAT log_age_s=1681.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:51:00 UTC] ISSUE log_stale age_s=1681.9
+[2026-03-27 00:51:30 UTC] HEARTBEAT log_age_s=1712.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:52:00 UTC] HEARTBEAT log_age_s=1742.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:52:30 UTC] HEARTBEAT log_age_s=1772.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:53:00 UTC] HEARTBEAT log_age_s=1802.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:53:00 UTC] ISSUE log_stale age_s=1802.2
+[2026-03-27 00:53:30 UTC] HEARTBEAT log_age_s=1832.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:54:00 UTC] HEARTBEAT log_age_s=1862.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:54:30 UTC] HEARTBEAT log_age_s=1892.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:55:01 UTC] HEARTBEAT log_age_s=1922.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:55:01 UTC] ISSUE log_stale age_s=1922.6
+[2026-03-27 00:55:31 UTC] HEARTBEAT log_age_s=1952.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:56:01 UTC] HEARTBEAT log_age_s=1982.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:56:31 UTC] HEARTBEAT log_age_s=2012.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:57:01 UTC] HEARTBEAT log_age_s=2042.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:57:01 UTC] ISSUE log_stale age_s=2042.8
+[2026-03-27 00:57:31 UTC] HEARTBEAT log_age_s=2072.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:58:01 UTC] HEARTBEAT log_age_s=2103.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:58:31 UTC] HEARTBEAT log_age_s=2133.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:59:01 UTC] HEARTBEAT log_age_s=2163.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 00:59:01 UTC] ISSUE log_stale age_s=2163.2
+[2026-03-27 00:59:31 UTC] HEARTBEAT log_age_s=2193.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:00:01 UTC] HEARTBEAT log_age_s=2223.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:00:31 UTC] HEARTBEAT log_age_s=2253.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:01:01 UTC] HEARTBEAT log_age_s=2283.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:01:01 UTC] ISSUE log_stale age_s=2283.5
+[2026-03-27 01:01:32 UTC] HEARTBEAT log_age_s=2313.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:02:02 UTC] HEARTBEAT log_age_s=2343.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:02:32 UTC] HEARTBEAT log_age_s=2373.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:03:02 UTC] HEARTBEAT log_age_s=2403.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:03:02 UTC] ISSUE log_stale age_s=2403.9
+[2026-03-27 01:03:32 UTC] HEARTBEAT log_age_s=2433.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:04:02 UTC] HEARTBEAT log_age_s=2464.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:04:32 UTC] HEARTBEAT log_age_s=2494.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:05:02 UTC] HEARTBEAT log_age_s=2524.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:05:02 UTC] ISSUE log_stale age_s=2524.2
+[2026-03-27 01:05:32 UTC] HEARTBEAT log_age_s=2554.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:06:02 UTC] HEARTBEAT log_age_s=2584.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:06:32 UTC] HEARTBEAT log_age_s=2614.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:07:03 UTC] HEARTBEAT log_age_s=2644.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:07:03 UTC] ISSUE log_stale age_s=2644.5
+[2026-03-27 01:07:33 UTC] HEARTBEAT log_age_s=2674.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:08:03 UTC] HEARTBEAT log_age_s=2704.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:08:33 UTC] HEARTBEAT log_age_s=2734.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:09:03 UTC] HEARTBEAT log_age_s=2764.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:09:03 UTC] ISSUE log_stale age_s=2764.9
+[2026-03-27 01:09:33 UTC] HEARTBEAT log_age_s=2795.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:10:03 UTC] HEARTBEAT log_age_s=2825.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:10:33 UTC] HEARTBEAT log_age_s=2855.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:11:03 UTC] HEARTBEAT log_age_s=2885.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:11:03 UTC] ISSUE log_stale age_s=2885.2
+[2026-03-27 01:11:33 UTC] HEARTBEAT log_age_s=2915.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:12:03 UTC] HEARTBEAT log_age_s=2945.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:12:33 UTC] HEARTBEAT log_age_s=2975.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:13:04 UTC] HEARTBEAT log_age_s=3005.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:13:04 UTC] ISSUE log_stale age_s=3005.5
+[2026-03-27 01:13:34 UTC] HEARTBEAT log_age_s=3035.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:14:04 UTC] HEARTBEAT log_age_s=3065.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:14:34 UTC] HEARTBEAT log_age_s=3095.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:15:04 UTC] HEARTBEAT log_age_s=3125.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:15:04 UTC] ISSUE log_stale age_s=3125.8
+[2026-03-27 01:15:34 UTC] HEARTBEAT log_age_s=3155.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:16:04 UTC] HEARTBEAT log_age_s=3186.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:16:34 UTC] HEARTBEAT log_age_s=3216.1 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:17:04 UTC] HEARTBEAT log_age_s=3246.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:17:04 UTC] ISSUE log_stale age_s=3246.2
+[2026-03-27 01:17:34 UTC] HEARTBEAT log_age_s=3276.2 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:18:04 UTC] HEARTBEAT log_age_s=3306.3 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:18:34 UTC] HEARTBEAT log_age_s=3336.4 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:19:04 UTC] HEARTBEAT log_age_s=3366.5 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:19:04 UTC] ISSUE log_stale age_s=3366.5
+[2026-03-27 01:19:35 UTC] HEARTBEAT log_age_s=3396.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:20:05 UTC] HEARTBEAT log_age_s=3426.6 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:20:35 UTC] HEARTBEAT log_age_s=3456.7 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:21:05 UTC] HEARTBEAT log_age_s=3486.8 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:21:05 UTC] ISSUE log_stale age_s=3486.8
+[2026-03-27 01:21:35 UTC] HEARTBEAT log_age_s=3516.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:22:05 UTC] HEARTBEAT log_age_s=3546.9 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:22:35 UTC] HEARTBEAT log_age_s=3577.0 cycles=4 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:22:59 UTC] CYCLE_SUMMARY cycle=7 duration_s=10.3 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 01:23:06 UTC] HEARTBEAT log_age_s=7.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:23:36 UTC] HEARTBEAT log_age_s=38.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:24:06 UTC] HEARTBEAT log_age_s=68.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:24:36 UTC] HEARTBEAT log_age_s=98.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:25:06 UTC] HEARTBEAT log_age_s=128.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:25:06 UTC] ISSUE log_stale age_s=128.3
+[2026-03-27 01:25:37 UTC] HEARTBEAT log_age_s=158.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:26:07 UTC] HEARTBEAT log_age_s=188.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:26:37 UTC] HEARTBEAT log_age_s=218.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:27:07 UTC] HEARTBEAT log_age_s=248.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:27:07 UTC] ISSUE log_stale age_s=248.6
+[2026-03-27 01:27:37 UTC] HEARTBEAT log_age_s=278.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:28:07 UTC] HEARTBEAT log_age_s=308.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:28:37 UTC] HEARTBEAT log_age_s=338.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:29:07 UTC] HEARTBEAT log_age_s=369.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:29:07 UTC] ISSUE log_stale age_s=369.0
+[2026-03-27 01:29:37 UTC] HEARTBEAT log_age_s=399.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:30:07 UTC] HEARTBEAT log_age_s=429.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:30:37 UTC] HEARTBEAT log_age_s=459.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:31:07 UTC] HEARTBEAT log_age_s=489.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:31:07 UTC] ISSUE log_stale age_s=489.3
+[2026-03-27 01:31:38 UTC] HEARTBEAT log_age_s=519.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:32:08 UTC] HEARTBEAT log_age_s=549.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:32:38 UTC] HEARTBEAT log_age_s=579.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:33:08 UTC] HEARTBEAT log_age_s=609.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:33:08 UTC] ISSUE log_stale age_s=609.6
+[2026-03-27 01:33:38 UTC] HEARTBEAT log_age_s=639.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:34:08 UTC] HEARTBEAT log_age_s=669.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:34:38 UTC] HEARTBEAT log_age_s=699.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:35:08 UTC] HEARTBEAT log_age_s=729.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:35:08 UTC] ISSUE log_stale age_s=729.9
+[2026-03-27 01:35:38 UTC] HEARTBEAT log_age_s=760.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:36:08 UTC] HEARTBEAT log_age_s=790.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:36:38 UTC] HEARTBEAT log_age_s=820.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:37:08 UTC] HEARTBEAT log_age_s=850.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:37:08 UTC] ISSUE log_stale age_s=850.3
+[2026-03-27 01:37:39 UTC] HEARTBEAT log_age_s=880.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:38:09 UTC] HEARTBEAT log_age_s=910.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:38:39 UTC] HEARTBEAT log_age_s=940.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:39:09 UTC] HEARTBEAT log_age_s=970.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:39:09 UTC] ISSUE log_stale age_s=970.6
+[2026-03-27 01:39:39 UTC] HEARTBEAT log_age_s=1000.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:40:09 UTC] HEARTBEAT log_age_s=1030.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:40:39 UTC] HEARTBEAT log_age_s=1060.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:41:09 UTC] HEARTBEAT log_age_s=1090.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:41:09 UTC] ISSUE log_stale age_s=1090.8
+[2026-03-27 01:41:39 UTC] HEARTBEAT log_age_s=1120.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:42:09 UTC] HEARTBEAT log_age_s=1151.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:42:39 UTC] HEARTBEAT log_age_s=1181.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:43:09 UTC] HEARTBEAT log_age_s=1211.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:43:09 UTC] ISSUE log_stale age_s=1211.2
+[2026-03-27 01:43:39 UTC] HEARTBEAT log_age_s=1241.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:44:10 UTC] HEARTBEAT log_age_s=1271.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:44:40 UTC] HEARTBEAT log_age_s=1301.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:45:10 UTC] HEARTBEAT log_age_s=1331.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:45:10 UTC] ISSUE log_stale age_s=1331.5
+[2026-03-27 01:45:40 UTC] HEARTBEAT log_age_s=1361.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:46:10 UTC] HEARTBEAT log_age_s=1391.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:46:40 UTC] HEARTBEAT log_age_s=1421.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:47:10 UTC] HEARTBEAT log_age_s=1451.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:47:10 UTC] ISSUE log_stale age_s=1451.9
+[2026-03-27 01:47:40 UTC] HEARTBEAT log_age_s=1482.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:48:10 UTC] HEARTBEAT log_age_s=1512.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:48:40 UTC] HEARTBEAT log_age_s=1542.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:49:10 UTC] HEARTBEAT log_age_s=1572.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:49:10 UTC] ISSUE log_stale age_s=1572.2
+[2026-03-27 01:49:40 UTC] HEARTBEAT log_age_s=1602.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:50:11 UTC] HEARTBEAT log_age_s=1632.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:50:41 UTC] HEARTBEAT log_age_s=1662.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:51:11 UTC] HEARTBEAT log_age_s=1692.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:51:11 UTC] ISSUE log_stale age_s=1692.5
+[2026-03-27 01:51:41 UTC] HEARTBEAT log_age_s=1722.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:52:11 UTC] HEARTBEAT log_age_s=1752.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:52:41 UTC] HEARTBEAT log_age_s=1782.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:53:11 UTC] HEARTBEAT log_age_s=1812.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:53:11 UTC] ISSUE log_stale age_s=1812.8
+[2026-03-27 01:53:41 UTC] HEARTBEAT log_age_s=1842.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:54:11 UTC] HEARTBEAT log_age_s=1873.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:54:41 UTC] HEARTBEAT log_age_s=1903.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:55:11 UTC] HEARTBEAT log_age_s=1933.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:55:11 UTC] ISSUE log_stale age_s=1933.2
+[2026-03-27 01:55:41 UTC] HEARTBEAT log_age_s=1963.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:56:11 UTC] HEARTBEAT log_age_s=1993.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:56:42 UTC] HEARTBEAT log_age_s=2023.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:57:12 UTC] HEARTBEAT log_age_s=2053.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:57:12 UTC] ISSUE log_stale age_s=2053.5
+[2026-03-27 01:57:42 UTC] HEARTBEAT log_age_s=2083.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:58:12 UTC] HEARTBEAT log_age_s=2113.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:58:42 UTC] HEARTBEAT log_age_s=2143.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:59:12 UTC] HEARTBEAT log_age_s=2173.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 01:59:12 UTC] ISSUE log_stale age_s=2173.7
+[2026-03-27 01:59:42 UTC] HEARTBEAT log_age_s=2203.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:00:12 UTC] HEARTBEAT log_age_s=2233.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:00:42 UTC] HEARTBEAT log_age_s=2264.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:01:12 UTC] HEARTBEAT log_age_s=2294.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:01:12 UTC] ISSUE log_stale age_s=2294.1
+[2026-03-27 02:01:42 UTC] HEARTBEAT log_age_s=2324.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:02:12 UTC] HEARTBEAT log_age_s=2354.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:02:43 UTC] HEARTBEAT log_age_s=2384.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:03:13 UTC] HEARTBEAT log_age_s=2414.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:03:13 UTC] ISSUE log_stale age_s=2414.4
+[2026-03-27 02:03:43 UTC] HEARTBEAT log_age_s=2444.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:04:13 UTC] HEARTBEAT log_age_s=2474.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:04:43 UTC] HEARTBEAT log_age_s=2504.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:05:13 UTC] HEARTBEAT log_age_s=2534.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:05:13 UTC] ISSUE log_stale age_s=2534.7
+[2026-03-27 02:05:43 UTC] HEARTBEAT log_age_s=2564.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:06:13 UTC] HEARTBEAT log_age_s=2594.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:06:43 UTC] HEARTBEAT log_age_s=2624.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:07:13 UTC] HEARTBEAT log_age_s=2655.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:07:13 UTC] ISSUE log_stale age_s=2655.0
+[2026-03-27 02:07:43 UTC] HEARTBEAT log_age_s=2685.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:08:13 UTC] HEARTBEAT log_age_s=2715.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:08:43 UTC] HEARTBEAT log_age_s=2745.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:09:14 UTC] HEARTBEAT log_age_s=2775.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:09:14 UTC] ISSUE log_stale age_s=2775.3
+[2026-03-27 02:09:44 UTC] HEARTBEAT log_age_s=2805.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:10:14 UTC] HEARTBEAT log_age_s=2835.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:10:44 UTC] HEARTBEAT log_age_s=2865.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:11:14 UTC] HEARTBEAT log_age_s=2895.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:11:14 UTC] ISSUE log_stale age_s=2895.7
+[2026-03-27 02:11:44 UTC] HEARTBEAT log_age_s=2925.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:12:14 UTC] HEARTBEAT log_age_s=2955.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:12:44 UTC] HEARTBEAT log_age_s=2985.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:13:14 UTC] HEARTBEAT log_age_s=3016.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:13:14 UTC] ISSUE log_stale age_s=3016.0
+[2026-03-27 02:13:44 UTC] HEARTBEAT log_age_s=3046.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:14:14 UTC] HEARTBEAT log_age_s=3076.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:14:44 UTC] HEARTBEAT log_age_s=3106.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:15:15 UTC] HEARTBEAT log_age_s=3136.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:15:15 UTC] ISSUE log_stale age_s=3136.3
+[2026-03-27 02:15:45 UTC] HEARTBEAT log_age_s=3166.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:16:15 UTC] HEARTBEAT log_age_s=3196.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:16:45 UTC] HEARTBEAT log_age_s=3226.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:17:15 UTC] HEARTBEAT log_age_s=3256.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:17:15 UTC] ISSUE log_stale age_s=3256.7
+[2026-03-27 02:17:45 UTC] HEARTBEAT log_age_s=3286.7 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:18:15 UTC] HEARTBEAT log_age_s=3316.8 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:18:45 UTC] HEARTBEAT log_age_s=3346.9 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:19:15 UTC] HEARTBEAT log_age_s=3377.0 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:19:15 UTC] ISSUE log_stale age_s=3377.0
+[2026-03-27 02:19:45 UTC] HEARTBEAT log_age_s=3407.1 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:20:15 UTC] HEARTBEAT log_age_s=3437.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:20:45 UTC] HEARTBEAT log_age_s=3467.2 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:21:16 UTC] HEARTBEAT log_age_s=3497.3 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:21:16 UTC] ISSUE log_stale age_s=3497.3
+[2026-03-27 02:21:46 UTC] HEARTBEAT log_age_s=3527.4 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:22:16 UTC] HEARTBEAT log_age_s=3557.5 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:22:46 UTC] HEARTBEAT log_age_s=3587.6 cycles=5 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:22:59 UTC] CYCLE_SUMMARY cycle=8 duration_s=10.4 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 02:23:16 UTC] HEARTBEAT log_age_s=17.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:23:46 UTC] HEARTBEAT log_age_s=47.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:24:16 UTC] HEARTBEAT log_age_s=77.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:24:46 UTC] HEARTBEAT log_age_s=107.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:25:16 UTC] HEARTBEAT log_age_s=137.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:25:16 UTC] ISSUE log_stale age_s=137.9
+[2026-03-27 02:25:46 UTC] HEARTBEAT log_age_s=167.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:26:16 UTC] HEARTBEAT log_age_s=198.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:26:46 UTC] HEARTBEAT log_age_s=228.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:27:16 UTC] HEARTBEAT log_age_s=258.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:27:16 UTC] ISSUE log_stale age_s=258.1
+[2026-03-27 02:27:47 UTC] HEARTBEAT log_age_s=288.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:28:17 UTC] HEARTBEAT log_age_s=318.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:28:47 UTC] HEARTBEAT log_age_s=348.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:29:17 UTC] HEARTBEAT log_age_s=378.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:29:17 UTC] ISSUE log_stale age_s=378.5
+[2026-03-27 02:29:47 UTC] HEARTBEAT log_age_s=408.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:30:17 UTC] HEARTBEAT log_age_s=438.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:30:47 UTC] HEARTBEAT log_age_s=468.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:31:17 UTC] HEARTBEAT log_age_s=498.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:31:17 UTC] ISSUE log_stale age_s=498.8
+[2026-03-27 02:31:47 UTC] HEARTBEAT log_age_s=528.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:32:17 UTC] HEARTBEAT log_age_s=559.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:32:47 UTC] HEARTBEAT log_age_s=589.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:33:17 UTC] HEARTBEAT log_age_s=619.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:33:17 UTC] ISSUE log_stale age_s=619.2
+[2026-03-27 02:33:48 UTC] HEARTBEAT log_age_s=649.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:34:18 UTC] HEARTBEAT log_age_s=679.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:34:48 UTC] HEARTBEAT log_age_s=709.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:35:18 UTC] HEARTBEAT log_age_s=739.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:35:18 UTC] ISSUE log_stale age_s=739.5
+[2026-03-27 02:35:48 UTC] HEARTBEAT log_age_s=769.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:36:18 UTC] HEARTBEAT log_age_s=799.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:36:48 UTC] HEARTBEAT log_age_s=829.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:37:18 UTC] HEARTBEAT log_age_s=859.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:37:18 UTC] ISSUE log_stale age_s=859.8
+[2026-03-27 02:37:48 UTC] HEARTBEAT log_age_s=889.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:38:18 UTC] HEARTBEAT log_age_s=919.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:38:48 UTC] HEARTBEAT log_age_s=950.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:39:18 UTC] HEARTBEAT log_age_s=980.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:39:18 UTC] ISSUE log_stale age_s=980.1
+[2026-03-27 02:39:49 UTC] HEARTBEAT log_age_s=1010.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:40:19 UTC] HEARTBEAT log_age_s=1040.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:40:49 UTC] HEARTBEAT log_age_s=1070.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:41:19 UTC] HEARTBEAT log_age_s=1100.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:41:19 UTC] ISSUE log_stale age_s=1100.4
+[2026-03-27 02:41:49 UTC] HEARTBEAT log_age_s=1130.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:42:19 UTC] HEARTBEAT log_age_s=1160.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:42:49 UTC] HEARTBEAT log_age_s=1190.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:43:19 UTC] HEARTBEAT log_age_s=1220.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:43:19 UTC] ISSUE log_stale age_s=1220.7
+[2026-03-27 02:43:49 UTC] HEARTBEAT log_age_s=1250.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:44:19 UTC] HEARTBEAT log_age_s=1280.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:44:49 UTC] HEARTBEAT log_age_s=1311.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:45:19 UTC] HEARTBEAT log_age_s=1341.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:45:19 UTC] ISSUE log_stale age_s=1341.1
+[2026-03-27 02:45:49 UTC] HEARTBEAT log_age_s=1371.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:46:20 UTC] HEARTBEAT log_age_s=1401.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:46:50 UTC] HEARTBEAT log_age_s=1431.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:47:20 UTC] HEARTBEAT log_age_s=1461.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:47:20 UTC] ISSUE log_stale age_s=1461.4
+[2026-03-27 02:47:50 UTC] HEARTBEAT log_age_s=1491.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:48:20 UTC] HEARTBEAT log_age_s=1521.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:48:50 UTC] HEARTBEAT log_age_s=1551.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:49:20 UTC] HEARTBEAT log_age_s=1581.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:49:20 UTC] ISSUE log_stale age_s=1581.8
+[2026-03-27 02:49:50 UTC] HEARTBEAT log_age_s=1611.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:50:20 UTC] HEARTBEAT log_age_s=1641.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:50:50 UTC] HEARTBEAT log_age_s=1672.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:51:20 UTC] HEARTBEAT log_age_s=1702.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:51:20 UTC] ISSUE log_stale age_s=1702.1
+[2026-03-27 02:51:50 UTC] HEARTBEAT log_age_s=1732.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:52:21 UTC] HEARTBEAT log_age_s=1762.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:52:51 UTC] HEARTBEAT log_age_s=1792.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:53:21 UTC] HEARTBEAT log_age_s=1822.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:53:21 UTC] ISSUE log_stale age_s=1822.3
+[2026-03-27 02:53:51 UTC] HEARTBEAT log_age_s=1852.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:54:21 UTC] HEARTBEAT log_age_s=1882.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:54:51 UTC] HEARTBEAT log_age_s=1912.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:55:21 UTC] HEARTBEAT log_age_s=1942.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:55:21 UTC] ISSUE log_stale age_s=1942.7
+[2026-03-27 02:55:51 UTC] HEARTBEAT log_age_s=1972.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:56:21 UTC] HEARTBEAT log_age_s=2002.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:56:51 UTC] HEARTBEAT log_age_s=2032.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:57:21 UTC] HEARTBEAT log_age_s=2063.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:57:21 UTC] ISSUE log_stale age_s=2063.0
+[2026-03-27 02:57:51 UTC] HEARTBEAT log_age_s=2093.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:58:22 UTC] HEARTBEAT log_age_s=2123.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:58:52 UTC] HEARTBEAT log_age_s=2153.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:59:22 UTC] HEARTBEAT log_age_s=2183.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 02:59:22 UTC] ISSUE log_stale age_s=2183.3
+[2026-03-27 02:59:52 UTC] HEARTBEAT log_age_s=2213.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:00:22 UTC] HEARTBEAT log_age_s=2243.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:00:52 UTC] HEARTBEAT log_age_s=2273.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:01:22 UTC] HEARTBEAT log_age_s=2303.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:01:22 UTC] ISSUE log_stale age_s=2303.6
+[2026-03-27 03:01:52 UTC] HEARTBEAT log_age_s=2333.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:02:22 UTC] HEARTBEAT log_age_s=2363.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:02:52 UTC] HEARTBEAT log_age_s=2393.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:03:22 UTC] HEARTBEAT log_age_s=2423.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:03:22 UTC] ISSUE log_stale age_s=2423.9
+[2026-03-27 03:03:52 UTC] HEARTBEAT log_age_s=2454.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:04:22 UTC] HEARTBEAT log_age_s=2484.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:04:52 UTC] HEARTBEAT log_age_s=2514.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:05:23 UTC] HEARTBEAT log_age_s=2544.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:05:23 UTC] ISSUE log_stale age_s=2544.2
+[2026-03-27 03:05:53 UTC] HEARTBEAT log_age_s=2574.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:06:23 UTC] HEARTBEAT log_age_s=2604.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:06:53 UTC] HEARTBEAT log_age_s=2634.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:07:23 UTC] HEARTBEAT log_age_s=2664.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:07:23 UTC] ISSUE log_stale age_s=2664.5
+[2026-03-27 03:07:53 UTC] HEARTBEAT log_age_s=2694.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:08:23 UTC] HEARTBEAT log_age_s=2724.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:08:53 UTC] HEARTBEAT log_age_s=2754.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:09:23 UTC] HEARTBEAT log_age_s=2784.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:09:23 UTC] ISSUE log_stale age_s=2784.9
+[2026-03-27 03:09:53 UTC] HEARTBEAT log_age_s=2814.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:10:23 UTC] HEARTBEAT log_age_s=2845.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:10:53 UTC] HEARTBEAT log_age_s=2875.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:11:24 UTC] HEARTBEAT log_age_s=2905.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:11:24 UTC] ISSUE log_stale age_s=2905.2
+[2026-03-27 03:11:54 UTC] HEARTBEAT log_age_s=2935.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:12:24 UTC] HEARTBEAT log_age_s=2965.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:12:54 UTC] HEARTBEAT log_age_s=2995.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:13:24 UTC] HEARTBEAT log_age_s=3025.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:13:24 UTC] ISSUE log_stale age_s=3025.5
+[2026-03-27 03:13:54 UTC] HEARTBEAT log_age_s=3055.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:14:24 UTC] HEARTBEAT log_age_s=3085.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:14:54 UTC] HEARTBEAT log_age_s=3115.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:15:24 UTC] HEARTBEAT log_age_s=3145.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:15:24 UTC] ISSUE log_stale age_s=3145.9
+[2026-03-27 03:15:54 UTC] HEARTBEAT log_age_s=3175.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:16:24 UTC] HEARTBEAT log_age_s=3206.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:16:54 UTC] HEARTBEAT log_age_s=3236.1 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:17:25 UTC] HEARTBEAT log_age_s=3266.2 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:17:25 UTC] ISSUE log_stale age_s=3266.2
+[2026-03-27 03:17:55 UTC] HEARTBEAT log_age_s=3296.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:18:25 UTC] HEARTBEAT log_age_s=3326.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:18:55 UTC] HEARTBEAT log_age_s=3356.4 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:19:25 UTC] HEARTBEAT log_age_s=3386.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:19:25 UTC] ISSUE log_stale age_s=3386.5
+[2026-03-27 03:19:55 UTC] HEARTBEAT log_age_s=3416.5 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:20:25 UTC] HEARTBEAT log_age_s=3446.6 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:20:55 UTC] HEARTBEAT log_age_s=3476.7 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:21:25 UTC] HEARTBEAT log_age_s=3506.8 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:21:25 UTC] ISSUE log_stale age_s=3506.8
+[2026-03-27 03:21:55 UTC] HEARTBEAT log_age_s=3536.9 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:22:25 UTC] HEARTBEAT log_age_s=3567.0 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:22:55 UTC] HEARTBEAT log_age_s=0.3 cycles=6 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:22:59 UTC] CYCLE_SUMMARY cycle=9 duration_s=10.5 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 03:23:26 UTC] HEARTBEAT log_age_s=28.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:23:57 UTC] HEARTBEAT log_age_s=58.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:24:27 UTC] HEARTBEAT log_age_s=88.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:24:57 UTC] HEARTBEAT log_age_s=118.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:25:27 UTC] HEARTBEAT log_age_s=148.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:25:27 UTC] ISSUE log_stale age_s=148.4
+[2026-03-27 03:25:57 UTC] HEARTBEAT log_age_s=178.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:26:27 UTC] HEARTBEAT log_age_s=208.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:26:57 UTC] HEARTBEAT log_age_s=238.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:27:27 UTC] HEARTBEAT log_age_s=268.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:27:27 UTC] ISSUE log_stale age_s=268.7
+[2026-03-27 03:27:57 UTC] HEARTBEAT log_age_s=298.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:28:27 UTC] HEARTBEAT log_age_s=328.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:28:57 UTC] HEARTBEAT log_age_s=359.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:29:27 UTC] HEARTBEAT log_age_s=389.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:29:27 UTC] ISSUE log_stale age_s=389.0
+[2026-03-27 03:29:58 UTC] HEARTBEAT log_age_s=419.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:30:28 UTC] HEARTBEAT log_age_s=449.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:30:58 UTC] HEARTBEAT log_age_s=479.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:31:28 UTC] HEARTBEAT log_age_s=509.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:31:28 UTC] ISSUE log_stale age_s=509.3
+[2026-03-27 03:31:58 UTC] HEARTBEAT log_age_s=539.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:32:28 UTC] HEARTBEAT log_age_s=569.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:32:58 UTC] HEARTBEAT log_age_s=599.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:33:28 UTC] HEARTBEAT log_age_s=629.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:33:28 UTC] ISSUE log_stale age_s=629.6
+[2026-03-27 03:33:58 UTC] HEARTBEAT log_age_s=659.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:34:28 UTC] HEARTBEAT log_age_s=689.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:34:58 UTC] HEARTBEAT log_age_s=719.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:35:28 UTC] HEARTBEAT log_age_s=750.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:35:28 UTC] ISSUE log_stale age_s=750.0
+[2026-03-27 03:35:59 UTC] HEARTBEAT log_age_s=780.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:36:29 UTC] HEARTBEAT log_age_s=810.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:36:59 UTC] HEARTBEAT log_age_s=840.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:36:59 UTC] ISSUE log_stale age_s=840.3
+[2026-03-27 03:37:29 UTC] HEARTBEAT log_age_s=870.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:37:59 UTC] HEARTBEAT log_age_s=900.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:38:29 UTC] HEARTBEAT log_age_s=930.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:38:59 UTC] HEARTBEAT log_age_s=960.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:38:59 UTC] ISSUE log_stale age_s=960.6
+[2026-03-27 03:39:29 UTC] HEARTBEAT log_age_s=990.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:39:59 UTC] HEARTBEAT log_age_s=1020.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:40:29 UTC] HEARTBEAT log_age_s=1050.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:40:59 UTC] HEARTBEAT log_age_s=1080.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:40:59 UTC] ISSUE log_stale age_s=1080.9
+[2026-03-27 03:41:30 UTC] HEARTBEAT log_age_s=1111.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:42:00 UTC] HEARTBEAT log_age_s=1141.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:42:30 UTC] HEARTBEAT log_age_s=1171.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:43:00 UTC] HEARTBEAT log_age_s=1201.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:43:00 UTC] ISSUE log_stale age_s=1201.3
+[2026-03-27 03:43:30 UTC] HEARTBEAT log_age_s=1231.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:44:00 UTC] HEARTBEAT log_age_s=1261.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:44:30 UTC] HEARTBEAT log_age_s=1291.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:45:00 UTC] HEARTBEAT log_age_s=1321.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:45:00 UTC] ISSUE log_stale age_s=1321.6
+[2026-03-27 03:45:30 UTC] HEARTBEAT log_age_s=1351.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:46:00 UTC] HEARTBEAT log_age_s=1381.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:46:30 UTC] HEARTBEAT log_age_s=1411.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:47:00 UTC] HEARTBEAT log_age_s=1441.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:47:00 UTC] ISSUE log_stale age_s=1441.9
+[2026-03-27 03:47:30 UTC] HEARTBEAT log_age_s=1472.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:48:01 UTC] HEARTBEAT log_age_s=1502.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:48:31 UTC] HEARTBEAT log_age_s=1532.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:49:01 UTC] HEARTBEAT log_age_s=1562.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:49:01 UTC] ISSUE log_stale age_s=1562.3
+[2026-03-27 03:49:31 UTC] HEARTBEAT log_age_s=1592.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:50:01 UTC] HEARTBEAT log_age_s=1622.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:50:31 UTC] HEARTBEAT log_age_s=1652.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:51:01 UTC] HEARTBEAT log_age_s=1682.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:51:01 UTC] ISSUE log_stale age_s=1682.7
+[2026-03-27 03:51:31 UTC] HEARTBEAT log_age_s=1712.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:52:01 UTC] HEARTBEAT log_age_s=1742.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:52:31 UTC] HEARTBEAT log_age_s=1772.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:53:01 UTC] HEARTBEAT log_age_s=1803.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:53:01 UTC] ISSUE log_stale age_s=1803.0
+[2026-03-27 03:53:31 UTC] HEARTBEAT log_age_s=1833.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:54:02 UTC] HEARTBEAT log_age_s=1863.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:54:32 UTC] HEARTBEAT log_age_s=1893.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:55:02 UTC] HEARTBEAT log_age_s=1923.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:55:02 UTC] ISSUE log_stale age_s=1923.3
+[2026-03-27 03:55:32 UTC] HEARTBEAT log_age_s=1953.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:56:02 UTC] HEARTBEAT log_age_s=1983.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:56:32 UTC] HEARTBEAT log_age_s=2013.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:57:02 UTC] HEARTBEAT log_age_s=2043.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:57:02 UTC] ISSUE log_stale age_s=2043.6
+[2026-03-27 03:57:32 UTC] HEARTBEAT log_age_s=2073.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:58:02 UTC] HEARTBEAT log_age_s=2103.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:58:32 UTC] HEARTBEAT log_age_s=2133.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:59:02 UTC] HEARTBEAT log_age_s=2164.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 03:59:02 UTC] ISSUE log_stale age_s=2164.0
+[2026-03-27 03:59:33 UTC] HEARTBEAT log_age_s=2194.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:00:03 UTC] HEARTBEAT log_age_s=0.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:00:33 UTC] HEARTBEAT log_age_s=27.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:01:03 UTC] HEARTBEAT log_age_s=57.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:01:33 UTC] HEARTBEAT log_age_s=87.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:02:03 UTC] HEARTBEAT log_age_s=117.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:02:33 UTC] HEARTBEAT log_age_s=147.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:02:33 UTC] ISSUE log_stale age_s=147.9
+[2026-03-27 04:03:03 UTC] HEARTBEAT log_age_s=178.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:03:33 UTC] HEARTBEAT log_age_s=208.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:04:03 UTC] HEARTBEAT log_age_s=238.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:04:33 UTC] HEARTBEAT log_age_s=268.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:04:33 UTC] ISSUE log_stale age_s=268.2
+[2026-03-27 04:05:03 UTC] HEARTBEAT log_age_s=298.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:05:34 UTC] HEARTBEAT log_age_s=328.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:06:04 UTC] HEARTBEAT log_age_s=358.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:06:34 UTC] HEARTBEAT log_age_s=388.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:06:34 UTC] ISSUE log_stale age_s=388.6
+[2026-03-27 04:07:04 UTC] HEARTBEAT log_age_s=418.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:07:34 UTC] HEARTBEAT log_age_s=448.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:08:04 UTC] HEARTBEAT log_age_s=478.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:08:34 UTC] HEARTBEAT log_age_s=508.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:08:34 UTC] ISSUE log_stale age_s=508.9
+[2026-03-27 04:09:04 UTC] HEARTBEAT log_age_s=539.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:09:34 UTC] HEARTBEAT log_age_s=569.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:10:04 UTC] HEARTBEAT log_age_s=599.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:10:34 UTC] HEARTBEAT log_age_s=629.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:10:34 UTC] ISSUE log_stale age_s=629.3
+[2026-03-27 04:11:05 UTC] HEARTBEAT log_age_s=659.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:11:35 UTC] HEARTBEAT log_age_s=689.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:12:05 UTC] HEARTBEAT log_age_s=719.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:12:35 UTC] HEARTBEAT log_age_s=749.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:12:35 UTC] ISSUE log_stale age_s=749.6
+[2026-03-27 04:13:05 UTC] HEARTBEAT log_age_s=779.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:13:35 UTC] HEARTBEAT log_age_s=809.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:14:05 UTC] HEARTBEAT log_age_s=839.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:14:35 UTC] HEARTBEAT log_age_s=869.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:14:35 UTC] ISSUE log_stale age_s=869.9
+[2026-03-27 04:15:05 UTC] HEARTBEAT log_age_s=900.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:15:35 UTC] HEARTBEAT log_age_s=930.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:16:05 UTC] HEARTBEAT log_age_s=960.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:16:05 UTC] ISSUE log_stale age_s=960.2
+[2026-03-27 04:16:35 UTC] HEARTBEAT log_age_s=990.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:17:06 UTC] HEARTBEAT log_age_s=1020.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:17:36 UTC] HEARTBEAT log_age_s=1050.4 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:18:06 UTC] HEARTBEAT log_age_s=1080.5 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:18:06 UTC] ISSUE log_stale age_s=1080.5
+[2026-03-27 04:18:36 UTC] HEARTBEAT log_age_s=1110.6 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:19:06 UTC] HEARTBEAT log_age_s=1140.7 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:19:36 UTC] HEARTBEAT log_age_s=1170.8 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:20:06 UTC] HEARTBEAT log_age_s=1200.9 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:20:06 UTC] ISSUE log_stale age_s=1200.9
+[2026-03-27 04:20:36 UTC] HEARTBEAT log_age_s=1231.0 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:21:06 UTC] HEARTBEAT log_age_s=1261.1 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:21:36 UTC] HEARTBEAT log_age_s=1291.2 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:22:06 UTC] HEARTBEAT log_age_s=1321.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:22:06 UTC] ISSUE log_stale age_s=1321.3
+[2026-03-27 04:22:37 UTC] HEARTBEAT log_age_s=1351.3 cycles=7 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:22:59 UTC] CYCLE_SUMMARY cycle=10 duration_s=10.2 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 04:23:08 UTC] HEARTBEAT log_age_s=9.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:23:38 UTC] HEARTBEAT log_age_s=39.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:24:08 UTC] HEARTBEAT log_age_s=69.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:24:38 UTC] HEARTBEAT log_age_s=99.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:25:08 UTC] HEARTBEAT log_age_s=129.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:25:08 UTC] ISSUE log_stale age_s=129.8
+[2026-03-27 04:25:38 UTC] HEARTBEAT log_age_s=159.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:26:08 UTC] HEARTBEAT log_age_s=189.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:26:38 UTC] HEARTBEAT log_age_s=220.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:27:08 UTC] HEARTBEAT log_age_s=250.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:27:08 UTC] ISSUE log_stale age_s=250.1
+[2026-03-27 04:27:38 UTC] HEARTBEAT log_age_s=280.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:28:08 UTC] HEARTBEAT log_age_s=310.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:28:38 UTC] HEARTBEAT log_age_s=340.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:29:09 UTC] HEARTBEAT log_age_s=370.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:29:09 UTC] ISSUE log_stale age_s=370.4
+[2026-03-27 04:29:39 UTC] HEARTBEAT log_age_s=400.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:30:09 UTC] HEARTBEAT log_age_s=430.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:30:39 UTC] HEARTBEAT log_age_s=460.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:31:09 UTC] HEARTBEAT log_age_s=490.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:31:09 UTC] ISSUE log_stale age_s=490.7
+[2026-03-27 04:31:39 UTC] HEARTBEAT log_age_s=520.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:32:09 UTC] HEARTBEAT log_age_s=550.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:32:39 UTC] HEARTBEAT log_age_s=580.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:33:09 UTC] HEARTBEAT log_age_s=611.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:33:09 UTC] ISSUE log_stale age_s=611.0
+[2026-03-27 04:33:39 UTC] HEARTBEAT log_age_s=641.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:34:09 UTC] HEARTBEAT log_age_s=671.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:34:40 UTC] HEARTBEAT log_age_s=701.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:35:10 UTC] HEARTBEAT log_age_s=731.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:35:10 UTC] ISSUE log_stale age_s=731.4
+[2026-03-27 04:35:40 UTC] HEARTBEAT log_age_s=761.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:36:10 UTC] HEARTBEAT log_age_s=791.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:36:40 UTC] HEARTBEAT log_age_s=821.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:37:10 UTC] HEARTBEAT log_age_s=851.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:37:10 UTC] ISSUE log_stale age_s=851.8
+[2026-03-27 04:37:40 UTC] HEARTBEAT log_age_s=881.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:38:10 UTC] HEARTBEAT log_age_s=912.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:38:40 UTC] HEARTBEAT log_age_s=942.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:39:10 UTC] HEARTBEAT log_age_s=972.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:39:10 UTC] ISSUE log_stale age_s=972.1
+[2026-03-27 04:39:40 UTC] HEARTBEAT log_age_s=1002.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:40:10 UTC] HEARTBEAT log_age_s=1032.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:40:41 UTC] HEARTBEAT log_age_s=1062.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:41:11 UTC] HEARTBEAT log_age_s=1092.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:41:11 UTC] ISSUE log_stale age_s=1092.5
+[2026-03-27 04:41:41 UTC] HEARTBEAT log_age_s=1122.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:42:11 UTC] HEARTBEAT log_age_s=1152.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:42:41 UTC] HEARTBEAT log_age_s=1182.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:43:11 UTC] HEARTBEAT log_age_s=1212.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:43:11 UTC] ISSUE log_stale age_s=1212.8
+[2026-03-27 04:43:41 UTC] HEARTBEAT log_age_s=1242.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:44:11 UTC] HEARTBEAT log_age_s=1272.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:44:41 UTC] HEARTBEAT log_age_s=1303.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:45:11 UTC] HEARTBEAT log_age_s=1333.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:45:11 UTC] ISSUE log_stale age_s=1333.1
+[2026-03-27 04:45:41 UTC] HEARTBEAT log_age_s=1363.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:46:11 UTC] HEARTBEAT log_age_s=1393.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:46:42 UTC] HEARTBEAT log_age_s=1423.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:47:12 UTC] HEARTBEAT log_age_s=1453.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:47:12 UTC] ISSUE log_stale age_s=1453.4
+[2026-03-27 04:47:42 UTC] HEARTBEAT log_age_s=1483.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:48:12 UTC] HEARTBEAT log_age_s=1513.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:48:42 UTC] HEARTBEAT log_age_s=1543.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:49:12 UTC] HEARTBEAT log_age_s=1573.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:49:12 UTC] ISSUE log_stale age_s=1573.7
+[2026-03-27 04:49:42 UTC] HEARTBEAT log_age_s=1603.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:50:12 UTC] HEARTBEAT log_age_s=1633.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:50:42 UTC] HEARTBEAT log_age_s=1664.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:51:12 UTC] HEARTBEAT log_age_s=1694.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:51:12 UTC] ISSUE log_stale age_s=1694.1
+[2026-03-27 04:51:42 UTC] HEARTBEAT log_age_s=1724.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:52:12 UTC] HEARTBEAT log_age_s=1754.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:52:43 UTC] HEARTBEAT log_age_s=1784.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:53:13 UTC] HEARTBEAT log_age_s=1814.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:53:13 UTC] ISSUE log_stale age_s=1814.4
+[2026-03-27 04:53:43 UTC] HEARTBEAT log_age_s=1844.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:54:13 UTC] HEARTBEAT log_age_s=1874.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:54:43 UTC] HEARTBEAT log_age_s=1904.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:55:13 UTC] HEARTBEAT log_age_s=1934.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:55:13 UTC] ISSUE log_stale age_s=1934.7
+[2026-03-27 04:55:43 UTC] HEARTBEAT log_age_s=1964.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:56:13 UTC] HEARTBEAT log_age_s=1994.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:56:43 UTC] HEARTBEAT log_age_s=2025.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:57:13 UTC] HEARTBEAT log_age_s=2055.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:57:13 UTC] ISSUE log_stale age_s=2055.0
+[2026-03-27 04:57:43 UTC] HEARTBEAT log_age_s=2085.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:58:13 UTC] HEARTBEAT log_age_s=2115.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:58:43 UTC] HEARTBEAT log_age_s=2145.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:59:13 UTC] HEARTBEAT log_age_s=2175.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 04:59:13 UTC] ISSUE log_stale age_s=2175.3
+[2026-03-27 04:59:44 UTC] HEARTBEAT log_age_s=2205.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:00:14 UTC] HEARTBEAT log_age_s=2235.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:00:44 UTC] HEARTBEAT log_age_s=2265.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:01:14 UTC] HEARTBEAT log_age_s=2295.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:01:14 UTC] ISSUE log_stale age_s=2295.6
+[2026-03-27 05:01:44 UTC] HEARTBEAT log_age_s=2325.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:02:14 UTC] HEARTBEAT log_age_s=2355.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:02:44 UTC] HEARTBEAT log_age_s=2385.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:03:14 UTC] HEARTBEAT log_age_s=2415.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:03:14 UTC] ISSUE log_stale age_s=2415.9
+[2026-03-27 05:03:44 UTC] HEARTBEAT log_age_s=2446.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:04:14 UTC] HEARTBEAT log_age_s=2476.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:04:44 UTC] HEARTBEAT log_age_s=2506.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:05:14 UTC] HEARTBEAT log_age_s=2536.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:05:14 UTC] ISSUE log_stale age_s=2536.3
+[2026-03-27 05:05:45 UTC] HEARTBEAT log_age_s=2566.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:06:15 UTC] HEARTBEAT log_age_s=2596.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:06:45 UTC] HEARTBEAT log_age_s=2626.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:07:15 UTC] HEARTBEAT log_age_s=2656.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:07:15 UTC] ISSUE log_stale age_s=2656.6
+[2026-03-27 05:07:45 UTC] HEARTBEAT log_age_s=2686.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:08:15 UTC] HEARTBEAT log_age_s=2716.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:08:45 UTC] HEARTBEAT log_age_s=2746.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:09:15 UTC] HEARTBEAT log_age_s=2776.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:09:15 UTC] ISSUE log_stale age_s=2776.9
+[2026-03-27 05:09:45 UTC] HEARTBEAT log_age_s=2807.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:10:15 UTC] HEARTBEAT log_age_s=2837.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:10:45 UTC] HEARTBEAT log_age_s=2867.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:11:15 UTC] HEARTBEAT log_age_s=2897.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:11:15 UTC] ISSUE log_stale age_s=2897.2
+[2026-03-27 05:11:45 UTC] HEARTBEAT log_age_s=2927.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:12:16 UTC] HEARTBEAT log_age_s=2957.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:12:46 UTC] HEARTBEAT log_age_s=2987.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:13:16 UTC] HEARTBEAT log_age_s=3017.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:13:16 UTC] ISSUE log_stale age_s=3017.5
+[2026-03-27 05:13:46 UTC] HEARTBEAT log_age_s=3047.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:14:16 UTC] HEARTBEAT log_age_s=3077.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:14:46 UTC] HEARTBEAT log_age_s=3107.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:15:16 UTC] HEARTBEAT log_age_s=3137.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:15:16 UTC] ISSUE log_stale age_s=3137.9
+[2026-03-27 05:15:46 UTC] HEARTBEAT log_age_s=3167.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:16:16 UTC] HEARTBEAT log_age_s=3198.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:16:46 UTC] HEARTBEAT log_age_s=3228.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:17:16 UTC] HEARTBEAT log_age_s=3258.2 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:17:16 UTC] ISSUE log_stale age_s=3258.2
+[2026-03-27 05:17:46 UTC] HEARTBEAT log_age_s=3288.3 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:18:17 UTC] HEARTBEAT log_age_s=3318.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:18:47 UTC] HEARTBEAT log_age_s=3348.4 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:19:17 UTC] HEARTBEAT log_age_s=3378.5 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:19:17 UTC] ISSUE log_stale age_s=3378.5
+[2026-03-27 05:19:47 UTC] HEARTBEAT log_age_s=3408.6 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:20:17 UTC] HEARTBEAT log_age_s=3438.7 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:20:47 UTC] HEARTBEAT log_age_s=3468.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:21:17 UTC] HEARTBEAT log_age_s=3498.8 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:21:17 UTC] ISSUE log_stale age_s=3498.8
+[2026-03-27 05:21:47 UTC] HEARTBEAT log_age_s=3528.9 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:22:17 UTC] HEARTBEAT log_age_s=3559.0 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:22:47 UTC] HEARTBEAT log_age_s=3589.1 cycles=8 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:22:58 UTC] CYCLE_SUMMARY cycle=11 duration_s=10.2 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 05:23:17 UTC] HEARTBEAT log_age_s=19.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:23:47 UTC] HEARTBEAT log_age_s=49.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:24:18 UTC] HEARTBEAT log_age_s=79.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:24:48 UTC] HEARTBEAT log_age_s=109.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:25:18 UTC] HEARTBEAT log_age_s=139.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:25:18 UTC] ISSUE log_stale age_s=139.5
+[2026-03-27 05:25:48 UTC] HEARTBEAT log_age_s=169.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:26:18 UTC] HEARTBEAT log_age_s=199.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:26:48 UTC] HEARTBEAT log_age_s=229.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:27:18 UTC] HEARTBEAT log_age_s=259.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:27:18 UTC] ISSUE log_stale age_s=259.9
+[2026-03-27 05:27:48 UTC] HEARTBEAT log_age_s=290.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:28:18 UTC] HEARTBEAT log_age_s=320.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:28:48 UTC] HEARTBEAT log_age_s=350.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:29:18 UTC] HEARTBEAT log_age_s=380.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:29:18 UTC] ISSUE log_stale age_s=380.2
+[2026-03-27 05:29:48 UTC] HEARTBEAT log_age_s=410.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:30:18 UTC] HEARTBEAT log_age_s=440.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:30:49 UTC] HEARTBEAT log_age_s=470.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:31:19 UTC] HEARTBEAT log_age_s=500.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:31:19 UTC] ISSUE log_stale age_s=500.6
+[2026-03-27 05:31:49 UTC] HEARTBEAT log_age_s=530.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:32:19 UTC] HEARTBEAT log_age_s=560.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:32:49 UTC] HEARTBEAT log_age_s=590.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:33:19 UTC] HEARTBEAT log_age_s=620.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:33:19 UTC] ISSUE log_stale age_s=620.9
+[2026-03-27 05:33:49 UTC] HEARTBEAT log_age_s=651.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:34:19 UTC] HEARTBEAT log_age_s=681.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:34:49 UTC] HEARTBEAT log_age_s=711.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:35:19 UTC] HEARTBEAT log_age_s=741.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:35:19 UTC] ISSUE log_stale age_s=741.2
+[2026-03-27 05:35:49 UTC] HEARTBEAT log_age_s=771.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:36:20 UTC] HEARTBEAT log_age_s=801.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:36:50 UTC] HEARTBEAT log_age_s=831.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:37:20 UTC] HEARTBEAT log_age_s=861.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:37:20 UTC] ISSUE log_stale age_s=861.5
+[2026-03-27 05:37:50 UTC] HEARTBEAT log_age_s=891.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:38:20 UTC] HEARTBEAT log_age_s=921.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:38:50 UTC] HEARTBEAT log_age_s=951.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:39:20 UTC] HEARTBEAT log_age_s=981.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:39:20 UTC] ISSUE log_stale age_s=981.8
+[2026-03-27 05:39:50 UTC] HEARTBEAT log_age_s=1011.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:40:20 UTC] HEARTBEAT log_age_s=1042.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:40:50 UTC] HEARTBEAT log_age_s=1072.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:41:20 UTC] HEARTBEAT log_age_s=1102.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:41:20 UTC] ISSUE log_stale age_s=1102.2
+[2026-03-27 05:41:50 UTC] HEARTBEAT log_age_s=1132.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:42:20 UTC] HEARTBEAT log_age_s=1162.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:42:51 UTC] HEARTBEAT log_age_s=1192.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:43:21 UTC] HEARTBEAT log_age_s=1222.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:43:21 UTC] ISSUE log_stale age_s=1222.5
+[2026-03-27 05:43:51 UTC] HEARTBEAT log_age_s=1252.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:44:21 UTC] HEARTBEAT log_age_s=1282.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:44:51 UTC] HEARTBEAT log_age_s=1312.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:45:21 UTC] HEARTBEAT log_age_s=1342.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:45:21 UTC] ISSUE log_stale age_s=1342.9
+[2026-03-27 05:45:51 UTC] HEARTBEAT log_age_s=1372.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:46:21 UTC] HEARTBEAT log_age_s=1403.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:46:51 UTC] HEARTBEAT log_age_s=1433.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:47:21 UTC] HEARTBEAT log_age_s=1463.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:47:21 UTC] ISSUE log_stale age_s=1463.2
+[2026-03-27 05:47:51 UTC] HEARTBEAT log_age_s=1493.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:48:21 UTC] HEARTBEAT log_age_s=1523.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:48:52 UTC] HEARTBEAT log_age_s=1553.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:49:22 UTC] HEARTBEAT log_age_s=1583.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:49:22 UTC] ISSUE log_stale age_s=1583.5
+[2026-03-27 05:49:52 UTC] HEARTBEAT log_age_s=1613.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:50:22 UTC] HEARTBEAT log_age_s=1643.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:50:52 UTC] HEARTBEAT log_age_s=1673.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:51:22 UTC] HEARTBEAT log_age_s=1703.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:51:22 UTC] ISSUE log_stale age_s=1703.9
+[2026-03-27 05:51:52 UTC] HEARTBEAT log_age_s=1734.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:52:22 UTC] HEARTBEAT log_age_s=1764.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:52:52 UTC] HEARTBEAT log_age_s=1794.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:53:22 UTC] HEARTBEAT log_age_s=1824.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:53:22 UTC] ISSUE log_stale age_s=1824.2
+[2026-03-27 05:53:52 UTC] HEARTBEAT log_age_s=1854.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:54:22 UTC] HEARTBEAT log_age_s=1884.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:54:53 UTC] HEARTBEAT log_age_s=1914.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:55:23 UTC] HEARTBEAT log_age_s=1944.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:55:23 UTC] ISSUE log_stale age_s=1944.5
+[2026-03-27 05:55:53 UTC] HEARTBEAT log_age_s=1974.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:56:23 UTC] HEARTBEAT log_age_s=2004.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:56:53 UTC] HEARTBEAT log_age_s=2034.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:57:23 UTC] HEARTBEAT log_age_s=2064.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:57:23 UTC] ISSUE log_stale age_s=2064.9
+[2026-03-27 05:57:53 UTC] HEARTBEAT log_age_s=2094.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:58:23 UTC] HEARTBEAT log_age_s=2125.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:58:53 UTC] HEARTBEAT log_age_s=2155.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:59:23 UTC] HEARTBEAT log_age_s=2185.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 05:59:23 UTC] ISSUE log_stale age_s=2185.2
+[2026-03-27 05:59:53 UTC] HEARTBEAT log_age_s=2215.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:00:23 UTC] HEARTBEAT log_age_s=2245.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:00:54 UTC] HEARTBEAT log_age_s=2275.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:01:24 UTC] HEARTBEAT log_age_s=2305.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:01:24 UTC] ISSUE log_stale age_s=2305.6
+[2026-03-27 06:01:54 UTC] HEARTBEAT log_age_s=2335.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:02:24 UTC] HEARTBEAT log_age_s=2365.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:02:54 UTC] HEARTBEAT log_age_s=2395.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:03:24 UTC] HEARTBEAT log_age_s=2425.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:03:24 UTC] ISSUE log_stale age_s=2425.8
+[2026-03-27 06:03:54 UTC] HEARTBEAT log_age_s=2455.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:04:24 UTC] HEARTBEAT log_age_s=2486.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:04:54 UTC] HEARTBEAT log_age_s=2516.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:05:24 UTC] HEARTBEAT log_age_s=2546.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:05:24 UTC] ISSUE log_stale age_s=2546.2
+[2026-03-27 06:05:54 UTC] HEARTBEAT log_age_s=2576.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:06:25 UTC] HEARTBEAT log_age_s=2606.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:06:55 UTC] HEARTBEAT log_age_s=2636.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:07:25 UTC] HEARTBEAT log_age_s=2666.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:07:25 UTC] ISSUE log_stale age_s=2666.6
+[2026-03-27 06:07:55 UTC] HEARTBEAT log_age_s=2696.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:08:25 UTC] HEARTBEAT log_age_s=2726.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:08:55 UTC] HEARTBEAT log_age_s=2756.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:09:25 UTC] HEARTBEAT log_age_s=2786.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:09:25 UTC] ISSUE log_stale age_s=2786.8
+[2026-03-27 06:09:55 UTC] HEARTBEAT log_age_s=2816.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:10:25 UTC] HEARTBEAT log_age_s=2847.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:10:55 UTC] HEARTBEAT log_age_s=2877.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:11:25 UTC] HEARTBEAT log_age_s=2907.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:11:25 UTC] ISSUE log_stale age_s=2907.2
+[2026-03-27 06:11:55 UTC] HEARTBEAT log_age_s=2937.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:12:25 UTC] HEARTBEAT log_age_s=2967.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:12:56 UTC] HEARTBEAT log_age_s=2997.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:13:26 UTC] HEARTBEAT log_age_s=3027.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:13:26 UTC] ISSUE log_stale age_s=3027.5
+[2026-03-27 06:13:56 UTC] HEARTBEAT log_age_s=3057.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:14:26 UTC] HEARTBEAT log_age_s=3087.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:14:56 UTC] HEARTBEAT log_age_s=3117.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:15:26 UTC] HEARTBEAT log_age_s=3147.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:15:26 UTC] ISSUE log_stale age_s=3147.8
+[2026-03-27 06:15:56 UTC] HEARTBEAT log_age_s=3177.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:16:26 UTC] HEARTBEAT log_age_s=3208.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:16:56 UTC] HEARTBEAT log_age_s=3238.1 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:17:26 UTC] HEARTBEAT log_age_s=3268.2 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:17:26 UTC] ISSUE log_stale age_s=3268.2
+[2026-03-27 06:17:56 UTC] HEARTBEAT log_age_s=3298.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:18:26 UTC] HEARTBEAT log_age_s=3328.3 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:18:57 UTC] HEARTBEAT log_age_s=3358.4 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:19:27 UTC] HEARTBEAT log_age_s=3388.5 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:19:27 UTC] ISSUE log_stale age_s=3388.5
+[2026-03-27 06:19:57 UTC] HEARTBEAT log_age_s=3418.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:20:27 UTC] HEARTBEAT log_age_s=3448.6 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:20:57 UTC] HEARTBEAT log_age_s=3478.7 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:21:27 UTC] HEARTBEAT log_age_s=3508.8 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:21:27 UTC] ISSUE log_stale age_s=3508.8
+[2026-03-27 06:21:57 UTC] HEARTBEAT log_age_s=3538.9 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:22:27 UTC] HEARTBEAT log_age_s=3569.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:22:57 UTC] HEARTBEAT log_age_s=0.0 cycles=9 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:22:59 UTC] CYCLE_SUMMARY cycle=12 duration_s=10.3 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 06:23:28 UTC] HEARTBEAT log_age_s=29.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:23:58 UTC] HEARTBEAT log_age_s=60.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:24:28 UTC] HEARTBEAT log_age_s=90.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:24:59 UTC] HEARTBEAT log_age_s=120.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:24:59 UTC] ISSUE log_stale age_s=120.1
+[2026-03-27 06:25:29 UTC] HEARTBEAT log_age_s=150.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:25:59 UTC] HEARTBEAT log_age_s=180.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:26:29 UTC] HEARTBEAT log_age_s=210.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:26:59 UTC] HEARTBEAT log_age_s=240.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:26:59 UTC] ISSUE log_stale age_s=240.5
+[2026-03-27 06:27:29 UTC] HEARTBEAT log_age_s=270.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:27:59 UTC] HEARTBEAT log_age_s=300.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:28:29 UTC] HEARTBEAT log_age_s=330.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:28:59 UTC] HEARTBEAT log_age_s=360.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:28:59 UTC] ISSUE log_stale age_s=360.8
+[2026-03-27 06:29:29 UTC] HEARTBEAT log_age_s=390.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:29:59 UTC] HEARTBEAT log_age_s=421.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:30:29 UTC] HEARTBEAT log_age_s=451.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:31:00 UTC] HEARTBEAT log_age_s=481.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:31:00 UTC] ISSUE log_stale age_s=481.2
+[2026-03-27 06:31:30 UTC] HEARTBEAT log_age_s=511.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:32:00 UTC] HEARTBEAT log_age_s=541.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:32:30 UTC] HEARTBEAT log_age_s=571.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:33:00 UTC] HEARTBEAT log_age_s=601.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:33:00 UTC] ISSUE log_stale age_s=601.5
+[2026-03-27 06:33:30 UTC] HEARTBEAT log_age_s=631.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:34:00 UTC] HEARTBEAT log_age_s=661.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:34:30 UTC] HEARTBEAT log_age_s=691.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:35:00 UTC] HEARTBEAT log_age_s=721.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:35:00 UTC] ISSUE log_stale age_s=721.8
+[2026-03-27 06:35:30 UTC] HEARTBEAT log_age_s=751.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:36:00 UTC] HEARTBEAT log_age_s=782.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:36:30 UTC] HEARTBEAT log_age_s=812.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:37:01 UTC] HEARTBEAT log_age_s=842.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:37:01 UTC] ISSUE log_stale age_s=842.1
+[2026-03-27 06:37:31 UTC] HEARTBEAT log_age_s=872.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:38:01 UTC] HEARTBEAT log_age_s=902.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:38:31 UTC] HEARTBEAT log_age_s=932.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:39:01 UTC] HEARTBEAT log_age_s=962.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:39:01 UTC] ISSUE log_stale age_s=962.5
+[2026-03-27 06:39:31 UTC] HEARTBEAT log_age_s=992.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:40:01 UTC] HEARTBEAT log_age_s=1022.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:40:31 UTC] HEARTBEAT log_age_s=1052.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:41:03 UTC] HEARTBEAT log_age_s=1084.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:41:03 UTC] ISSUE log_stale age_s=1084.7
+[2026-03-27 06:41:33 UTC] HEARTBEAT log_age_s=1114.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:42:03 UTC] HEARTBEAT log_age_s=1144.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:42:33 UTC] HEARTBEAT log_age_s=1174.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:43:03 UTC] HEARTBEAT log_age_s=1205.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:43:03 UTC] ISSUE log_stale age_s=1205.0
+[2026-03-27 06:43:33 UTC] HEARTBEAT log_age_s=1235.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:44:04 UTC] HEARTBEAT log_age_s=1265.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:44:34 UTC] HEARTBEAT log_age_s=1295.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:45:04 UTC] HEARTBEAT log_age_s=1325.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:45:04 UTC] ISSUE log_stale age_s=1325.3
+[2026-03-27 06:45:34 UTC] HEARTBEAT log_age_s=1355.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:46:04 UTC] HEARTBEAT log_age_s=1385.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:46:34 UTC] HEARTBEAT log_age_s=1415.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:47:04 UTC] HEARTBEAT log_age_s=1445.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:47:04 UTC] ISSUE log_stale age_s=1445.6
+[2026-03-27 06:47:34 UTC] HEARTBEAT log_age_s=1475.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:48:04 UTC] HEARTBEAT log_age_s=1505.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:48:34 UTC] HEARTBEAT log_age_s=1535.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:49:04 UTC] HEARTBEAT log_age_s=1565.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:49:04 UTC] ISSUE log_stale age_s=1565.9
+[2026-03-27 06:49:34 UTC] HEARTBEAT log_age_s=1596.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:50:04 UTC] HEARTBEAT log_age_s=1626.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:50:35 UTC] HEARTBEAT log_age_s=1656.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:51:05 UTC] HEARTBEAT log_age_s=1686.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:51:05 UTC] ISSUE log_stale age_s=1686.3
+[2026-03-27 06:51:35 UTC] HEARTBEAT log_age_s=1716.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:52:05 UTC] HEARTBEAT log_age_s=1746.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:52:35 UTC] HEARTBEAT log_age_s=1776.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:53:05 UTC] HEARTBEAT log_age_s=1806.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:53:05 UTC] ISSUE log_stale age_s=1806.5
+[2026-03-27 06:53:35 UTC] HEARTBEAT log_age_s=1836.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:54:05 UTC] HEARTBEAT log_age_s=1866.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:54:35 UTC] HEARTBEAT log_age_s=1896.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:55:05 UTC] HEARTBEAT log_age_s=1926.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:55:05 UTC] ISSUE log_stale age_s=1926.8
+[2026-03-27 06:55:35 UTC] HEARTBEAT log_age_s=1956.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:56:05 UTC] HEARTBEAT log_age_s=1987.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:56:35 UTC] HEARTBEAT log_age_s=2017.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:57:06 UTC] HEARTBEAT log_age_s=2047.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:57:06 UTC] ISSUE log_stale age_s=2047.2
+[2026-03-27 06:57:36 UTC] HEARTBEAT log_age_s=2077.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:58:06 UTC] HEARTBEAT log_age_s=2107.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:58:36 UTC] HEARTBEAT log_age_s=2137.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:59:06 UTC] HEARTBEAT log_age_s=2167.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 06:59:06 UTC] ISSUE log_stale age_s=2167.5
+[2026-03-27 06:59:36 UTC] HEARTBEAT log_age_s=2197.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:00:06 UTC] HEARTBEAT log_age_s=2227.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:00:36 UTC] HEARTBEAT log_age_s=2257.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:01:06 UTC] HEARTBEAT log_age_s=2287.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:01:06 UTC] ISSUE log_stale age_s=2287.8
+[2026-03-27 07:01:36 UTC] HEARTBEAT log_age_s=2317.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:02:06 UTC] HEARTBEAT log_age_s=2348.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:02:37 UTC] HEARTBEAT log_age_s=2378.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:03:07 UTC] HEARTBEAT log_age_s=2408.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:03:07 UTC] ISSUE log_stale age_s=2408.2
+[2026-03-27 07:03:37 UTC] HEARTBEAT log_age_s=2438.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:04:07 UTC] HEARTBEAT log_age_s=2468.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:04:37 UTC] HEARTBEAT log_age_s=2498.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:05:07 UTC] HEARTBEAT log_age_s=2528.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:05:07 UTC] ISSUE log_stale age_s=2528.5
+[2026-03-27 07:05:37 UTC] HEARTBEAT log_age_s=2558.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:06:07 UTC] HEARTBEAT log_age_s=2588.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:06:37 UTC] HEARTBEAT log_age_s=2618.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:07:07 UTC] HEARTBEAT log_age_s=2648.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:07:07 UTC] ISSUE log_stale age_s=2648.9
+[2026-03-27 07:07:37 UTC] HEARTBEAT log_age_s=2679.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:08:07 UTC] HEARTBEAT log_age_s=2709.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:08:38 UTC] HEARTBEAT log_age_s=2739.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:09:08 UTC] HEARTBEAT log_age_s=2769.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:09:08 UTC] ISSUE log_stale age_s=2769.2
+[2026-03-27 07:09:38 UTC] HEARTBEAT log_age_s=2799.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:10:08 UTC] HEARTBEAT log_age_s=2829.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:10:38 UTC] HEARTBEAT log_age_s=2859.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:11:08 UTC] HEARTBEAT log_age_s=2889.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:11:08 UTC] ISSUE log_stale age_s=2889.6
+[2026-03-27 07:11:38 UTC] HEARTBEAT log_age_s=2919.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:12:08 UTC] HEARTBEAT log_age_s=2949.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:12:38 UTC] HEARTBEAT log_age_s=2979.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:13:08 UTC] HEARTBEAT log_age_s=3009.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:13:08 UTC] ISSUE log_stale age_s=3009.9
+[2026-03-27 07:13:38 UTC] HEARTBEAT log_age_s=3040.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:14:08 UTC] HEARTBEAT log_age_s=3070.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:14:39 UTC] HEARTBEAT log_age_s=3100.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:15:09 UTC] HEARTBEAT log_age_s=3130.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:15:09 UTC] ISSUE log_stale age_s=3130.2
+[2026-03-27 07:15:39 UTC] HEARTBEAT log_age_s=3160.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:16:09 UTC] HEARTBEAT log_age_s=3190.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:16:39 UTC] HEARTBEAT log_age_s=3220.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:17:09 UTC] HEARTBEAT log_age_s=3250.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:17:09 UTC] ISSUE log_stale age_s=3250.5
+[2026-03-27 07:17:39 UTC] HEARTBEAT log_age_s=3280.6 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:18:09 UTC] HEARTBEAT log_age_s=3310.7 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:18:39 UTC] HEARTBEAT log_age_s=3340.8 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:19:09 UTC] HEARTBEAT log_age_s=3370.9 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:19:09 UTC] ISSUE log_stale age_s=3370.9
+[2026-03-27 07:19:39 UTC] HEARTBEAT log_age_s=3401.0 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:20:09 UTC] HEARTBEAT log_age_s=3431.1 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:20:40 UTC] HEARTBEAT log_age_s=3461.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:21:10 UTC] HEARTBEAT log_age_s=3491.2 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:21:10 UTC] ISSUE log_stale age_s=3491.2
+[2026-03-27 07:21:40 UTC] HEARTBEAT log_age_s=3521.3 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:22:10 UTC] HEARTBEAT log_age_s=3551.4 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:22:40 UTC] HEARTBEAT log_age_s=3581.5 cycles=10 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:22:59 UTC] CYCLE_SUMMARY cycle=13 duration_s=10.2 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 07:23:10 UTC] HEARTBEAT log_age_s=11.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:23:40 UTC] HEARTBEAT log_age_s=42.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:24:10 UTC] HEARTBEAT log_age_s=72.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:24:40 UTC] HEARTBEAT log_age_s=102.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:25:10 UTC] HEARTBEAT log_age_s=132.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:25:10 UTC] ISSUE log_stale age_s=132.2
+[2026-03-27 07:25:40 UTC] HEARTBEAT log_age_s=162.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:26:11 UTC] HEARTBEAT log_age_s=192.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:26:41 UTC] HEARTBEAT log_age_s=222.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:27:11 UTC] HEARTBEAT log_age_s=252.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:27:11 UTC] ISSUE log_stale age_s=252.5
+[2026-03-27 07:27:41 UTC] HEARTBEAT log_age_s=282.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:28:11 UTC] HEARTBEAT log_age_s=312.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:28:41 UTC] HEARTBEAT log_age_s=342.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:29:11 UTC] HEARTBEAT log_age_s=372.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:29:11 UTC] ISSUE log_stale age_s=372.9
+[2026-03-27 07:29:41 UTC] HEARTBEAT log_age_s=402.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:30:11 UTC] HEARTBEAT log_age_s=433.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:30:41 UTC] HEARTBEAT log_age_s=463.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:31:11 UTC] HEARTBEAT log_age_s=493.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:31:11 UTC] ISSUE log_stale age_s=493.2
+[2026-03-27 07:31:41 UTC] HEARTBEAT log_age_s=523.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:32:11 UTC] HEARTBEAT log_age_s=553.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:32:42 UTC] HEARTBEAT log_age_s=583.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:33:12 UTC] HEARTBEAT log_age_s=613.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:33:12 UTC] ISSUE log_stale age_s=613.5
+[2026-03-27 07:33:42 UTC] HEARTBEAT log_age_s=643.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:34:12 UTC] HEARTBEAT log_age_s=673.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:34:42 UTC] HEARTBEAT log_age_s=703.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:35:12 UTC] HEARTBEAT log_age_s=733.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:35:12 UTC] ISSUE log_stale age_s=733.9
+[2026-03-27 07:35:42 UTC] HEARTBEAT log_age_s=764.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:36:12 UTC] HEARTBEAT log_age_s=794.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:36:42 UTC] HEARTBEAT log_age_s=824.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:37:12 UTC] HEARTBEAT log_age_s=854.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:37:12 UTC] ISSUE log_stale age_s=854.3
+[2026-03-27 07:37:42 UTC] HEARTBEAT log_age_s=884.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:38:13 UTC] HEARTBEAT log_age_s=914.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:38:43 UTC] HEARTBEAT log_age_s=944.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:39:13 UTC] HEARTBEAT log_age_s=974.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:39:13 UTC] ISSUE log_stale age_s=974.6
+[2026-03-27 07:39:43 UTC] HEARTBEAT log_age_s=1004.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:40:13 UTC] HEARTBEAT log_age_s=1034.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:40:43 UTC] HEARTBEAT log_age_s=1064.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:41:13 UTC] HEARTBEAT log_age_s=1094.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:41:13 UTC] ISSUE log_stale age_s=1094.9
+[2026-03-27 07:41:43 UTC] HEARTBEAT log_age_s=1125.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:42:13 UTC] HEARTBEAT log_age_s=1155.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:42:43 UTC] HEARTBEAT log_age_s=1185.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:43:13 UTC] HEARTBEAT log_age_s=1215.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:43:13 UTC] ISSUE log_stale age_s=1215.2
+[2026-03-27 07:43:43 UTC] HEARTBEAT log_age_s=1245.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:44:14 UTC] HEARTBEAT log_age_s=1275.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:44:44 UTC] HEARTBEAT log_age_s=1305.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:45:14 UTC] HEARTBEAT log_age_s=1335.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:45:14 UTC] ISSUE log_stale age_s=1335.6
+[2026-03-27 07:45:44 UTC] HEARTBEAT log_age_s=1365.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:46:14 UTC] HEARTBEAT log_age_s=1395.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:46:44 UTC] HEARTBEAT log_age_s=1425.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:47:14 UTC] HEARTBEAT log_age_s=1455.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:47:14 UTC] ISSUE log_stale age_s=1455.9
+[2026-03-27 07:47:44 UTC] HEARTBEAT log_age_s=1486.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:48:14 UTC] HEARTBEAT log_age_s=1516.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:48:44 UTC] HEARTBEAT log_age_s=1546.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:49:14 UTC] HEARTBEAT log_age_s=1576.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:49:14 UTC] ISSUE log_stale age_s=1576.2
+[2026-03-27 07:49:44 UTC] HEARTBEAT log_age_s=1606.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:50:15 UTC] HEARTBEAT log_age_s=1636.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:50:45 UTC] HEARTBEAT log_age_s=1666.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:51:15 UTC] HEARTBEAT log_age_s=1696.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:51:15 UTC] ISSUE log_stale age_s=1696.6
+[2026-03-27 07:51:45 UTC] HEARTBEAT log_age_s=1726.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:52:15 UTC] HEARTBEAT log_age_s=1756.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:52:45 UTC] HEARTBEAT log_age_s=1786.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:53:15 UTC] HEARTBEAT log_age_s=1816.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:53:15 UTC] ISSUE log_stale age_s=1816.9
+[2026-03-27 07:53:45 UTC] HEARTBEAT log_age_s=1847.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:54:15 UTC] HEARTBEAT log_age_s=1877.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:54:45 UTC] HEARTBEAT log_age_s=1907.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:55:15 UTC] HEARTBEAT log_age_s=1937.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:55:15 UTC] ISSUE log_stale age_s=1937.2
+[2026-03-27 07:55:45 UTC] HEARTBEAT log_age_s=1967.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:56:15 UTC] HEARTBEAT log_age_s=1997.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:56:46 UTC] HEARTBEAT log_age_s=2027.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:57:16 UTC] HEARTBEAT log_age_s=2057.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:57:16 UTC] ISSUE log_stale age_s=2057.5
+[2026-03-27 07:57:46 UTC] HEARTBEAT log_age_s=2087.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:58:16 UTC] HEARTBEAT log_age_s=2117.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:58:46 UTC] HEARTBEAT log_age_s=2147.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:59:16 UTC] HEARTBEAT log_age_s=2177.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 07:59:16 UTC] ISSUE log_stale age_s=2177.9
+[2026-03-27 07:59:46 UTC] HEARTBEAT log_age_s=2208.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:00:17 UTC] HEARTBEAT log_age_s=11.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:00:47 UTC] HEARTBEAT log_age_s=41.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:01:17 UTC] HEARTBEAT log_age_s=72.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:01:47 UTC] HEARTBEAT log_age_s=102.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:02:17 UTC] HEARTBEAT log_age_s=132.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:02:17 UTC] ISSUE log_stale age_s=132.1
+[2026-03-27 08:02:48 UTC] HEARTBEAT log_age_s=162.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:03:18 UTC] HEARTBEAT log_age_s=192.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:03:48 UTC] HEARTBEAT log_age_s=222.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:04:18 UTC] HEARTBEAT log_age_s=252.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:04:18 UTC] ISSUE log_stale age_s=252.5
+[2026-03-27 08:04:48 UTC] HEARTBEAT log_age_s=282.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:05:18 UTC] HEARTBEAT log_age_s=312.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:05:48 UTC] HEARTBEAT log_age_s=342.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:06:18 UTC] HEARTBEAT log_age_s=372.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:06:18 UTC] ISSUE log_stale age_s=372.8
+[2026-03-27 08:06:48 UTC] HEARTBEAT log_age_s=402.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:07:18 UTC] HEARTBEAT log_age_s=432.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:07:48 UTC] HEARTBEAT log_age_s=463.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:08:18 UTC] HEARTBEAT log_age_s=493.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:08:18 UTC] ISSUE log_stale age_s=493.1
+[2026-03-27 08:08:49 UTC] HEARTBEAT log_age_s=523.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:09:19 UTC] HEARTBEAT log_age_s=553.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:09:49 UTC] HEARTBEAT log_age_s=583.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:10:19 UTC] HEARTBEAT log_age_s=613.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:10:19 UTC] ISSUE log_stale age_s=613.4
+[2026-03-27 08:10:49 UTC] HEARTBEAT log_age_s=643.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:11:19 UTC] HEARTBEAT log_age_s=673.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:11:49 UTC] HEARTBEAT log_age_s=703.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:12:19 UTC] HEARTBEAT log_age_s=733.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:12:19 UTC] ISSUE log_stale age_s=733.7
+[2026-03-27 08:12:49 UTC] HEARTBEAT log_age_s=763.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:13:19 UTC] HEARTBEAT log_age_s=793.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:13:49 UTC] HEARTBEAT log_age_s=823.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:14:19 UTC] HEARTBEAT log_age_s=854.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:14:19 UTC] ISSUE log_stale age_s=854.0
+[2026-03-27 08:14:49 UTC] HEARTBEAT log_age_s=884.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:15:20 UTC] HEARTBEAT log_age_s=914.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:15:50 UTC] HEARTBEAT log_age_s=944.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:16:20 UTC] HEARTBEAT log_age_s=974.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:16:20 UTC] ISSUE log_stale age_s=974.4
+[2026-03-27 08:16:50 UTC] HEARTBEAT log_age_s=1004.5 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:17:20 UTC] HEARTBEAT log_age_s=1034.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:17:50 UTC] HEARTBEAT log_age_s=1064.6 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:18:20 UTC] HEARTBEAT log_age_s=1094.7 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:18:20 UTC] ISSUE log_stale age_s=1094.7
+[2026-03-27 08:18:50 UTC] HEARTBEAT log_age_s=1124.8 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:19:20 UTC] HEARTBEAT log_age_s=1154.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:19:50 UTC] HEARTBEAT log_age_s=1184.9 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:20:20 UTC] HEARTBEAT log_age_s=1215.0 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:20:20 UTC] ISSUE log_stale age_s=1215.0
+[2026-03-27 08:20:50 UTC] HEARTBEAT log_age_s=1245.1 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:21:21 UTC] HEARTBEAT log_age_s=1275.2 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:21:51 UTC] HEARTBEAT log_age_s=1305.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:22:21 UTC] HEARTBEAT log_age_s=1335.4 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:22:21 UTC] ISSUE log_stale age_s=1335.4
+[2026-03-27 08:22:51 UTC] HEARTBEAT log_age_s=0.3 cycles=11 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:23:01 UTC] CYCLE_SUMMARY cycle=14 duration_s=11.9 approved=0 trade=0 warnings=0 errors=0
+[2026-03-27 08:23:22 UTC] HEARTBEAT log_age_s=22.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:23:52 UTC] HEARTBEAT log_age_s=52.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:24:22 UTC] HEARTBEAT log_age_s=82.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:24:52 UTC] HEARTBEAT log_age_s=112.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:25:22 UTC] HEARTBEAT log_age_s=142.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:25:22 UTC] ISSUE log_stale age_s=142.3
+[2026-03-27 08:25:52 UTC] HEARTBEAT log_age_s=172.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:26:22 UTC] HEARTBEAT log_age_s=202.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:26:52 UTC] HEARTBEAT log_age_s=232.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:27:23 UTC] HEARTBEAT log_age_s=262.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:27:23 UTC] ISSUE log_stale age_s=262.6
+[2026-03-27 08:27:53 UTC] HEARTBEAT log_age_s=292.7 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:28:23 UTC] HEARTBEAT log_age_s=322.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:28:53 UTC] HEARTBEAT log_age_s=352.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:29:23 UTC] HEARTBEAT log_age_s=382.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:29:23 UTC] ISSUE log_stale age_s=382.9
+[2026-03-27 08:29:53 UTC] HEARTBEAT log_age_s=413.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:30:23 UTC] HEARTBEAT log_age_s=443.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:30:53 UTC] HEARTBEAT log_age_s=473.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:31:23 UTC] HEARTBEAT log_age_s=503.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:31:23 UTC] ISSUE log_stale age_s=503.2
+[2026-03-27 08:31:53 UTC] HEARTBEAT log_age_s=533.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:32:23 UTC] HEARTBEAT log_age_s=563.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:32:53 UTC] HEARTBEAT log_age_s=593.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:33:23 UTC] HEARTBEAT log_age_s=623.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:33:23 UTC] ISSUE log_stale age_s=623.6
+[2026-03-27 08:33:54 UTC] HEARTBEAT log_age_s=653.7 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:34:24 UTC] HEARTBEAT log_age_s=683.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:34:54 UTC] HEARTBEAT log_age_s=713.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:35:24 UTC] HEARTBEAT log_age_s=743.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:35:24 UTC] ISSUE log_stale age_s=743.9
+[2026-03-27 08:35:54 UTC] HEARTBEAT log_age_s=774.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:36:24 UTC] HEARTBEAT log_age_s=804.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:36:54 UTC] HEARTBEAT log_age_s=834.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:37:24 UTC] HEARTBEAT log_age_s=864.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:37:24 UTC] ISSUE log_stale age_s=864.2
+[2026-03-27 08:37:54 UTC] HEARTBEAT log_age_s=894.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:38:24 UTC] HEARTBEAT log_age_s=924.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:38:54 UTC] HEARTBEAT log_age_s=954.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:39:24 UTC] HEARTBEAT log_age_s=984.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:39:24 UTC] ISSUE log_stale age_s=984.5
+[2026-03-27 08:39:55 UTC] HEARTBEAT log_age_s=1014.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:40:25 UTC] HEARTBEAT log_age_s=1044.7 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:40:55 UTC] HEARTBEAT log_age_s=1074.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:41:25 UTC] HEARTBEAT log_age_s=1104.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:41:25 UTC] ISSUE log_stale age_s=1104.9
+[2026-03-27 08:41:55 UTC] HEARTBEAT log_age_s=1134.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:42:25 UTC] HEARTBEAT log_age_s=1165.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:42:55 UTC] HEARTBEAT log_age_s=1195.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:43:25 UTC] HEARTBEAT log_age_s=1225.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:43:25 UTC] ISSUE log_stale age_s=1225.2
+[2026-03-27 08:43:55 UTC] HEARTBEAT log_age_s=1255.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:44:25 UTC] HEARTBEAT log_age_s=1285.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:44:55 UTC] HEARTBEAT log_age_s=1315.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:45:25 UTC] HEARTBEAT log_age_s=1345.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:45:25 UTC] ISSUE log_stale age_s=1345.4
+[2026-03-27 08:45:55 UTC] HEARTBEAT log_age_s=1375.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:46:25 UTC] HEARTBEAT log_age_s=1405.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:46:56 UTC] HEARTBEAT log_age_s=1435.7 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:47:26 UTC] HEARTBEAT log_age_s=1465.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:47:26 UTC] ISSUE log_stale age_s=1465.8
+[2026-03-27 08:47:56 UTC] HEARTBEAT log_age_s=1495.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:48:26 UTC] HEARTBEAT log_age_s=1525.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:48:56 UTC] HEARTBEAT log_age_s=1556.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:49:26 UTC] HEARTBEAT log_age_s=1586.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:49:26 UTC] ISSUE log_stale age_s=1586.1
+[2026-03-27 08:49:56 UTC] HEARTBEAT log_age_s=1616.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:50:26 UTC] HEARTBEAT log_age_s=1646.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:50:56 UTC] HEARTBEAT log_age_s=1676.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:51:26 UTC] HEARTBEAT log_age_s=1706.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:51:26 UTC] ISSUE log_stale age_s=1706.4
+[2026-03-27 08:51:56 UTC] HEARTBEAT log_age_s=1736.5 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:52:26 UTC] HEARTBEAT log_age_s=1766.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:52:57 UTC] HEARTBEAT log_age_s=1796.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:53:27 UTC] HEARTBEAT log_age_s=1826.7 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:53:27 UTC] ISSUE log_stale age_s=1826.7
+[2026-03-27 08:53:57 UTC] HEARTBEAT log_age_s=1856.8 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:54:27 UTC] HEARTBEAT log_age_s=1886.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:54:57 UTC] HEARTBEAT log_age_s=1916.9 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:55:27 UTC] HEARTBEAT log_age_s=1947.0 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:55:27 UTC] ISSUE log_stale age_s=1947.0
+[2026-03-27 08:55:57 UTC] HEARTBEAT log_age_s=1977.1 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:56:27 UTC] HEARTBEAT log_age_s=2007.2 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:56:57 UTC] HEARTBEAT log_age_s=2037.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:57:27 UTC] HEARTBEAT log_age_s=2067.3 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:57:27 UTC] ISSUE log_stale age_s=2067.3
+[2026-03-27 08:57:57 UTC] HEARTBEAT log_age_s=2097.4 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:58:27 UTC] HEARTBEAT log_age_s=2127.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:58:58 UTC] HEARTBEAT log_age_s=2157.6 cycles=12 trades=0 warnings=0 errors=0 missed_opportunities=0
+[2026-03-27 08:59:20 UTC] 12-hour monitor finished
