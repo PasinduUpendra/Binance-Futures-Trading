@@ -260,6 +260,7 @@ if 'start_of_day_balance' not in state:
 
         ORCH_PID=$!
         echo "$ORCH_PID" > "$PID_FILE"
+        disown "$ORCH_PID"  # Detach from shell — survives terminal close
 
         # Verify process started
         sleep 2
