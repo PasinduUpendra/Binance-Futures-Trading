@@ -69,6 +69,10 @@ class SupertrendTrend(BaseStrategy):
     SL_ATR_MULT: float = 3.0
     TP_ATR_MULT: float = 6.0
 
+    # Minimum consecutive bars the 4H Supertrend must hold the same direction
+    # to qualify as an "established trend" for 1H continuation entries.
+    MIN_ESTABLISHED_BARS: int = 3
+
     def generate_signal(
         self,
         df: pd.DataFrame,
@@ -233,3 +237,169 @@ class SupertrendTrend(BaseStrategy):
         score += 10.0
 
         return min(100.0, max(0.0, round(score, 2)))
+
+    # ------------------------------------------------------------------
+    # 1H Continuation entry (sustained 4H trend + 1H flip in same dir)
+    # ------------------------------------------------------------------
+
+    def generate_continuation_signal(
+        self,
+        df_4h: pd.DataFrame,
+        df_1h: pd.DataFrame,
+    ) -> Signal:
+        """Generate a continuation entry using a 1H Supertrend flip.
+
+        When the 4H Supertrend is established (same direction for
+        ``MIN_ESTABLISHED_BARS``+ bars), a 1H Supertrend flip in the
+        same direction provides a continuation entry opportunity.
+
+        Lower confidence ceiling than a 4H flip signal (80 vs 100).
+        """
+        try:
+            self._validate(df_4h)
+            self._validate(df_1h)
+        except (KeyError, ValueError) as exc:
+            return self._no_signal(f"Continuation validation failed: {exc}")
+
+        # Check 4H trend is established (same direction for N bars)
+        st_dir_4h = df_4h[self.COL_SUPERTREND_DIR].dropna()
+        if len(st_dir_4h) < self.MIN_ESTABLISHED_BARS + 1:
+            return self._no_signal("Not enough 4H bars for continuation check")
+
+        recent_dirs = st_dir_4h.iloc[-self.MIN_ESTABLISHED_BARS:]
+        if not (recent_dirs == recent_dirs.iloc[0]).all():
+            return self._no_signal("4H Supertrend not established — mixed directions")
+
+        established_dir = int(recent_dirs.iloc[0])
+
+        # ADX gate on 4H data
+        adx = self._safe_last(df_4h[self.COL_ADX])
+        if np.isnan(adx) or adx < self.ADX_MIN:
+            return self._no_signal(
+                f"ADX {adx:.1f} < {self.ADX_MIN} — too weak for continuation"
+            )
+
+        # Check 1H Supertrend flip in same direction as 4H established trend
+        st_dir_1h = self._safe_last(df_1h[self.COL_SUPERTREND_DIR])
+        prev_st_dir_1h = self._safe_prev(df_1h[self.COL_SUPERTREND_DIR])
+
+        if np.isnan(st_dir_1h) or np.isnan(prev_st_dir_1h):
+            return self._no_signal("1H Supertrend direction is NaN")
+
+        direction = SignalDirection.NONE
+        if established_dir > 0 and prev_st_dir_1h < 0 and st_dir_1h > 0:
+            direction = SignalDirection.LONG
+        elif established_dir < 0 and prev_st_dir_1h > 0 and st_dir_1h < 0:
+            direction = SignalDirection.SHORT
+        else:
+            return self._no_signal(
+                f"No 1H continuation flip: 4H_est={established_dir}, "
+                f"1H prev={prev_st_dir_1h:.0f}, 1H cur={st_dir_1h:.0f}"
+            )
+
+        # Entry / SL / TP — use 4H ATR for consistency with flip entries
+        atr = self._safe_last(df_4h[self.COL_ATR])
+        close = float(df_1h["close"].dropna().iloc[-1])
+
+        if np.isnan(atr):
+            return self._no_signal("ATR is NaN")
+
+        sl_distance = atr * self.SL_ATR_MULT
+        tp_distance = atr * self.TP_ATR_MULT
+
+        if direction == SignalDirection.LONG:
+            stop_loss = close - sl_distance
+            take_profit = close + tp_distance
+        else:
+            stop_loss = close + sl_distance
+            take_profit = close - tp_distance
+
+        if stop_loss <= 0 or take_profit <= 0:
+            return self._no_signal("Computed SL or TP is non-positive")
+
+        rr = calculate_rr_ratio(close, stop_loss, take_profit)
+        if rr < 1.5:
+            return self._no_signal(f"R/R {rr:.2f} below 1.5 minimum")
+
+        # Confidence: lower base for continuation (30 vs 40), no flip bonus
+        ema9 = self._safe_last(df_4h[self.COL_EMA9])
+        ema21 = self._safe_last(df_4h[self.COL_EMA21])
+        rsi = self._safe_last(df_4h[self.COL_RSI])
+        confidence = self._compute_continuation_confidence(
+            adx=adx, ema9=ema9, ema21=ema21, rsi=rsi, direction=direction,
+        )
+
+        dir_label = direction.value.upper()
+        ema_aligned = (
+            (direction == SignalDirection.LONG
+             and not np.isnan(ema9) and not np.isnan(ema21) and ema9 > ema21)
+            or (direction == SignalDirection.SHORT
+                and not np.isnan(ema9) and not np.isnan(ema21) and ema9 < ema21)
+        )
+        reasoning = (
+            f"{dir_label} 1H continuation in established 4H trend. "
+            f"4H Supertrend={established_dir} for {self.MIN_ESTABLISHED_BARS}+ bars. "
+            f"1H Supertrend flipped {'bullish' if st_dir_1h > 0 else 'bearish'}. "
+            f"ADX={adx:.1f}. "
+            f"EMA alignment: {'confirmed' if ema_aligned else 'divergent'}. "
+            f"SL={stop_loss:.6f}, TP={take_profit:.6f}, R/R={rr:.2f}. "
+            f"Confidence: {confidence:.0f}%."
+        )
+
+        indicators_snapshot = {
+            "supertrend_dir_4h": established_dir,
+            "supertrend_dir_1h": int(st_dir_1h),
+            "prev_supertrend_dir_1h": int(prev_st_dir_1h),
+            "adx": round(adx, 2),
+            "ema_9": round(ema9, 6) if not np.isnan(ema9) else None,
+            "ema_21": round(ema21, 6) if not np.isnan(ema21) else None,
+            "rsi": round(rsi, 2) if not np.isnan(rsi) else None,
+            "atr": round(atr, 6),
+            "close": round(close, 6),
+            "entry_type": "continuation",
+        }
+
+        return Signal(
+            direction=direction,
+            confidence=confidence,
+            entry_price=round(close, 8),
+            stop_loss=round(stop_loss, 8),
+            take_profit=round(take_profit, 8),
+            strategy_name=self.name,
+            regime="trending",
+            indicators_used=indicators_snapshot,
+            reasoning=reasoning,
+        )
+
+    def _compute_continuation_confidence(
+        self, *, adx: float, ema9: float, ema21: float,
+        rsi: float, direction: SignalDirection,
+    ) -> float:
+        """Confidence for 1H continuation entries (lower ceiling than flip).
+
+        Breakdown (max 80):
+          Base for continuation  : 30
+          ADX strength           : up to 20
+          EMA alignment          : up to 20
+          RSI position           : up to 10
+        """
+        score = 30.0
+
+        adx_score = min(20.0, max(0.0, (adx - self.ADX_MIN) / 22.0) * 20.0)
+        score += adx_score
+
+        if not np.isnan(ema9) and not np.isnan(ema21):
+            if direction == SignalDirection.LONG and ema9 > ema21:
+                score += 20.0
+            elif direction == SignalDirection.SHORT and ema9 < ema21:
+                score += 20.0
+            else:
+                score += 5.0
+
+        if not np.isnan(rsi):
+            if direction == SignalDirection.LONG and 30 < rsi < 65:
+                score += 10.0
+            elif direction == SignalDirection.SHORT and 35 < rsi < 70:
+                score += 10.0
+
+        return min(80.0, max(0.0, round(score, 2)))

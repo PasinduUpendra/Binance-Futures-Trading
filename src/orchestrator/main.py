@@ -47,7 +47,7 @@ from src.risk.leverage_manager import LeverageManager
 from src.risk.volatility_model import VolatilityModel
 from src.risk.drawdown_monitor import DrawdownMonitor
 from src.execution.order_manager import OrderManager, OrderState
-from src.execution.position_tracker import PositionTracker
+from src.execution.position_tracker import Position, PositionTracker
 from src.execution.fee_calculator import FeeCalculator
 from src.memory.trade_journal import TradeJournal
 from src.memory.performance_tracker import PerformanceTracker
@@ -1226,23 +1226,146 @@ class Orchestrator:
             self._trailing_stops.pop(sym, None)
             self._persist_trailing_stop_state()
 
-        # 2. For every open position, ensure it has at least one
-        #    conditional order (SL or TP). If zero orders, log a warning.
+        # 2. For every open position, ensure it's tracked and has protective orders.
         for pos in open_positions:
+            # Register untracked positions so reconciliation covers them
+            if pos.symbol not in self._trailing_stops:
+                logger.warning(
+                    "RECONCILE: %s %s not in trailing_stops — registering",
+                    pos.symbol, pos.side,
+                )
+                self._trailing_stops[pos.symbol] = TrailingStopState(
+                    symbol=pos.symbol,
+                    direction=pos.side,
+                    entry_price=float(pos.entry_price),
+                    best_price=float(pos.current_price),
+                    atr_4h=0.0,
+                    strategy_name="reconciled",
+                )
+                self._persist_trailing_stop_state()
+
             try:
                 open_orders = await self.order_manager.get_open_orders(
                     pos.symbol,
                     conditional_only=True,
                 )
-                if len(open_orders) == 0 and pos.symbol in self._trailing_stops:
+                if len(open_orders) == 0:
                     logger.warning(
                         "RECONCILE: %s has open position but ZERO conditional "
-                        "orders. Trailing stop may be sole protection.", pos.symbol
+                        "orders — UNPROTECTED. Placing emergency SL at entry.",
+                        pos.symbol,
+                    )
+                    await self._place_emergency_stop_loss(pos)
+                elif len(open_orders) < 2:
+                    logger.warning(
+                        "RECONCILE: %s has only %d conditional order(s) "
+                        "(expected 2: SL + TP).",
+                        pos.symbol, len(open_orders),
                     )
             except Exception as e:
                 logger.error(
                     "RECONCILE: Failed to check orders for %s: %s", pos.symbol, e
                 )
+
+        # 3. Excess position handling: close most vulnerable positions
+        #    to bring count under circuit breaker max.
+        try:
+            recent_entries = self.trade_journal.get_recent_trades(10)
+            recent_trade_results = [
+                TradeResult(
+                    is_win=t.pnl is not None and t.pnl > 0,
+                    closed_at=t.timestamp,
+                )
+                for t in recent_entries if t.pnl is not None
+            ]
+            cb_state = CircuitBreaker.is_trading_allowed(
+                balance=self.state.current_balance,
+                recent_trades=recent_trade_results,
+                start_of_day_balance=self.state.daily_start_balance,
+                peak_balance=self.drawdown_monitor.peak_balance,
+            )
+            max_pos = cb_state.constraints.max_positions
+            if len(open_positions) > max_pos:
+                excess = len(open_positions) - max_pos
+                logger.warning(
+                    "RECONCILE: %d positions exceeds CB max %d — "
+                    "closing %d most vulnerable.",
+                    len(open_positions), max_pos, excess,
+                )
+                # Gather order counts per position (already fetched above
+                # but not stored — re-fetch to keep code self-contained)
+                pos_vulnerability: list[tuple[Position, int]] = []
+                for pos in open_positions:
+                    try:
+                        orders = await self.order_manager.get_open_orders(
+                            pos.symbol, conditional_only=True,
+                        )
+                        pos_vulnerability.append((pos, len(orders)))
+                    except Exception:
+                        pos_vulnerability.append((pos, 0))
+
+                # Sort: fewest orders first, then lowest unrealized PnL
+                pos_vulnerability.sort(
+                    key=lambda x: (x[1], float(x[0].unrealized_pnl))
+                )
+
+                for i in range(excess):
+                    close_pos, n_orders = pos_vulnerability[i]
+                    close_side = "sell" if close_pos.side == "long" else "buy"
+                    logger.warning(
+                        "RECONCILE: Closing excess position %s %s "
+                        "(orders=%d, PnL=%s)",
+                        close_pos.symbol, close_pos.side,
+                        n_orders, close_pos.unrealized_pnl,
+                    )
+                    try:
+                        await self.order_manager.cancel_open_orders(
+                            close_pos.symbol,
+                        )
+                        await self.order_manager.place_market_order(
+                            symbol=close_pos.symbol,
+                            side=close_side,
+                            amount=close_pos.size,
+                        )
+                        self._trailing_stops.pop(close_pos.symbol, None)
+                        self._persist_trailing_stop_state()
+                    except Exception as e:
+                        logger.error(
+                            "RECONCILE: Failed to close excess %s: %s",
+                            close_pos.symbol, e,
+                        )
+        except Exception as e:
+            logger.error("RECONCILE: Excess position check failed: %s", e)
+
+    async def _place_emergency_stop_loss(self, pos: Position) -> None:
+        """Place emergency stop-loss at entry price for unprotected positions.
+
+        When reconciliation finds a position with zero conditional orders,
+        this places a breakeven SL as a safety net.
+        """
+        try:
+            entry_price = float(pos.entry_price)
+            sl_side = "sell" if pos.side == "long" else "buy"
+            result = await self.order_manager.place_stop_loss(
+                symbol=pos.symbol,
+                side=sl_side,
+                amount=pos.size,
+                stop_price=Decimal(str(entry_price)),
+            )
+            if result:
+                logger.info(
+                    "RECONCILE: Emergency SL placed for %s at %s (breakeven)",
+                    pos.symbol, entry_price,
+                )
+            else:
+                logger.error(
+                    "RECONCILE: Emergency SL returned None for %s", pos.symbol,
+                )
+        except Exception as e:
+            logger.error(
+                "RECONCILE: Emergency SL placement failed for %s: %s",
+                pos.symbol, e,
+            )
 
     async def _detect_preexisting_positions(self) -> None:
         """On startup, detect positions already on exchange and register them.

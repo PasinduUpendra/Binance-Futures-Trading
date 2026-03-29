@@ -116,3 +116,37 @@ class TestTrendingScorerFix:
         score_low = self.d._score_trending(adx=25.0, bbr=1.0, atrr=1.0, volr=0.1)
         score_mid = self.d._score_trending(adx=25.0, bbr=1.0, atrr=1.0, volr=0.4)
         assert score_mid > score_low
+
+
+class TestHighADXRangingPenalty:
+    """Tests for the v6.11 fix: high ADX penalises ranging score.
+
+    Bug: ADX=35.2 with narrow BB/low ATR/low volume scored RANGING > TRENDING
+    because sub-scores in _score_ranging had no ADX override.
+    """
+
+    def setup_method(self):
+        self.d = RegimeDetector()
+
+    def test_high_adx_narrow_bb_is_trending_not_ranging(self):
+        """ADX=35.2 with narrow BB/ATR should be TRENDING, not RANGING."""
+        trending = self.d._score_trending(adx=35.2, bbr=0.5, atrr=0.6, volr=0.5)
+        ranging = self.d._score_ranging(adx=35.2, bbr=0.5, atrr=0.6, volr=0.5)
+        assert trending > ranging, (
+            f"ADX=35.2: trending={trending:.3f} must beat ranging={ranging:.3f}"
+        )
+
+    def test_high_adx_ranging_penalty_applied(self):
+        """_score_ranging with ADX >= 20 should be penalised (multiplied by 0.3)."""
+        score_penalised = self.d._score_ranging(adx=35.0, bbr=0.5, atrr=0.5, volr=0.5)
+        score_normal = self.d._score_ranging(adx=15.0, bbr=0.5, atrr=0.5, volr=0.5)
+        assert score_penalised < score_normal * 0.5, (
+            f"Penalised={score_penalised:.3f} should be < 50% of normal={score_normal:.3f}"
+        )
+
+    def test_low_adx_ranging_unaffected(self):
+        """ADX < 20 should have no penalty on ranging score."""
+        score = self.d._score_ranging(adx=15.0, bbr=0.5, atrr=0.5, volr=0.5)
+        # With ADX=15: ADX sub-score = 1.0 + (5/20)*0.5 = 1.125
+        # + BB narrow 1.0 + ATR low 1.0 + vol low 0.8 = 3.925
+        assert score > 3.0

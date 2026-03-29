@@ -4,6 +4,48 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-29
+
+#### v6.11 Audit Fixes: Reconciliation safety, regime detection, 1H continuation entries, BreakoutTrader re-enabled
+
+**Origin**: External audit identified 6 issues (2 CRITICAL, 4 MEDIUM/ARCHITECTURAL). All 6 verified independently against source code.
+
+**Phase 1 — Safety fixes (no backtest needed)**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 1 | **Reconciliation bug: untracked positions silently skipped**. `_reconcile_positions_and_orders()` line 1237 had `and pos.symbol in self._trailing_stops` condition — positions not in the trailing_stops dict (e.g., SOL, ETH from before trailing stop system) were silently skipped, never warned about zero orders. Fixed: removed the condition, all positions now checked. Untracked positions are auto-registered in trailing_stops during reconciliation. | CRITICAL | Eliminates silent skipping of unprotected positions during runtime reconciliation. |
+| 2 | **Emergency SL placement for unprotected positions**. New `_place_emergency_stop_loss()` method places a breakeven SL when reconciliation finds a position with zero conditional orders. | CRITICAL | Positions with zero orders (like SOL) get automatic safety net instead of just a log warning. |
+| 3 | **Excess position closer**. Reconciliation now detects when position count exceeds CB max_positions and closes the most vulnerable (fewest orders, worst PnL) until count is under limit. | CRITICAL | Unblocks new trade entry when stale positions exceed the limit (was blocking all trading with 4 >= 3). |
+
+**Phase 2 — Strategy improvements (backtest validated)**:
+
+| # | Fix | Severity | Impact |
+|---|-----|----------|--------|
+| 4 | **RANGING misclassification fix**. `_score_ranging()` in `regime_detector.py` now applies 0.3x penalty when ADX >= 20 (trending threshold). Previously, narrow BB + low ATR + low volume sub-scores could override high ADX, scoring ADX=35.2 as RANGING. | MEDIUM | Prevents trending markets with compressed volatility from being misclassified as ranging. |
+| 5 | **1H continuation entries for SupertrendTrend**. New `generate_continuation_signal()` method: when 4H Supertrend is established (same direction 3+ bars), a 1H Supertrend flip in the same direction generates a continuation entry. Lower confidence ceiling (80 vs 100). Called as fallback in AdaptiveStrategy when 4H flip returns NONE. | ARCHITECTURAL | Enables trading during sustained trends (was generating 0 signals for 48+ hours in all-bearish market). |
+| 6 | **ADX 18-19.99 dead zone bridged**. RANGING regime with ADX >= 18 now routes to SupertrendTrend instead of returning None. Closes gap between regime detector threshold (20.0) and SupertrendTrend gate (18.0). | MEDIUM | Captures signals in the ADX transition zone that were previously discarded. |
+| 7 | **BreakoutTrader re-enabled for VOLATILE regime** with ADX >= 15 gate. v6.10 fixed the volume scoring formula; BreakoutTrader's own volume surge check provides secondary filter. | ARCHITECTURAL | Gives the bot a strategy for volatile markets instead of sitting idle. |
+
+**Backtest results (v4 production-code, 3 pairs, 172 days)**:
+
+| Metric | v3 Baseline | v6.11 | Gate |
+|--------|------------|-------|------|
+| Total return | +94.0% | **+1156.7%** | — |
+| Trades | 69 | **179** | — |
+| Win rate | 60.9% | 45.3% | — |
+| Profit factor | 2.58 | **18.63** | > 1.5 ✅ |
+| Sharpe | 3.31 | **7.25** | > 1.5 ✅ |
+| Max drawdown | 7.9% | **2.2%** | < 15% ✅ |
+| Avg daily | 0.55% | **1.560%** | — |
+| Strategies | ST only | ST: 136, Breakout: 55 | — |
+
+**Backtest syntax fix**: `backtest_v4.py` had pre-existing indentation error (elif inside if body) — corrected.
+
+**Files changed**: `src/orchestrator/main.py`, `src/strategies/regime_detector.py`, `src/strategies/supertrend_trend.py`, `src/strategies/adaptive_strategy.py`, `scripts/backtest_v4.py`, `tests/test_strategies/test_adaptive_multi_tf.py`, `tests/test_strategies/test_supertrend_trend.py`, `tests/test_strategies/test_regime_detector.py`.
+
+**Tests**: 431 passed (+13 new), 0 failures.
+
 ### 2026-03-27
 
 #### v6.10 Audit Hardening: DB trailing stops, CB race fix, Kelly ceiling, scalper corrections

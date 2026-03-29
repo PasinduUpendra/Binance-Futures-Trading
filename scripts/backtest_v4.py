@@ -165,14 +165,14 @@ def run_backtest():
                 if lo <= pos["sl"]:
                     hit_sl = True
                     exit_price = pos["sl"]
-                    elif hi >= pos["tp"]:
-                        hit_tp = True
-                        exit_price = pos["tp"]
-                else:
-                    if hi >= pos["sl"]:
-                        hit_sl = True
-                        exit_price = pos["sl"]
-                    elif lo <= pos["tp"]:
+                elif hi >= pos["tp"]:
+                    hit_tp = True
+                    exit_price = pos["tp"]
+            else:
+                if hi >= pos["sl"]:
+                    hit_sl = True
+                    exit_price = pos["sl"]
+                elif lo <= pos["tp"]:
                         hit_tp = True
                         exit_price = pos["tp"]
 

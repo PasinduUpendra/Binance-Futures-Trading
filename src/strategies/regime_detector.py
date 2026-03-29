@@ -320,6 +320,11 @@ class RegimeDetector:
             score += 0.8
         elif volr <= 1.0:
             score += 0.3
+        # High ADX fundamentally contradicts ranging — heavy penalty.
+        # Narrow BB / low ATR can occur in a strong trend that compresses
+        # before continuation; ADX >= 20 means directional strength is real.
+        if adx >= self.ADX_TRENDING_MIN:
+            score *= 0.3
         return score
 
     def _score_volatile(

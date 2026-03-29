@@ -200,7 +200,21 @@ def test_trending_low_adx_routes_to_none(adaptive: AdaptiveStrategy) -> None:
 
 
 def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
-    """RANGING regime returns None (MeanReversion disabled: 25% WR paper, 5.3% historical)."""
+    """RANGING with ADX < 18 returns None (MeanReversion disabled)."""
+    regime = RegimeState(
+        regime=MarketRegime.RANGING,
+        confidence=70.0,
+        adx=15.0,
+        bb_width_ratio=0.7,
+        atr_ratio=0.8,
+        volume_ratio=0.6,
+    )
+    strategy = adaptive.select_strategy(regime)
+    assert strategy is None
+
+
+def test_ranging_with_adx_18_routes_to_supertrend(adaptive: AdaptiveStrategy) -> None:
+    """RANGING with ADX >= 18 bridges dead zone → SupertrendTrend."""
     regime = RegimeState(
         regime=MarketRegime.RANGING,
         confidence=70.0,
@@ -210,7 +224,8 @@ def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
         volume_ratio=0.6,
     )
     strategy = adaptive.select_strategy(regime)
-    assert strategy is None
+    assert strategy is not None
+    assert strategy.name == "SupertrendTrend"
 
 
 # ---------------------------------------------------------------------------
@@ -219,11 +234,26 @@ def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
 
 
 def test_volatile_routes_to_breakout_trader(adaptive: AdaptiveStrategy) -> None:
-    """VOLATILE regime returns None (BreakoutTrader disabled: 23.9% WR, negative EV)."""
+    """VOLATILE with ADX >= 15 routes to BreakoutTrader."""
     regime = RegimeState(
         regime=MarketRegime.VOLATILE,
         confidence=65.0,
         adx=22.0,
+        bb_width_ratio=1.2,
+        atr_ratio=1.3,
+        volume_ratio=1.5,
+    )
+    strategy = adaptive.select_strategy(regime)
+    assert strategy is not None
+    assert strategy.name == "BreakoutTrader"
+
+
+def test_volatile_low_adx_routes_to_none(adaptive: AdaptiveStrategy) -> None:
+    """VOLATILE with ADX < 15 returns None."""
+    regime = RegimeState(
+        regime=MarketRegime.VOLATILE,
+        confidence=65.0,
+        adx=12.0,
         bb_width_ratio=1.2,
         atr_ratio=1.3,
         volume_ratio=1.5,

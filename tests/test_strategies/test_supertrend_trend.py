@@ -285,3 +285,75 @@ def test_signal_regime_is_trending(strategy: SupertrendTrend) -> None:
     df = _make_df(st_dirs=[-1, 1])
     sig = strategy.generate_signal(df)
     assert sig.regime == "trending"
+
+
+# ---------------------------------------------------------------------------
+# 1H Continuation entry tests
+# ---------------------------------------------------------------------------
+
+
+def test_continuation_signal_long(strategy: SupertrendTrend) -> None:
+    """1H flip bullish during established 4H bullish trend -> LONG."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0)
+    df_1h = _make_df(st_dirs=[-1, 1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.LONG
+    assert sig.confidence > 0
+    assert "continuation" in sig.reasoning.lower()
+
+
+def test_continuation_signal_short(strategy: SupertrendTrend) -> None:
+    """1H flip bearish during established 4H bearish trend -> SHORT."""
+    df_4h = _make_df(st_dirs=[-1, -1, -1, -1], adx=30.0)
+    df_1h = _make_df(st_dirs=[1, -1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.SHORT
+    assert sig.confidence > 0
+
+
+def test_continuation_no_signal_when_4h_not_established(strategy: SupertrendTrend) -> None:
+    """Mixed 4H directions should return NONE."""
+    df_4h = _make_df(st_dirs=[1, -1, 1, -1], adx=30.0)
+    df_1h = _make_df(st_dirs=[-1, 1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.NONE
+
+
+def test_continuation_no_signal_when_1h_no_flip(strategy: SupertrendTrend) -> None:
+    """No 1H flip -> no continuation signal."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0)
+    df_1h = _make_df(st_dirs=[1, 1])  # No flip
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.NONE
+
+
+def test_continuation_no_signal_wrong_direction(strategy: SupertrendTrend) -> None:
+    """1H flip opposite to 4H established direction -> NONE."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0)  # Bullish
+    df_1h = _make_df(st_dirs=[1, -1])  # Bearish flip — wrong direction
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.NONE
+
+
+def test_continuation_adx_gate(strategy: SupertrendTrend) -> None:
+    """ADX below threshold blocks continuation signal."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=15.0)
+    df_1h = _make_df(st_dirs=[-1, 1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.direction == SignalDirection.NONE
+
+
+def test_continuation_confidence_capped_at_80(strategy: SupertrendTrend) -> None:
+    """Continuation confidence should never exceed 80."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=40.0, ema9=3010.0, ema21=2990.0, rsi=50.0)
+    df_1h = _make_df(st_dirs=[-1, 1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.confidence <= 80.0
+
+
+def test_continuation_has_entry_type_indicator(strategy: SupertrendTrend) -> None:
+    """Continuation signals must have entry_type='continuation' in indicators."""
+    df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0)
+    df_1h = _make_df(st_dirs=[-1, 1])
+    sig = strategy.generate_continuation_signal(df_4h, df_1h)
+    assert sig.indicators_used.get("entry_type") == "continuation"

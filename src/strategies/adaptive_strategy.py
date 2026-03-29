@@ -111,6 +111,16 @@ class AdaptiveStrategy:
                 return None
 
         if regime.regime == MarketRegime.RANGING:
+            # ADX 18-19.99: regime detector says RANGING but ADX is strong
+            # enough for SupertrendTrend (gate is 18.0). Route to it instead
+            # of discarding — closes the dead zone between detectors.
+            if regime.adx >= 18.0:
+                self.logger.info(
+                    "Regime RANGING but ADX=%.1f >= 18 -> SupertrendTrend "
+                    "(dead zone bridge)",
+                    regime.adx,
+                )
+                return self._supertrend_trend
             self.logger.info(
                 "Regime RANGING (ADX=%.1f) -> NO TRADE "
                 "(MeanReversion disabled: 25%% WR in paper trading, 5.3%% WR historical)",
@@ -119,10 +129,20 @@ class AdaptiveStrategy:
             return None
 
         if regime.regime == MarketRegime.VOLATILE:
+            # Re-enabled with ADX gate. BreakoutTrader's own volume surge
+            # check (VOLUME_SURGE_MULT) provides the second filter.
+            # v6.10 fixed the volume scoring formula (MED-3).
+            if regime.adx >= 15.0:
+                self.logger.info(
+                    "Regime VOLATILE (BBw=%.2f, ADX=%.1f) -> BreakoutTrader (1H)",
+                    regime.bb_width_ratio,
+                    regime.adx,
+                )
+                return self._breakout_trader
             self.logger.info(
-                "Regime VOLATILE (BBw=%.2f) -> NO TRADE "
-                "(BreakoutTrader disabled: 23.9%% WR, negative EV)",
+                "Regime VOLATILE (BBw=%.2f) but ADX=%.1f < 15 -> NO TRADE",
                 regime.bb_width_ratio,
+                regime.adx,
             )
             return None
 
@@ -163,6 +183,14 @@ class AdaptiveStrategy:
                 # 4H strategies: use 4H data, 1H close as entry_price
                 close_1h = float(df_1h["close"].dropna().iloc[-1])
                 signal = strategy.generate_signal(df_4h, entry_price=close_1h)
+
+                # If 4H flip returned NONE and strategy is SupertrendTrend,
+                # try 1H continuation entry in established 4H trend.
+                if (
+                    signal.direction == SignalDirection.NONE
+                    and isinstance(strategy, SupertrendTrend)
+                ):
+                    signal = strategy.generate_continuation_signal(df_4h, df_1h)
             else:
                 # 1H strategies (TrendFollower, BreakoutTrader)
                 signal = strategy.generate_signal(df_1h)
