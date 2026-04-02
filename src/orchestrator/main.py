@@ -26,7 +26,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 load_dotenv()
 
@@ -88,10 +88,26 @@ class TrailingStopState(BaseModel):
     activated: bool = False  # True once price moved 2.0 ATR favorable
     strategy_name: str = ""
     take_profit: float = 0.0  # Original TP price for re-placement after ST reversal
+    tp_pending: bool = False  # True when TP placement failed and needs retry
 
     # Trailing stop parameters (from v3 backtest)
     ACTIVATE_ATR_MULT: float = 2.0
     TRAIL_ATR_MULT: float = 2.5
+
+    @model_validator(mode="after")
+    def _validate_tp_direction(self) -> "TrailingStopState":
+        """Reject take_profit on wrong side of entry_price."""
+        if self.take_profit == 0.0:
+            return self  # 0.0 means "no TP set"
+        if self.direction == "long" and self.take_profit <= self.entry_price:
+            raise ValueError(
+                f"LONG TP {self.take_profit} must be above entry {self.entry_price}"
+            )
+        if self.direction == "short" and self.take_profit >= self.entry_price:
+            raise ValueError(
+                f"SHORT TP {self.take_profit} must be below entry {self.entry_price}"
+            )
+        return self
 
 
 class CycleResult(BaseModel):
@@ -182,6 +198,7 @@ class Orchestrator:
         self.dashboard = Dashboard()
         self.report_generator = ReportGenerator()
         self.alert_system = AlertSystem()
+        self.alert_system.log_channel_status()
         self.db = DatabaseManager()  # consolidated DB at user_data/claude_quant.db
 
         AGENT_STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -563,11 +580,26 @@ class Orchestrator:
             # ── Position count gate ──
             open_positions = await self.position_tracker.get_open_positions()
             if len(open_positions) >= constraints.max_positions:
-                logger.info(
-                    f"[{trigger}] Max positions reached "
-                    f"({len(open_positions)}/{constraints.max_positions})"
+                # Try smart swap: close worst position if new signal is much better
+                swap_pos = await self._find_swap_candidate(
+                    new_confidence=signal.confidence,
+                    open_positions=open_positions,
                 )
-                return None
+                if swap_pos is None:
+                    logger.info(
+                        f"[{trigger}] Max positions reached "
+                        f"({len(open_positions)}/{constraints.max_positions})"
+                    )
+                    return None
+
+                swapped = await self._close_position_for_swap(
+                    swap_pos, symbol, trigger,
+                )
+                if not swapped:
+                    logger.info(
+                        f"[{trigger}] Max positions reached and swap failed"
+                    )
+                    return None
 
             for pos in open_positions:
                 if pos.symbol == symbol:
@@ -919,24 +951,39 @@ class Orchestrator:
                         symbol=pos.symbol,
                         side=sl_side,
                         amount=pos.size,
-                        stop_price=entry_price,
+                        stop_price=Decimal(str(entry_price)),
                     )
 
                     # Re-place TP (cancel_open_orders removed it too).
                     # Backtest keeps TP intact; production must match.
                     if ts_state.take_profit and ts_state.take_profit > 0:
-                        try:
-                            await self.order_manager.place_take_profit(
-                                symbol=pos.symbol,
-                                side=sl_side,
-                                amount=pos.size,
-                                stop_price=Decimal(str(ts_state.take_profit)),
+                        # Validate TP direction before placement
+                        tp_valid = (
+                            (ts_state.direction == "long" and ts_state.take_profit > ts_state.entry_price)
+                            or (ts_state.direction == "short" and ts_state.take_profit < ts_state.entry_price)
+                        )
+                        if not tp_valid:
+                            logger.error(
+                                "ST reversal: TP %.6f invalid for %s %s (entry=%.6f) — clearing TP",
+                                ts_state.take_profit, pos.symbol, ts_state.direction, ts_state.entry_price,
                             )
-                        except Exception as tp_err:
-                            logger.warning(
-                                f"ST reversal: TP re-placement failed for "
-                                f"{pos.symbol} (non-blocking): {tp_err}"
-                            )
+                            ts_state.take_profit = 0.0
+                            self._persist_trailing_stop_state()
+                        else:
+                            try:
+                                await self.order_manager.place_take_profit(
+                                    symbol=pos.symbol,
+                                    side=sl_side,
+                                    amount=pos.size,
+                                    stop_price=Decimal(str(ts_state.take_profit)),
+                                )
+                            except Exception as tp_err:
+                                logger.warning(
+                                    f"ST reversal: TP re-placement failed for "
+                                    f"{pos.symbol} (non-blocking): {tp_err}"
+                                )
+                                ts_state.tp_pending = True
+                                self._persist_trailing_stop_state()
 
                     result.positions_closed.append({
                         "symbol": pos.symbol,
@@ -1227,6 +1274,8 @@ class Orchestrator:
             self._persist_trailing_stop_state()
 
         # 2. For every open position, ensure it's tracked and has protective orders.
+        #    Cache orders per symbol to avoid duplicate API calls in step 3.
+        _orders_cache: dict[str, list] = {}
         for pos in open_positions:
             # Register untracked positions so reconciliation covers them
             if pos.symbol not in self._trailing_stops:
@@ -1249,19 +1298,36 @@ class Orchestrator:
                     pos.symbol,
                     conditional_only=True,
                 )
-                if len(open_orders) == 0:
+                _orders_cache[pos.symbol] = open_orders
+
+                # Discriminate SL vs TP by order type
+                has_sl = any(
+                    "stop" in o.order_type.lower()
+                    and "profit" not in o.order_type.lower()
+                    for o in open_orders
+                )
+                has_tp = any(
+                    "profit" in o.order_type.lower()
+                    for o in open_orders
+                )
+
+                # Treat tp_pending as missing TP (retry failed placements)
+                ts_state = self._trailing_stops.get(pos.symbol)
+                if ts_state and ts_state.tp_pending:
+                    has_tp = False
+
+                if not has_sl:
                     logger.warning(
-                        "RECONCILE: %s has open position but ZERO conditional "
-                        "orders — UNPROTECTED. Placing emergency SL at entry.",
+                        "RECONCILE: %s missing SL order — placing emergency SL.",
                         pos.symbol,
                     )
                     await self._place_emergency_stop_loss(pos)
-                elif len(open_orders) < 2:
+                if not has_tp:
                     logger.warning(
-                        "RECONCILE: %s has only %d conditional order(s) "
-                        "(expected 2: SL + TP).",
-                        pos.symbol, len(open_orders),
+                        "RECONCILE: %s missing TP order — placing emergency TP.",
+                        pos.symbol,
                     )
+                    await self._place_emergency_take_profit(pos)
             except Exception as e:
                 logger.error(
                     "RECONCILE: Failed to check orders for %s: %s", pos.symbol, e
@@ -1292,17 +1358,20 @@ class Orchestrator:
                     "closing %d most vulnerable.",
                     len(open_positions), max_pos, excess,
                 )
-                # Gather order counts per position (already fetched above
-                # but not stored — re-fetch to keep code self-contained)
+                # Gather order counts per position (use cache from step 2)
                 pos_vulnerability: list[tuple[Position, int]] = []
                 for pos in open_positions:
-                    try:
-                        orders = await self.order_manager.get_open_orders(
-                            pos.symbol, conditional_only=True,
-                        )
-                        pos_vulnerability.append((pos, len(orders)))
-                    except Exception:
-                        pos_vulnerability.append((pos, 0))
+                    cached = _orders_cache.get(pos.symbol)
+                    if cached is not None:
+                        pos_vulnerability.append((pos, len(cached)))
+                    else:
+                        try:
+                            orders = await self.order_manager.get_open_orders(
+                                pos.symbol, conditional_only=True,
+                            )
+                            pos_vulnerability.append((pos, len(orders)))
+                        except Exception:
+                            pos_vulnerability.append((pos, 0))
 
                 # Sort: fewest orders first, then lowest unrealized PnL
                 pos_vulnerability.sort(
@@ -1338,24 +1407,35 @@ class Orchestrator:
             logger.error("RECONCILE: Excess position check failed: %s", e)
 
     async def _place_emergency_stop_loss(self, pos: Position) -> None:
-        """Place emergency stop-loss at entry price for unprotected positions.
+        """Place emergency stop-loss for unprotected positions.
 
-        When reconciliation finds a position with zero conditional orders,
-        this places a breakeven SL as a safety net.
+        Uses 3×ATR(4H) from trailing stop state if available. Falls back to
+        entry price (breakeven) when ATR is unavailable.
         """
         try:
             entry_price = float(pos.entry_price)
+            sl_price = entry_price  # default: breakeven
+
+            ts_state = self._trailing_stops.get(pos.symbol)
+            if ts_state and ts_state.atr_4h > 0:
+                SL_ATR_MULT = 3.0
+                if pos.side == "long":
+                    sl_price = entry_price - (SL_ATR_MULT * ts_state.atr_4h)
+                else:
+                    sl_price = entry_price + (SL_ATR_MULT * ts_state.atr_4h)
+
             sl_side = "sell" if pos.side == "long" else "buy"
             result = await self.order_manager.place_stop_loss(
                 symbol=pos.symbol,
                 side=sl_side,
                 amount=pos.size,
-                stop_price=Decimal(str(entry_price)),
+                stop_price=Decimal(str(sl_price)),
             )
             if result:
+                sl_type = "ATR-based" if (ts_state and ts_state.atr_4h > 0) else "breakeven"
                 logger.info(
-                    "RECONCILE: Emergency SL placed for %s at %s (breakeven)",
-                    pos.symbol, entry_price,
+                    "RECONCILE: Emergency SL placed for %s at %.6f (%s)",
+                    pos.symbol, sl_price, sl_type,
                 )
             else:
                 logger.error(
@@ -1366,6 +1446,167 @@ class Orchestrator:
                 "RECONCILE: Emergency SL placement failed for %s: %s",
                 pos.symbol, e,
             )
+
+    async def _place_emergency_take_profit(self, pos: Position) -> None:
+        """Place emergency take-profit for unprotected positions.
+
+        Uses stored TP from trailing stop state if valid, otherwise computes
+        from 6×ATR(4H). If ATR is unavailable, sets tp_pending for retry.
+        """
+        ts_state = self._trailing_stops.get(pos.symbol)
+        try:
+            entry_price = float(pos.entry_price)
+            tp_price = 0.0
+
+            # Try stored TP (validate direction)
+            if ts_state and ts_state.take_profit > 0:
+                if pos.side == "long" and ts_state.take_profit > entry_price:
+                    tp_price = ts_state.take_profit
+                elif pos.side == "short" and ts_state.take_profit < entry_price:
+                    tp_price = ts_state.take_profit
+
+            # Fall back to 6×ATR computation
+            if tp_price <= 0 and ts_state and ts_state.atr_4h > 0:
+                TP_ATR_MULT = 6.0
+                if pos.side == "long":
+                    tp_price = entry_price + (TP_ATR_MULT * ts_state.atr_4h)
+                else:
+                    tp_price = entry_price - (TP_ATR_MULT * ts_state.atr_4h)
+
+            if tp_price <= 0:
+                logger.error(
+                    "RECONCILE: Cannot compute TP for %s — no valid TP or ATR. "
+                    "Setting tp_pending=True", pos.symbol,
+                )
+                if ts_state:
+                    ts_state.tp_pending = True
+                    self._persist_trailing_stop_state()
+                return
+
+            tp_side = "sell" if pos.side == "long" else "buy"
+            result = await self.order_manager.place_take_profit(
+                symbol=pos.symbol,
+                side=tp_side,
+                amount=pos.size,
+                stop_price=Decimal(str(tp_price)),
+            )
+            if result:
+                logger.info(
+                    "RECONCILE: Emergency TP placed for %s at %.6f",
+                    pos.symbol, tp_price,
+                )
+                if ts_state:
+                    ts_state.take_profit = tp_price
+                    ts_state.tp_pending = False
+                    self._persist_trailing_stop_state()
+            else:
+                logger.error(
+                    "RECONCILE: Emergency TP returned None for %s", pos.symbol,
+                )
+                if ts_state:
+                    ts_state.tp_pending = True
+                    self._persist_trailing_stop_state()
+        except Exception as e:
+            logger.error(
+                "RECONCILE: Emergency TP placement failed for %s: %s",
+                pos.symbol, e,
+            )
+            if ts_state:
+                ts_state.tp_pending = True
+                self._persist_trailing_stop_state()
+
+    async def _find_swap_candidate(
+        self,
+        new_confidence: float,
+        open_positions: list[Position],
+    ) -> Position | None:
+        """Find the best swap candidate among open positions.
+
+        Returns the position to close for swap, or None if no suitable candidate.
+        Requirements:
+        - New signal confidence >= 70%
+        - Position has NEGATIVE unrealized PnL
+        - Trailing stop NOT activated
+        - New confidence exceeds entry confidence by >= 20 points
+        """
+        if new_confidence < 70:
+            return None
+
+        candidates: list[tuple[Position, float]] = []
+
+        # Look up entry confidence from trade journal
+        recent_trades = self.trade_journal.get_recent_trades(50)
+
+        for pos in open_positions:
+            if float(pos.unrealized_pnl) >= 0:
+                continue
+
+            ts_state = self._trailing_stops.get(pos.symbol)
+            if ts_state and ts_state.activated:
+                continue
+
+            entry_confidence = 0.0
+            for trade in recent_trades:
+                if trade.symbol == pos.symbol and trade.exit_price is None:
+                    entry_confidence = float(trade.confidence)
+                    break
+
+            if new_confidence - entry_confidence >= 20:
+                candidates.append((pos, entry_confidence))
+
+        if not candidates:
+            return None
+
+        # Sort by worst PnL first (most negative = best swap target)
+        candidates.sort(key=lambda x: float(x[0].unrealized_pnl))
+        return candidates[0][0]
+
+    async def _close_position_for_swap(
+        self,
+        pos: Position,
+        new_symbol: str,
+        trigger: str,
+    ) -> bool:
+        """Close a position to make room for a better trade.
+
+        Returns True on success.
+        """
+        try:
+            close_side = "sell" if pos.side == "long" else "buy"
+            await self.order_manager.cancel_open_orders(pos.symbol)
+            result = await self.order_manager.place_market_order(
+                symbol=pos.symbol,
+                side=close_side,
+                amount=pos.size,
+            )
+            if result:
+                logger.info(
+                    "[%s] SWAP: Closed %s %s (PnL=%s) to open %s",
+                    trigger, pos.symbol, pos.side, pos.unrealized_pnl, new_symbol,
+                )
+
+                self._record_trade_exit(
+                    symbol=pos.symbol,
+                    exit_price=float(pos.current_price),
+                    pnl=float(pos.unrealized_pnl),
+                    entry_price=float(pos.entry_price),
+                    reason="swap_out",
+                )
+
+                self._trailing_stops.pop(pos.symbol, None)
+                self._persist_trailing_stop_state()
+                return True
+            else:
+                logger.error(
+                    "[%s] SWAP: Market close returned None for %s",
+                    trigger, pos.symbol,
+                )
+                return False
+        except Exception as e:
+            logger.error(
+                "[%s] SWAP: Failed to close %s: %s", trigger, pos.symbol, e,
+            )
+            return False
 
     async def _detect_preexisting_positions(self) -> None:
         """On startup, detect positions already on exchange and register them.
@@ -1757,16 +1998,23 @@ class Orchestrator:
             if rows:
                 loaded: dict[str, TrailingStopState] = {}
                 for symbol, data in rows.items():
-                    loaded[symbol] = TrailingStopState(
-                        symbol=symbol,
-                        direction=data["direction"],
-                        entry_price=data["entry_price"],
-                        best_price=data["best_price"],
-                        atr_4h=data["atr_4h"],
-                        activated=data["activated"],
-                        strategy_name=data.get("strategy_name", ""),
-                        take_profit=data.get("take_profit", 0.0),
-                    )
+                    try:
+                        loaded[symbol] = TrailingStopState(
+                            symbol=symbol,
+                            direction=data["direction"],
+                            entry_price=data["entry_price"],
+                            best_price=data["best_price"],
+                            atr_4h=data["atr_4h"],
+                            activated=data["activated"],
+                            strategy_name=data.get("strategy_name", ""),
+                            take_profit=data.get("take_profit", 0.0),
+                            tp_pending=data.get("tp_pending", False),
+                        )
+                    except (ValueError, KeyError) as entry_exc:
+                        logger.error(
+                            "Skipping corrupted trailing stop for %s: %s",
+                            symbol, entry_exc,
+                        )
                 self._trailing_stops = loaded
                 logger.info(
                     "Restored %d trailing stop state(s) from database",
@@ -1786,7 +2034,13 @@ class Orchestrator:
             )
             loaded_json: dict[str, TrailingStopState] = {}
             for symbol, state in raw.items():
-                loaded_json[symbol] = TrailingStopState(**state)
+                try:
+                    loaded_json[symbol] = TrailingStopState(**state)
+                except (ValueError, KeyError) as entry_exc:
+                    logger.error(
+                        "Skipping corrupted trailing stop for %s (JSON): %s",
+                        symbol, entry_exc,
+                    )
             self._trailing_stops = loaded_json
             # Migrate to DB immediately
             self._persist_trailing_stop_state()
@@ -1818,6 +2072,7 @@ class Orchestrator:
                     activated=state.activated,
                     strategy_name=state.strategy_name,
                     take_profit=state.take_profit,
+                    tp_pending=state.tp_pending,
                 )
 
             # Delete stale entries (positions closed since last persist)

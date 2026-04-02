@@ -4,6 +4,39 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-03-30
+
+#### v6.12 Bug Fix Batch: TP validation, SL/TP reconciliation, alert hardening, smart swap, ATR emergency SL
+
+**Origin**: Production monitoring identified 4 primary bugs (ADA stuck TP, ETH missing TP, alert 404s, blocked positions) plus 4 hardening improvements. All 8 fixes implemented with 44 new tests.
+
+**Batch 1 — P0 Safety**:
+
+| # | Fix | Files Modified | Tests Added |
+|---|-----|---------------|-------------|
+| 1 | **ADA stuck TP validator**: Added `@model_validator(mode="after")` to `TrailingStopState` rejecting TPs on wrong side of entry price. Defensive TP direction check in `_check_supertrend_reversal_exits`. Per-entry `try/except` in `_load_trailing_stop_state` so one corrupted entry doesn't block all others. Fixed ADA JSON data (TP 0.61 → 0.0 for SHORT at 0.2606). | `main.py`, `trailing_stops.json` | 8 |
+| 2 | **ETH missing TP reconciliation**: New `_place_emergency_take_profit()` method uses stored TP if valid, falls back to 6×ATR computation, sets `tp_pending` if ATR unavailable. Reconciliation now discriminates SL vs TP orders by `order_type` field (`"stop"` vs `"profit"` patterns) instead of just counting orders. | `main.py` | 6 |
+| 3 | **Alert placeholder detection**: `_telegram_configured()` and `_discord_configured()` now reject placeholder tokens (`your_*`, `changeme`, `<token>`, `${VAR}`, etc.) and require `https://` for Discord webhooks. New `log_channel_status()` called at startup shows which channels are active. | `alert_system.py`, `main.py` | 10 |
+
+**Batch 2 — P2 Profit**:
+
+| # | Fix | Files Modified | Tests Added |
+|---|-----|---------------|-------------|
+| 4 | **Smart position swap**: When max positions reached and new signal confidence ≥ 70% with ≥ 20-point advantage over worst position's entry confidence, closes the worst losing position (negative PnL, trailing stop not activated) to make room. New `_find_swap_candidate()` and `_close_position_for_swap()` methods. | `main.py` | 5 |
+
+**Batch 3 — P1 Hardening**:
+
+| # | Fix | Files Modified | Tests Added |
+|---|-----|---------------|-------------|
+| 5 | **ATR-based emergency SL**: `_place_emergency_stop_loss()` now uses 3×ATR(4H) from trailing stop state when available, falls back to breakeven only when ATR is 0. | `main.py` | 2 |
+| 6 | **TP retry mechanism**: New `tp_pending` field on `TrailingStopState` persisted to DB. Reconciliation treats `tp_pending=True` as missing TP and retries placement. DB schema migrated with `ALTER TABLE` for existing databases. | `main.py`, `database.py` | 2 |
+| 7 | **Cached API calls**: Reconciliation caches `get_open_orders` results per symbol in step 2, reused in step 3 (excess position handling) to eliminate duplicate API calls. | `main.py` | 0 |
+| 8 | **Float precision**: ST reversal SL placement now uses `Decimal(str(entry_price))` instead of passing raw float to `place_stop_loss`. | `main.py` | 1 |
+
+**DB migration**: `tp_pending INTEGER NOT NULL DEFAULT 0` column added to `trailing_stops` table via `_run_migrations()` in `DatabaseManager._initialize()`.
+
+**Test results**: 475 total (431 baseline + 44 new), 0 failures, 0 regressions.
+
 ### 2026-03-29
 
 #### v6.11 Audit Fixes: Reconciliation safety, regime detection, 1H continuation entries, BreakoutTrader re-enabled

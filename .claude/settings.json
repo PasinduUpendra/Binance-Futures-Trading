@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/pasinduupendra/Documents/Development/**)",
+      "Bash(find '/Users/pasinduupendra/Documents/Development/Claude Quant' -name *.log -o -name *.db -o -name *.sqlite*)",
+      "Bash(sqlite3 user_data/agent_state/trade_journal.db \".tables\")",
+      "Bash(sqlite3 user_data/agent_state/trade_journal.db \".schema trades\")",
+      "Bash(sqlite3 user_data/agent_state/trade_journal.db \"SELECT COUNT\\(*\\) as total_trades FROM trades; SELECT * FROM trades ORDER BY timestamp DESC LIMIT 20;\")",
+      "Bash(find src:*)",
+      "Bash(python -m pytest tests/ --co -q)",
+      "Bash(python -m pytest tests/ -x)",
+      "Bash(wc -l \"/Users/pasinduupendra/Documents/Development/Claude Quant/src/risk/\"*.py \"/Users/pasinduupendra/Documents/Development/Claude Quant/src/validation/\"*.py)",
+      "Bash(sqlite3 user_data/agent_state/trade_journal.db \"SELECT symbol, direction, COUNT\\(*\\) as count, SUM\\(CASE WHEN pnl IS NOT NULL AND CAST\\(pnl AS FLOAT\\) > 0 THEN 1 ELSE 0 END\\) as wins FROM trades GROUP BY symbol, direction;\")",
+      "Bash(sqlite3 user_data/agent_state/trade_journal.db \"SELECT symbol, direction, entry_price, exit_price, pnl, pnl_pct, strategy, reason FROM trades WHERE exit_price IS NOT NULL ORDER BY timestamp;\")",
+      "Bash(sqlite3 user_data/claude_quant.db \".tables\")",
+      "Bash(sqlite3 user_data/claude_quant.db \"SELECT COUNT\\(*\\) as closed_trades FROM trades WHERE exit_price IS NOT NULL; SELECT COUNT\\(*\\) as open_trades FROM trades WHERE exit_price IS NULL;\")",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(grep -n \"CLAUDE.md\\\\|README\\\\|DESIGN\\\\|requirements\" /Users/pasinduupendra/Documents/Development/Claude Quant/*.md)",
+      "Bash(cd /Users/pasinduupendra/Documents/Development/\"Claude Quant\")",
+      "Bash(find tests:*)",
+      "Bash(python -m pytest tests -v)",
+      "Bash(python -m pytest tests --tb=no -q)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

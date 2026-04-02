@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS trailing_stops (
     activated       INTEGER NOT NULL DEFAULT 0,
     strategy_name   TEXT DEFAULT '',
     take_profit     REAL DEFAULT 0.0,
+    tp_pending      INTEGER NOT NULL DEFAULT 0,
     updated_at      TEXT NOT NULL
 );
 """
@@ -248,7 +249,23 @@ class DatabaseManager:
             + _INDEXES
         )
         conn.commit()
+        self._run_migrations(conn)
         logger.info("DatabaseManager initialized at %s", self._db_path)
+
+    def _run_migrations(self, conn: sqlite3.Connection) -> None:
+        """Apply schema migrations for columns added after initial release."""
+        # v6.12: Add tp_pending column to trailing_stops
+        try:
+            cursor = conn.execute("PRAGMA table_info(trailing_stops)")
+            columns = {row["name"] for row in cursor.fetchall()}
+            if "tp_pending" not in columns:
+                conn.execute(
+                    "ALTER TABLE trailing_stops ADD COLUMN tp_pending INTEGER NOT NULL DEFAULT 0"
+                )
+                conn.commit()
+                logger.info("Migration: added tp_pending column to trailing_stops")
+        except Exception as exc:
+            logger.warning("Migration check failed: %s", exc)
 
     def _get_conn(self) -> sqlite3.Connection:
         """Get or create the SQLite connection with WAL mode."""
@@ -421,6 +438,7 @@ class DatabaseManager:
         activated: bool,
         strategy_name: str = "",
         take_profit: float = 0.0,
+        tp_pending: bool = False,
     ) -> None:
         """Insert or update a trailing stop record for *symbol*."""
         conn = self._get_conn()
@@ -429,8 +447,8 @@ class DatabaseManager:
             """
             INSERT OR REPLACE INTO trailing_stops (
                 symbol, direction, entry_price, best_price, atr_4h,
-                activated, strategy_name, take_profit, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                activated, strategy_name, take_profit, tp_pending, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 symbol,
@@ -441,6 +459,7 @@ class DatabaseManager:
                 int(activated),
                 strategy_name,
                 take_profit,
+                int(tp_pending),
                 now,
             ),
         )
@@ -454,6 +473,7 @@ class DatabaseManager:
         for row in cursor.fetchall():
             d = dict(row)
             d["activated"] = bool(d["activated"])
+            d["tp_pending"] = bool(d.get("tp_pending", 0))
             result[d["symbol"]] = d
         return result
 

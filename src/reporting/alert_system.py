@@ -243,11 +243,52 @@ class AlertSystem:
 
     # -- channel checks ------------------------------------------------------
 
+    @staticmethod
+    def _is_placeholder(value: str) -> bool:
+        """Return True if value looks like an unfilled placeholder token."""
+        v = value.strip().lower()
+        return (
+            v.startswith("your_")
+            or v.startswith("your-")
+            or v in {"", "changeme", "placeholder", "xxx", "none", "todo"}
+            or v.startswith("<")
+            or v.startswith("${")
+        )
+
     def _telegram_configured(self) -> bool:
-        return bool(self._config.telegram_bot_token and self._config.telegram_chat_id)
+        token = self._config.telegram_bot_token
+        chat_id = self._config.telegram_chat_id
+        if not token or not chat_id:
+            return False
+        if self._is_placeholder(token) or self._is_placeholder(chat_id):
+            return False
+        return True
 
     def _discord_configured(self) -> bool:
-        return bool(self._config.discord_webhook_url)
+        url = self._config.discord_webhook_url
+        if not url:
+            return False
+        if self._is_placeholder(url):
+            return False
+        if not url.startswith("https://"):
+            return False
+        return True
+
+    def log_channel_status(self) -> None:
+        """Log which alert channels are active at startup."""
+        tg = self._telegram_configured()
+        dc = self._discord_configured()
+        co = self._config.console_enabled
+        logger.info(
+            "Alert channels: Telegram=%s, Discord=%s, Console=%s",
+            "ON" if tg else "OFF",
+            "ON" if dc else "OFF",
+            "ON" if co else "OFF",
+        )
+        if not tg and not dc:
+            logger.warning(
+                "No external alert channels configured — alerts are console-only"
+            )
 
     # -- Telegram ------------------------------------------------------------
 
