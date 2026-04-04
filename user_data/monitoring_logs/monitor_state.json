@@ -1,0 +1,959 @@
+{
+  "log_file": "/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/monitoring_logs/audit_20260404_090627.log",
+  "check_number": 35,
+  "start_time": "2026-04-04T09:06:27.741916+00:00",
+  "prev_balance": "5905.93165324",
+  "start_balance": "5911.29481394",
+  "min_balance": "5902.73168251",
+  "max_balance": "5911.29481394",
+  "all_flags": [],
+  "position_history": [
+    {
+      "time": "2026-04-04T09:06:27.742278+00:00",
+      "check": 1,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.99579979",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-95.48809347",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:29:12.056832+00:00",
+      "check": 2,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "197.4144",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-104.1729",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:29:47.515375+00:00",
+      "check": 3,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.10560909",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:30:27.911803+00:00",
+      "check": 4,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "194.7008",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.43236367",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:30:56.868122+00:00",
+      "check": 5,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "194.7008",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.16625",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:31:17.087045+00:00",
+      "check": 6,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "194.7008",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.61438578",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:31:37.349090+00:00",
+      "check": 7,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.71398836",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.03379015",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:31:58.132821+00:00",
+      "check": 8,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.65585111",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-99.93631636",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:32:18.402025+00:00",
+      "check": 9,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.70808451",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.55921421",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:32:38.841818+00:00",
+      "check": 10,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-102.03408612",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:32:58.954463+00:00",
+      "check": 11,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "194.7008",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.45612686",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:33:20.055458+00:00",
+      "check": 12,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.16094786",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.96758",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:33:41.278927+00:00",
+      "check": 13,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.96758",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:34:02.131311+00:00",
+      "check": 14,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.62694286",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-98.9493743",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:34:22.858030+00:00",
+      "check": 15,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "197.07651338",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-99.80018642",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:34:44.017650+00:00",
+      "check": 16,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.47565527",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:35:05.080661+00:00",
+      "check": 17,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.02539544",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:35:26.645408+00:00",
+      "check": 18,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.37157",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:35:47.577856+00:00",
+      "check": 19,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.36100899",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:36:08.316639+00:00",
+      "check": 20,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.0576",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.36317258",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:36:28.910259+00:00",
+      "check": 21,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.35653221",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.37157",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:36:49.698702+00:00",
+      "check": 22,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "196.65242586",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-102.5265595",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:37:11.114104+00:00",
+      "check": 23,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.76891",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:37:33.586669+00:00",
+      "check": 24,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "194.7008",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.76891",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:38:06.001656+00:00",
+      "check": 25,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.26947083",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-99.62197865",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:38:38.517987+00:00",
+      "check": 26,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.26557614",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-101.76891",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:39:10.872564+00:00",
+      "check": 27,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.50627381",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.96758",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:39:43.312474+00:00",
+      "check": 28,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-99.26843986",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:40:15.626625+00:00",
+      "check": 29,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-102.12096632",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:40:48.035315+00:00",
+      "check": 30,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.88847759",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.37157",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:41:20.493315+00:00",
+      "check": 31,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.11768154",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.37157",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:41:52.787838+00:00",
+      "check": 32,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.37157",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:42:25.098722+00:00",
+      "check": 33,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-103.31249595",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:42:57.749109+00:00",
+      "check": 34,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-99.46977403",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    },
+    {
+      "time": "2026-04-04T09:43:30.211231+00:00",
+      "check": 35,
+      "positions": [
+        {
+          "symbol": "SOL/USDT:USDT",
+          "side": "short",
+          "size": "67.84",
+          "entry_price": "82.82",
+          "unrealized_pnl": "195.3792",
+          "leverage": "1"
+        },
+        {
+          "symbol": "LINK/USDT:USDT",
+          "side": "long",
+          "size": "801.33",
+          "entry_price": "8.769",
+          "unrealized_pnl": "-100.98196387",
+          "leverage": "1"
+        }
+      ],
+      "order_count": 1
+    }
+  ],
+  "balance_history": [
+    {
+      "time": "2026-04-04T09:06:27.742278+00:00",
+      "balance": "5911.29481394"
+    },
+    {
+      "time": "2026-04-04T09:29:12.056832+00:00",
+      "balance": "5904.19779801"
+    },
+    {
+      "time": "2026-04-04T09:29:47.515375+00:00",
+      "balance": "5902.84099801"
+    },
+    {
+      "time": "2026-04-04T09:30:27.911803+00:00",
+      "balance": "5905.41053872"
+    },
+    {
+      "time": "2026-04-04T09:30:56.868122+00:00",
+      "balance": "5904.85806175"
+    },
+    {
+      "time": "2026-04-04T09:31:17.087045+00:00",
+      "balance": "5905.54211555"
+    },
+    {
+      "time": "2026-04-04T09:31:37.349090+00:00",
+      "balance": "5906.19793175"
+    },
+    {
+      "time": "2026-04-04T09:31:58.132821+00:00",
+      "balance": "5907.93237421"
+    },
+    {
+      "time": "2026-04-04T09:32:18.402025+00:00",
+      "balance": "5906.58342547"
+    },
+    {
+      "time": "2026-04-04T09:32:38.841818+00:00",
+      "balance": "5905.77099909"
+    },
+    {
+      "time": "2026-04-04T09:32:58.954463+00:00",
+      "balance": "5903.87957606"
+    },
+    {
+      "time": "2026-04-04T09:33:20.055458+00:00",
+      "balance": "5905.14930700"
+    },
+    {
+      "time": "2026-04-04T09:33:41.278927+00:00",
+      "balance": "5905.36791801"
+    },
+    {
+      "time": "2026-04-04T09:34:02.131311+00:00",
+      "balance": "5907.54254390"
+    },
+    {
+      "time": "2026-04-04T09:34:22.858030+00:00",
+      "balance": "5908.40048365"
+    },
+    {
+      "time": "2026-04-04T09:34:44.017650+00:00",
+      "balance": "5905.53781804"
+    },
+    {
+      "time": "2026-04-04T09:35:05.080661+00:00",
+      "balance": "5904.66957902"
+    },
+    {
+      "time": "2026-04-04T09:35:26.645408+00:00",
+      "balance": "5904.32072801"
+    },
+    {
+      "time": "2026-04-04T09:35:47.577856+00:00",
+      "balance": "5905.65222392"
+    },
+    {
+      "time": "2026-04-04T09:36:08.316639+00:00",
+      "balance": "5906.13289433"
+    },
+    {
+      "time": "2026-04-04T09:36:28.910259+00:00",
+      "balance": "5903.80402193"
+    },
+    {
+      "time": "2026-04-04T09:36:49.698702+00:00",
+      "balance": "5905.12834933"
+    },
+    {
+      "time": "2026-04-04T09:37:11.114104+00:00",
+      "balance": "5904.44241609"
+    },
+    {
+      "time": "2026-04-04T09:37:33.586669+00:00",
+      "balance": "5904.42673585"
+    },
+    {
+      "time": "2026-04-04T09:38:06.001656+00:00",
+      "balance": "5906.69547579"
+    },
+    {
+      "time": "2026-04-04T09:38:38.517987+00:00",
+      "balance": "5904.76842897"
+    },
+    {
+      "time": "2026-04-04T09:39:10.872564+00:00",
+      "balance": "5905.36791801"
+    },
+    {
+      "time": "2026-04-04T09:39:43.312474+00:00",
+      "balance": "5904.20886059"
+    },
+    {
+      "time": "2026-04-04T09:40:15.626625+00:00",
+      "balance": "5904.21277678"
+    },
+    {
+      "time": "2026-04-04T09:40:48.035315+00:00",
+      "balance": "5903.72537582"
+    },
+    {
+      "time": "2026-04-04T09:41:20.493315+00:00",
+      "balance": "5902.73168251"
+    },
+    {
+      "time": "2026-04-04T09:41:52.787838+00:00",
+      "balance": "5902.96392801"
+    },
+    {
+      "time": "2026-04-04T09:42:25.098722+00:00",
+      "balance": "5903.69836502"
+    },
+    {
+      "time": "2026-04-04T09:42:57.749109+00:00",
+      "balance": "5907.83466220"
+    },
+    {
+      "time": "2026-04-04T09:43:30.211231+00:00",
+      "balance": "5905.93165324"
+    }
+  ]
+}

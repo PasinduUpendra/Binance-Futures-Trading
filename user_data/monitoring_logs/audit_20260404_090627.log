@@ -1,0 +1,1204 @@
+=== CLAUDE QUANT 24H MONITORING STARTED 2026-04-04T09:06:27Z ===
+
+======================================================================
+--- CHECK #1 | 2026-04-04T09:06:27Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.3 411587104  42112 s019  SN   11:00AM   0:03.60 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5911.29481394
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.99579979 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-95.48809347 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:06 | BAL=$5911.29481394 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #2 | 2026-04-04T09:29:12Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  37632 s019  SN   11:00AM   0:11.52 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.19779801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=197.4144 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-104.1729 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:29 | BAL=$5904.19779801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #3 | 2026-04-04T09:29:47Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38832 s019  SN   11:00AM   0:11.61 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5902.84099801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.10560909 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:29 | BAL=$5902.84099801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #4 | 2026-04-04T09:30:27Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38752 s019  SN   11:00AM   0:11.75 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.41053872
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.7008 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.43236367 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:30 | BAL=$5905.41053872 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #5 | 2026-04-04T09:30:56Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38848 s019  SN   11:00AM   0:11.83 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.85806175
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.7008 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.16625 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:30 | BAL=$5904.85806175 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #6 | 2026-04-04T09:31:17Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38480 s019  SN   11:00AM   0:11.89 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.54211555
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.7008 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.61438578 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:31 | BAL=$5905.54211555 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #7 | 2026-04-04T09:31:37Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38768 s019  SN   11:00AM   0:11.94 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5906.19793175
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.71398836 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.03379015 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:31 | BAL=$5906.19793175 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #8 | 2026-04-04T09:31:58Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38704 s019  SN   11:00AM   0:11.99 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5907.93237421
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.65585111 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-99.93631636 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:31 | BAL=$5907.93237421 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #9 | 2026-04-04T09:32:18Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38640 s019  SN   11:00AM   0:12.05 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5906.58342547
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.70808451 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.55921421 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:32 | BAL=$5906.58342547 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #10 | 2026-04-04T09:32:38Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.0  0.2 411587104  38592 s019  SN   11:00AM   0:12.11 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.77099909
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-102.03408612 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:32 | BAL=$5905.77099909 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #11 | 2026-04-04T09:32:58Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  38672 s019  SN   11:00AM   0:12.16 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5903.87957606
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.7008 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.45612686 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:32 | BAL=$5903.87957606 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #12 | 2026-04-04T09:33:20Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  38704 s019  SN   11:00AM   0:12.25 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.14930700
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.16094786 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.96758 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:33 | BAL=$5905.14930700 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #13 | 2026-04-04T09:33:41Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38784 s019  SN   11:00AM   0:12.32 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.36791801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.96758 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:33 | BAL=$5905.36791801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #14 | 2026-04-04T09:34:02Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  38768 s019  SN   11:00AM   0:12.39 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5907.54254390
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.62694286 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-98.9493743 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:34 | BAL=$5907.54254390 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #15 | 2026-04-04T09:34:22Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38832 s019  SN   11:00AM   0:12.48 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5908.40048365
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=197.07651338 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-99.80018642 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:34 | BAL=$5908.40048365 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #16 | 2026-04-04T09:34:44Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38864 s019  SN   11:00AM   0:12.56 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.53781804
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.47565527 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:34 | BAL=$5905.53781804 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #17 | 2026-04-04T09:35:05Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38896 s019  SN   11:00AM   0:12.64 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.66957902
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.02539544 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:35 | BAL=$5904.66957902 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #18 | 2026-04-04T09:35:26Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  38736 s019  SN   11:00AM   0:12.72 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.32072801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.37157 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:35 | BAL=$5904.32072801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #19 | 2026-04-04T09:35:47Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.4  0.2 411587104  38832 s019  SN   11:00AM   0:12.79 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.65222392
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.36100899 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:35 | BAL=$5905.65222392 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #20 | 2026-04-04T09:36:08Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  37776 s019  SN   11:00AM   0:12.87 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5906.13289433
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.0576 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.36317258 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:36 | BAL=$5906.13289433 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #21 | 2026-04-04T09:36:28Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38768 s019  SN   11:00AM   0:12.93 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5903.80402193
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.35653221 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.37157 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:36 | BAL=$5903.80402193 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #22 | 2026-04-04T09:36:49Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  38720 s019  SN   11:00AM   0:13.01 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.12834933
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=196.65242586 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-102.5265595 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:36 | BAL=$5905.12834933 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #23 | 2026-04-04T09:37:11Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.3  0.2 411587104  37632 s019  SN   11:00AM   0:13.09 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.44241609
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.76891 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:37 | BAL=$5904.44241609 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #24 | 2026-04-04T09:37:33Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.6  0.2 411587104  38816 s019  SN   11:00AM   0:13.15 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.42673585
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.7008 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.76891 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:37 | BAL=$5904.42673585 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #25 | 2026-04-04T09:38:06Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  37408 s019  SN   11:00AM   0:13.24 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5906.69547579
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.26947083 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-99.62197865 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:38 | BAL=$5906.69547579 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #26 | 2026-04-04T09:38:38Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38656 s019  SN   11:00AM   0:13.38 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.76842897
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.26557614 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-101.76891 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:38 | BAL=$5904.76842897 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #27 | 2026-04-04T09:39:10Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.7  0.2 411587104  38736 s019  SN   11:00AM   0:13.52 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.36791801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.50627381 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.96758 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:39 | BAL=$5905.36791801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #28 | 2026-04-04T09:39:43Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.4  0.2 411587104  38848 s019  SN   11:00AM   0:13.72 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.20886059
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-99.26843986 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:39 | BAL=$5904.20886059 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #29 | 2026-04-04T09:40:15Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38832 s019  SN   11:00AM   0:13.88 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5904.21277678
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-102.12096632 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:40 | BAL=$5904.21277678 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #30 | 2026-04-04T09:40:48Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.7  0.3 411456032  47680 s019  SN   11:00AM   0:14.13 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5903.72537582
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.88847759 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.37157 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:40 | BAL=$5903.72537582 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #31 | 2026-04-04T09:41:20Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.3 411587104  47456 s019  SN   11:00AM   0:14.32 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5902.73168251
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.11768154 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.37157 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:41 | BAL=$5902.73168251 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #32 | 2026-04-04T09:41:52Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.5  0.3 411587104  47488 s019  SN   11:00AM   0:14.49 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5902.96392801
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.37157 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:41 | BAL=$5902.96392801 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #33 | 2026-04-04T09:42:25Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38832 s019  SN   11:00AM   0:14.67 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5903.69836502
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-103.31249595 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:42 | BAL=$5903.69836502 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #34 | 2026-04-04T09:42:57Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.0  0.2 411587104  38800 s019  SN   11:00AM   0:14.83 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5907.83466220
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-99.46977403 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:42 | BAL=$5907.83466220 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #35 | 2026-04-04T09:43:30Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.2  0.2 411587104  38704 s019  SN   11:00AM   0:14.98 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5905.93165324
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.98196387 lev=1
+
+[4] OPEN ORDERS: 1 total
+    ORDER: SOL/USDT:USDT unknown OrderSide.BUY amt=67.84 price=82.82
+
+[5] --- RECENT LOGS (source: /Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/bot.log) ---
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=-1, 1H prev=1, 1H cur=1
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=85.1%, ADX=17.90, BBw=0.91, ATRr=0.71, Vr=0.16)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.9) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: ranging (confidence=98.7%, ADX=17.05, BBw=0.71, ATRr=0.74, Vr=0.37)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime RANGING (ADX=17.1) -> NO TRADE (MeanReversion disabled: 25% WR in paper trading, 5.3% WR historical)
+    2026-04-04 11:02:09 [src.strategies.regime_detector.RegimeDetector] INFO: Regime detected: trending (confidence=62.6%, ADX=37.17, BBw=0.77, ATRr=1.44, Vr=0.91)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Regime TRENDING with ADX=37.2 -> SupertrendTrend (4H)
+    2026-04-04 11:02:09 [src.strategies.adaptive_strategy.AdaptiveStrategy] INFO: Strategy SupertrendTrend returned NONE signal: No 1H continuation flip: 4H_est=1, 1H prev=-1, 1H cur=-1
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: No valid signals this cycle
+    2026-04-04 11:02:09 [claude_quant.orchestrator] INFO: === Cycle 1 complete (17.7s) ===
+
+[6] DATABASE: integrity=ok trades_today=0 trailing_stops=2
+
+[7] FLAGS: NONE
+
+SUMMARY: 09:43 | BAL=$5905.93165324 | POS=2 | TRADES=0 | FLAGS=NONE
+
+======================================================================
+--- CHECK #36 | 2026-04-04T09:44:02Z ---
+======================================================================
+
+[1] BOT HEALTH: RUNNING (PID=47210)
+    pasinduupendra   47210   0.1  0.2 411587104  38784 s019  SN   11:00AM   0:15.14 /opt/homebrew/Cellar/python@3.14/3.14.2/
+
+[2] BALANCE=$5903.57238590
+
+[3] OPEN POSITIONS: 2
+    POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=195.3792 lev=1
+    POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-102.82620082 lev=1

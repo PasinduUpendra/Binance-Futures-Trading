@@ -1,0 +1,24 @@
+=== DRY RUN TEST ===
+
+============================================================
+--- CHECK #1/48 2026-04-04T09:46:52Z ---
+============================================================
+[1] BOT HEALTH:
+  PROCESS: pasinduupendra   47210   0.1  0.2 411587104  37504 s019  SN   11:00AM   0:16.05 /opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python scripts/run_bot.py
+[2] BALANCE:
+  BALANCE=5904.68951801
+[3] POSITIONS:
+  POS: SOL/USDT:USDT short size=67.84 entry=82.82 upnl=194.62392371 lev=1
+  POS: LINK/USDT:USDT long size=801.33 entry=8.769 upnl=-100.96758 lev=1
+[4] ORDERS:
+  ORDER: SOL/USDT:USDT ? OrderSide.BUY amt=67.84 price=82.82
+[5] LOG TAIL:
+  --- RECENT LOGS ---
+[6] DATABASE:
+  INTEGRITY: ok
+  TRADES_TODAY=0
+  TRAILING_STOPS_ACTIVE=2
+[7] ANOMALY FLAGS:
+  FLAGS: NONE
+
+SUMMARY: 09:47 | BAL=$5904.68951801 | POS=2 | TRADES=0 | TS=2 | FLAGS=NONE
