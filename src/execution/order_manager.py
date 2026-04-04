@@ -369,34 +369,68 @@ class OrderManager:
 
         Used after timeout/503 to check if the order was actually placed
         before deciding whether to retry. Returns None if order not found.
+        Retries once on transient network errors or NOT_FOUND to avoid
+        false negatives from Binance settlement lag.
         """
         exchange = self._require_exchange()
-        await asyncio.sleep(2)  # Brief wait for exchange-side propagation
-        try:
-            market = exchange.market(symbol)
-            if conditional:
-                response = await exchange.fapiPrivateGetAlgoOrder(
-                    {
-                        "symbol": market["id"],
-                        "clientAlgoId": client_oid,
-                    }
+        await asyncio.sleep(3)  # Wait for exchange-side propagation (was 2s)
+        for query_attempt in range(2):
+            try:
+                market = exchange.market(symbol)
+                if conditional:
+                    response = await exchange.fapiPrivateGetAlgoOrder(
+                        {
+                            "symbol": market["id"],
+                            "clientAlgoId": client_oid,
+                        }
+                    )
+                else:
+                    response = await exchange.fapiPrivateGetOrder(
+                        {
+                            "symbol": market["id"],
+                            "origClientOrderId": client_oid,
+                        }
+                    )
+                parsed = exchange.parse_order(response, market)
+                return self._parse_order_status(parsed)
+            except (
+                ccxt_async.NetworkError,
+                ccxt_async.ExchangeNotAvailable,
+                ccxt_async.RequestTimeout,
+            ) as exc:
+                if query_attempt == 0:
+                    logger.warning(
+                        "QUERY_CLIENT_OID client_oid=%s network error (%s) "
+                        "— retrying once after 3s",
+                        client_oid,
+                        type(exc).__name__,
+                    )
+                    await asyncio.sleep(3)
+                    continue
+                logger.warning(
+                    "QUERY_CLIENT_OID client_oid=%s network error on retry (%s) "
+                    "— returning None (AMBIGUOUS)",
+                    client_oid,
+                    type(exc).__name__,
                 )
-            else:
-                response = await exchange.fapiPrivateGetOrder(
-                    {
-                        "symbol": market["id"],
-                        "origClientOrderId": client_oid,
-                    }
+                return None
+            except Exception as exc:
+                if query_attempt == 0:
+                    logger.info(
+                        "QUERY_CLIENT_OID client_oid=%s NOT_FOUND (%s) "
+                        "— retrying once after 3s (settlement lag)",
+                        client_oid,
+                        type(exc).__name__,
+                    )
+                    await asyncio.sleep(3)
+                    continue
+                logger.info(
+                    "QUERY_CLIENT_OID client_oid=%s result=NOT_FOUND on retry (%s)",
+                    client_oid,
+                    type(exc).__name__,
                 )
-            parsed = exchange.parse_order(response, market)
-            return self._parse_order_status(parsed)
-        except Exception as exc:
-            logger.info(
-                "QUERY_CLIENT_OID client_oid=%s result=NOT_FOUND (%s)",
-                client_oid,
-                type(exc).__name__,
-            )
-            return None
+                return None
+        return None
 
     def _order_result_from_status(
         self, status: OrderStatus, client_oid: str
@@ -921,7 +955,7 @@ class OrderManager:
         )
         return orders
 
-    async def cancel_open_orders(self, symbol: str) -> int:
+    async def cancel_open_orders(self, symbol: str) -> tuple[int, bool]:
         """Cancel all open orders for a symbol.
 
         Parameters
@@ -931,10 +965,18 @@ class OrderManager:
 
         Returns
         -------
-        int
-            Number of orders cancelled.
+        tuple[int, bool]
+            (number_cancelled, all_cancelled). ``all_cancelled`` is True
+            when every open order was successfully cancelled.
+
+        Raises
+        ------
+        RuntimeError
+            If there were open orders but ALL cancel attempts failed.
         """
         open_orders = await self.get_open_orders(symbol)
+        if not open_orders:
+            return (0, True)
         cancelled = 0
         for order in open_orders:
             try:
@@ -949,8 +991,14 @@ class OrderManager:
                     "Failed to cancel order %s for %s: %s",
                     order.order_id, symbol, exc,
                 )
+        all_ok = cancelled == len(open_orders)
         logger.info(
             "CANCEL_OPEN_ORDERS symbol=%s cancelled=%d/%d",
             symbol, cancelled, len(open_orders),
         )
-        return cancelled
+        if cancelled == 0:
+            raise RuntimeError(
+                f"cancel_open_orders({symbol}): all {len(open_orders)} "
+                f"cancel attempts failed"
+            )
+        return (cancelled, all_ok)

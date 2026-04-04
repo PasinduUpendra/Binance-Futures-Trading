@@ -4,6 +4,53 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-04-03
+
+#### v6.14 Live-Readiness Audit Hardening: 4 supplementary fixes, 5 new tests (488 total)
+
+**Origin**: Re-audit of v6.13 identified 4 gaps in existing fixes. 8 of 12 original spec items were already implemented; 4 needed supplements or new implementation.
+
+**Supplementary Fixes**:
+
+| # | Fix | File | Impact |
+|---|-----|------|--------|
+| C2+ | **SL None return guard**: `place_stop_loss` returns `OrderResult | None` but code only caught exceptions, not `None` return. Added `sl_result` capture and `None` check → emergency close naked position. Also capture `tp_result` with warning on None. | `main.py` | Closes gap in C2 exception-only handling |
+| C5 | **Startup stale order cleanup**: Added cleanup loop in `start()` before WS subscribe — iterates all TRADING_PAIRS and cancels all open orders with retry on partial failure. | `main.py` | Prevents stale orders from prior session |
+| C6/C7 | **Orphan order purge in reconciliation**: Step 4 in `_reconcile_positions_and_orders()` scans all pairs for orders with no matching position, cancels orphans. | `main.py` | Prevents accumulated orphan orders |
+| H4+ | **`cancel_open_orders` partial failure reporting**: Return type changed from `int` to `tuple[int, bool]`. All 7+ call sites updated to unpack, check `all_ok`, retry once on partial failure. | `order_manager.py`, `main.py` | Callers now detect and retry partial cancels |
+| H7+ | **Idempotent query delay increase**: Initial sleep 2→3s in `_query_by_client_order_id`. Added retry on OrderNotFound — first attempt sleeps 3s and retries before returning None. | `order_manager.py` | Reduces false negatives from propagation delay |
+
+**Tests**: 5 new tests across `test_orchestrator_fixes.py` and `test_order_manager.py`. Updated 2 existing test mocks for `cancel_open_orders` tuple return. Total: 488 passing.
+
+### 2026-04-02
+
+#### v6.13 Live-Readiness Audit: 11 bug fixes, 8 new tests (483 total)
+
+**Origin**: Pre-live audit identified 4 CRITICAL and 7 HIGH severity issues across orchestrator, strategy, execution, data, and config layers. All 11 fixes applied with 8 new tests.
+
+**CRITICAL Fixes**:
+
+| # | Fix | File | Impact |
+|---|-----|------|--------|
+| C1 | **Order result null check**: `place_market_order` returns `None` on `InsufficientFunds`/`InvalidOrder` — added guard before dereferencing `order_result.order_id` | `main.py` | Prevents orchestrator crash |
+| C2 | **SL placement validation**: If SL order fails, emergency-close the naked position at market instead of leaving it unprotected | `main.py` | Prevents unlimited loss |
+| C3 | **Daily trade count**: Added `_daily_trade_count`/`_daily_trade_date` to enforce Immutable Rule #5 (20 max daily trades) with reset at UTC midnight | `main.py` | Prevents overtrading |
+| C4 | **Zero fill guard**: If order status is CLOSED but `filled == 0`, abort trade — prevents ghost positions with zero-size SL/TP | `main.py` | Prevents ghost positions |
+
+**HIGH Fixes**:
+
+| # | Fix | File | Impact |
+|---|-----|------|--------|
+| H1 | **R/R minimum 2.0**: Changed `rr < 1.5` → `rr < 2.0` in both flip and continuation signals per Immutable Rule #9 | `supertrend_trend.py` | Enforces min 2:1 R/R |
+| H2 | **Config drift**: `regime_params.yaml` `adx_min: 25` → `20` to match code's ADX ≥ 18 threshold | `regime_params.yaml` | Config-code alignment |
+| H3 | **Fresh balance in `_on_4h_close`**: Fetch fresh balance from API instead of using potentially stale `self.state.current_balance` | `main.py` | Prevents stale CB decisions |
+| H4 | **`cancel_open_orders` failure reporting**: Raises `RuntimeError` when ALL cancel attempts fail (was silently returning 0) | `order_manager.py` | Surfaces cancel failures |
+| H5 | **WS multi-candle gap**: Reconnect REST fallback now fetches 10 candles and iterates all missed closes (was only checking 1) | `market_data.py` | Catches multi-period gaps |
+| H6 | **SQLite synchronous FULL**: Changed `PRAGMA synchronous=NORMAL` → `FULL` for crash-safe trade journal writes | `database.py` | Prevents data loss |
+| H7 | **Idempotent query retry**: `_query_by_client_order_id` retries once on `NetworkError` before returning None to reduce false negatives | `order_manager.py` | Prevents duplicate orders |
+
+**Tests**: 8 new tests in `test_orchestrator_fixes.py`, `test_supertrend_trend.py`, `test_order_manager.py`. Total: 483 passing.
+
 ### 2026-03-30
 
 #### v6.12 Bug Fix Batch: TP validation, SL/TP reconciliation, alert hardening, smart swap, ATR emergency SL

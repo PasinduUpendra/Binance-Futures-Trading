@@ -626,40 +626,41 @@ class MarketDataClient:
                     logger.info("Kline WS connected for %s %s at %s", symbol, timeframe, url)
                     reconnect_delay = 5.0  # Reset on successful connect
 
-                    # REST fallback: check if a candle close was missed during disconnect
+                    # REST fallback: check if candle closes were missed during disconnect
                     if last_closed_ts is not None:
                         try:
-                            recent = await self.fetch_ohlcv(symbol, timeframe, limit=2)
+                            recent = await self.fetch_ohlcv(symbol, timeframe, limit=10)
                             if recent and len(recent) >= 2:
-                                # The second-to-last candle is the latest fully closed one
-                                latest_closed = recent[-2]
-                                closed_ts = latest_closed["timestamp"]
-                                if closed_ts > last_closed_ts:
-                                    logger.warning(
-                                        "Missed 4H close during WS disconnect for %s: "
-                                        "last_seen=%s, latest_closed=%s. Firing callback.",
-                                        symbol, last_closed_ts, closed_ts,
-                                    )
-                                    candle = {
-                                        "symbol": symbol,
-                                        "timeframe": timeframe,
-                                        "open": float(latest_closed["open"]),
-                                        "high": float(latest_closed["high"]),
-                                        "low": float(latest_closed["low"]),
-                                        "close": float(latest_closed["close"]),
-                                        "volume": float(latest_closed["volume"]),
-                                        "timestamp": closed_ts,
-                                    }
-                                    try:
-                                        result = callback(candle)
-                                        if asyncio.iscoroutine(result):
-                                            await result
-                                    except Exception:
-                                        logger.exception(
-                                            "Missed-candle callback raised for %s %s",
-                                            symbol, timeframe,
+                                # Iterate all fully closed candles since last_closed_ts
+                                # (exclude last row — it's the currently-forming candle)
+                                for row in recent[:-1]:
+                                    closed_ts = row["timestamp"]
+                                    if closed_ts > last_closed_ts:
+                                        logger.warning(
+                                            "Missed %s close during WS disconnect for %s: "
+                                            "last_seen=%s, firing for %s",
+                                            timeframe, symbol, last_closed_ts, closed_ts,
                                         )
-                                    last_closed_ts = closed_ts
+                                        candle = {
+                                            "symbol": symbol,
+                                            "timeframe": timeframe,
+                                            "open": float(row["open"]),
+                                            "high": float(row["high"]),
+                                            "low": float(row["low"]),
+                                            "close": float(row["close"]),
+                                            "volume": float(row["volume"]),
+                                            "timestamp": closed_ts,
+                                        }
+                                        try:
+                                            result = callback(candle)
+                                            if asyncio.iscoroutine(result):
+                                                await result
+                                        except Exception:
+                                            logger.exception(
+                                                "Missed-candle callback raised for %s %s",
+                                                symbol, timeframe,
+                                            )
+                                        last_closed_ts = closed_ts
                         except Exception:
                             logger.exception(
                                 "REST fallback candle check failed for %s %s",

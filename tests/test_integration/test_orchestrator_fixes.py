@@ -13,8 +13,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import pandas as pd
+
 from src.orchestrator import main as orchestrator_main
 from src.orchestrator.main import Orchestrator, TrailingStopState
+from src.execution.order_manager import OrderState
 
 
 @pytest.fixture
@@ -521,7 +524,7 @@ async def test_close_position_for_swap(
         symbol="ADA/USDT:USDT", direction="long",
         entry_price=0.30, best_price=0.30, atr_4h=0.01,
     )
-    isolated_orchestrator.order_manager.cancel_open_orders = AsyncMock(return_value=2)
+    isolated_orchestrator.order_manager.cancel_open_orders = AsyncMock(return_value=(2, True))
     isolated_orchestrator.order_manager.place_market_order = AsyncMock(
         return_value=SimpleNamespace(order_id="close1", filled=Decimal("100"))
     )
@@ -605,3 +608,287 @@ async def test_emergency_sl_uses_decimal_stop_price(
 
     call_args = isolated_orchestrator.order_manager.place_stop_loss.call_args
     assert isinstance(call_args.kwargs["stop_price"], Decimal)
+
+
+# ════════════════════════════════════════════════════════════════════════
+# Live-readiness audit tests (2026-04-02)
+# ════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_execute_signal_returns_none_on_null_order_result(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 1 (C1): If place_market_order returns None, _execute_signal
+    should abort gracefully instead of crashing on order_result.order_id."""
+    orch = isolated_orchestrator
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+    orch.order_manager.set_leverage = AsyncMock()
+    orch.order_manager.place_market_order = AsyncMock(return_value=None)
+
+    signal = SimpleNamespace(
+        direction=SimpleNamespace(value="long"),
+        confidence=65,
+        entry_price=100.0,
+        stop_loss=97.0,
+        take_profit=106.0,
+        strategy_name="SupertrendTrend",
+        regime="trending",
+    )
+    cb_state = SimpleNamespace(
+        level="GREEN",
+        constraints=SimpleNamespace(
+            trading_allowed=True,
+            max_positions=3,
+            max_leverage=10,
+            size_multiplier=Decimal("1.0"),
+            reason="",
+        ),
+    )
+    df = pd.DataFrame({"atr": [1.5], "close": [100.0]})
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_execute_signal_returns_none_on_zero_fill(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 2 (C4): If order is CLOSED but filled == 0, abort."""
+    orch = isolated_orchestrator
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+    orch.order_manager.set_leverage = AsyncMock()
+    orch.order_manager.place_market_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="test123", filled=Decimal("0"),
+            average_fill_price=Decimal("100"),
+        )
+    )
+    orch.order_manager.get_order_status = AsyncMock(
+        return_value=SimpleNamespace(status=OrderState.CLOSED)
+    )
+
+    signal = SimpleNamespace(
+        direction=SimpleNamespace(value="long"),
+        confidence=65,
+        entry_price=100.0,
+        stop_loss=97.0,
+        take_profit=106.0,
+        strategy_name="SupertrendTrend",
+        regime="trending",
+    )
+    cb_state = SimpleNamespace(
+        level="GREEN",
+        constraints=SimpleNamespace(
+            trading_allowed=True,
+            max_positions=3,
+            max_leverage=10,
+            size_multiplier=Decimal("1.0"),
+            reason="",
+        ),
+    )
+    df = pd.DataFrame({"atr": [1.5], "close": [100.0]})
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+
+
+def test_daily_trade_counter_initialized(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 4 (C3): Orchestrator must have daily trade counter attributes."""
+    orch = isolated_orchestrator
+    assert hasattr(orch, "_daily_trade_count")
+    assert hasattr(orch, "_daily_trade_date")
+    assert orch._daily_trade_count == 0
+
+
+@pytest.mark.asyncio
+async def test_daily_trade_limit_blocks_at_20(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 4 (C3): After 20 trades in a day, _execute_signal rejects."""
+    orch = isolated_orchestrator
+    orch._daily_trade_count = 20
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+
+    signal = SimpleNamespace(
+        direction=SimpleNamespace(value="long"),
+        confidence=65,
+        entry_price=100.0,
+        stop_loss=97.0,
+        take_profit=106.0,
+        strategy_name="SupertrendTrend",
+        regime="trending",
+    )
+    cb_state = SimpleNamespace(
+        level="GREEN",
+        constraints=SimpleNamespace(
+            trading_allowed=True,
+            max_positions=3,
+            max_leverage=10,
+            size_multiplier=Decimal("1.0"),
+            reason="",
+        ),
+    )
+    df = pd.DataFrame({"atr": [1.5], "close": [100.0]})
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="SOL/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+
+
+# ────────────────────────────────────────────────────────────────────
+# Fix 3 (C2): SL returns None → emergency close
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_execute_signal_aborts_on_sl_none(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 3 (C2): If place_stop_loss returns None, emergency close the
+    position and return None to prevent naked exposure."""
+    orch = isolated_orchestrator
+    # Set state so CB re-check inside _execute_signal passes
+    orch.state.daily_start_balance = Decimal("6000")
+    orch.drawdown_monitor._peak_balance = Decimal("6000")
+
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+    orch.order_manager.set_leverage = AsyncMock()
+    orch.order_manager.place_market_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="fill1", filled=Decimal("0.5"),
+            average_fill_price=Decimal("100"),
+        )
+    )
+    orch.order_manager.get_order_status = AsyncMock(
+        return_value=SimpleNamespace(status=OrderState.CLOSED)
+    )
+    # SL returns None (graceful failure)
+    orch.order_manager.place_stop_loss = AsyncMock(return_value=None)
+
+    signal = SimpleNamespace(
+        direction=SimpleNamespace(value="long"),
+        confidence=65,
+        entry_price=100.0,
+        stop_loss=97.0,
+        take_profit=106.0,
+        strategy_name="SupertrendTrend",
+        regime="trending",
+    )
+    cb_state = SimpleNamespace(
+        level="GREEN",
+        constraints=SimpleNamespace(
+            trading_allowed=True,
+            max_positions=3,
+            max_leverage=10,
+            size_multiplier=Decimal("1.0"),
+            reason="",
+        ),
+    )
+    df = pd.DataFrame({"atr": [1.5], "close": [100.0]})
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+
+    # Emergency close should have been called (second call to place_market_order)
+    assert orch.order_manager.place_market_order.await_count == 2
+    emergency_call = orch.order_manager.place_market_order.await_args_list[1]
+    assert emergency_call.kwargs["side"] == "sell"  # close long
+    assert emergency_call.kwargs["amount"] == Decimal("0.5")
+
+
+# ────────────────────────────────────────────────────────────────────
+# Fix 5 (C5): Startup cleans all stale orders
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_startup_cancels_all_stale_orders(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 5 (C5): start() must cancel all open orders on every TRADING_PAIR
+    before subscribing to WebSocket kline streams."""
+    orch = isolated_orchestrator
+    orch.market_data.connect = AsyncMock()
+    orch.position_tracker.connect = AsyncMock()
+    orch.order_manager.connect = AsyncMock()
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.market_data.get_all_assets = AsyncMock(return_value=[])
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+    orch.order_manager.cancel_open_orders = AsyncMock(return_value=(0, True))
+    orch.order_manager.get_open_orders = AsyncMock(return_value=[])
+    orch.market_data.subscribe_kline_close = AsyncMock()
+
+    # Prevent the main loop from running
+    orch._shutdown_event.set()
+
+    await orch.start()
+
+    # cancel_open_orders should have been called for each TRADING_PAIR
+    from src.orchestrator.main import TRADING_PAIRS
+    called_symbols = [
+        call.args[0] for call in orch.order_manager.cancel_open_orders.await_args_list
+    ]
+    for pair in TRADING_PAIRS:
+        assert pair in called_symbols, f"cancel_open_orders not called for {pair}"
+
+
+# ────────────────────────────────────────────────────────────────────
+# Fix 5b (C6): Orphan orders cleaned during reconciliation
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_orphan_orders_cleaned_on_reconciliation(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Fix 5b: If a symbol has open orders but no matching position,
+    reconciliation must cancel those orphan orders."""
+    orch = isolated_orchestrator
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+
+    # DOGE has orphan orders (no position)
+    orphan_order = SimpleNamespace(
+        order_id="orphan1",
+        order_type="STOP_MARKET",
+        side="sell",
+        amount=Decimal("100"),
+        stop_price=Decimal("0.10"),
+        price=None,
+        status=OrderState.OPEN,
+        is_conditional=True,
+    )
+
+    async def mock_get_open_orders(symbol, **kwargs):
+        if symbol == "DOGE/USDT:USDT":
+            return [orphan_order]
+        return []
+
+    orch.order_manager.get_open_orders = AsyncMock(side_effect=mock_get_open_orders)
+    orch.order_manager.cancel_open_orders = AsyncMock(return_value=(1, True))
+
+    await orch._reconcile_positions_and_orders()
+
+    # cancel_open_orders should have been called for DOGE (orphan)
+    cancel_symbols = [
+        call.args[0] for call in orch.order_manager.cancel_open_orders.await_args_list
+    ]
+    assert "DOGE/USDT:USDT" in cancel_symbols

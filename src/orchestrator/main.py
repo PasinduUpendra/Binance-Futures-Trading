@@ -18,7 +18,7 @@ import logging
 import os
 import signal
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional
@@ -171,6 +171,10 @@ class Orchestrator:
         # Trailing stop state for each open position (keyed by symbol)
         self._trailing_stops: dict[str, TrailingStopState] = {}
 
+        # Daily trade counter (Immutable Rule #5: 20 max daily trades)
+        self._daily_trade_count: int = 0
+        self._daily_trade_date: date = datetime.now(timezone.utc).date()
+
         # Initialize all components
         self.market_data = MarketDataClient()
         self.indicator_engine = IndicatorEngine()
@@ -269,6 +273,22 @@ class Orchestrator:
             await self._detect_preexisting_positions()
         except Exception as e:
             logger.warning(f"Pre-existing position detection failed: {e}")
+
+        # Startup cleanup: cancel ALL open orders to prevent duplicates
+        # from prior restarts (live monitoring found 50+ stale orders).
+        for pair in TRADING_PAIRS:
+            try:
+                cancelled, _all_ok = await self.order_manager.cancel_open_orders(pair)
+                if cancelled > 0:
+                    logger.info(
+                        f"Startup cleanup: cancelled {cancelled} stale orders for {pair}"
+                    )
+                if not _all_ok:
+                    logger.warning(f"Startup cleanup: partial cancel for {pair}, retrying")
+                    await asyncio.sleep(1)
+                    await self.order_manager.cancel_open_orders(pair)
+            except Exception as e:
+                logger.warning(f"Startup cleanup failed for {pair}: {e}")
 
         # Subscribe to 4H kline close events for all pairs
         for pair in TRADING_PAIRS:
@@ -577,6 +597,18 @@ class Orchestrator:
 
             constraints = cb_state.constraints
 
+            # ── Daily trade limit (Immutable Rule #5: 20 max) ──
+            today = datetime.now(timezone.utc).date()
+            if today != self._daily_trade_date:
+                self._daily_trade_count = 0
+                self._daily_trade_date = today
+            if self._daily_trade_count >= 20:
+                logger.warning(
+                    f"[{trigger}] Daily trade limit reached "
+                    f"({self._daily_trade_count}/20) — rejecting"
+                )
+                return None
+
             # ── Position count gate ──
             open_positions = await self.position_tracker.get_open_positions()
             if len(open_positions) >= constraints.max_positions:
@@ -763,6 +795,13 @@ class Orchestrator:
                     symbol=symbol, side=side, amount=order_qty,
                 )
 
+                if order_result is None:
+                    logger.warning(
+                        f"[{trigger}] Market order returned None "
+                        f"(InsufficientFunds/InvalidOrder) — aborting"
+                    )
+                    return None
+
                 order_status = await self.order_manager.get_order_status(
                     symbol, order_result.order_id
                 )
@@ -772,16 +811,54 @@ class Orchestrator:
                     )
                     return None
 
-                sl_side = "sell" if signal.direction.value == "long" else "buy"
-                await self.order_manager.place_stop_loss(
-                    symbol=symbol,
-                    side=sl_side,
-                    amount=order_result.filled,
-                    stop_price=Decimal(str(signal.stop_loss)),
-                )
+                if order_result.filled <= Decimal("0"):
+                    logger.error(
+                        f"[{trigger}] Zero fill on CLOSED order "
+                        f"{order_result.order_id} — ghost position risk, aborting"
+                    )
+                    return None
 
+                sl_side = "sell" if signal.direction.value == "long" else "buy"
+                sl_result = None
                 try:
-                    await self.order_manager.place_take_profit(
+                    sl_result = await self.order_manager.place_stop_loss(
+                        symbol=symbol,
+                        side=sl_side,
+                        amount=order_result.filled,
+                        stop_price=Decimal(str(signal.stop_loss)),
+                    )
+                except Exception as sl_err:
+                    logger.error(
+                        f"[{trigger}] SL placement FAILED for {symbol}: {sl_err} "
+                        f"— closing naked position at market"
+                    )
+
+                if sl_result is None:
+                    if not isinstance(locals().get("sl_err"), Exception):
+                        logger.critical(
+                            f"[{trigger}] SL returned None for {symbol} "
+                            f"(InsufficientFunds/InvalidOrder) — closing naked position"
+                        )
+                    try:
+                        close_side = "sell" if signal.direction.value == "long" else "buy"
+                        await self.order_manager.place_market_order(
+                            symbol=symbol,
+                            side=close_side,
+                            amount=order_result.filled,
+                        )
+                        logger.info(
+                            f"[{trigger}] Emergency close sent for naked {symbol}"
+                        )
+                    except Exception as close_err:
+                        logger.critical(
+                            f"[{trigger}] EMERGENCY CLOSE ALSO FAILED for {symbol}: "
+                            f"{close_err} — MANUAL INTERVENTION REQUIRED"
+                        )
+                    return None
+
+                tp_result = None
+                try:
+                    tp_result = await self.order_manager.place_take_profit(
                         symbol=symbol,
                         side=sl_side,
                         amount=order_result.filled,
@@ -790,6 +867,11 @@ class Orchestrator:
                 except Exception as tp_err:
                     logger.warning(
                         f"[{trigger}] TP order failed (non-blocking): {tp_err}"
+                    )
+                if tp_result is None:
+                    logger.warning(
+                        f"[{trigger}] TP returned None for {symbol} "
+                        f"(trailing stop provides backup exit)"
                     )
 
                 fill_price = (
@@ -842,6 +924,8 @@ class Orchestrator:
                     self.trade_journal.record_trade_entry(trade_details)
                 except Exception as e:
                     logger.warning(f"[{trigger}] Memory recording failed: {e}")
+
+                self._daily_trade_count += 1
 
                 return trade_details
 
@@ -943,7 +1027,11 @@ class Orchestrator:
 
                 try:
                     # Cancel existing SL/TP orders
-                    await self.order_manager.cancel_open_orders(pos.symbol)
+                    _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
+                    if not _all_ok:
+                        logger.warning("ST reversal: partial cancel for %s, retrying", pos.symbol)
+                        await asyncio.sleep(1)
+                        await self.order_manager.cancel_open_orders(pos.symbol)
 
                     # Place new SL at entry price (breakeven)
                     sl_side = "sell" if pos.side == "long" else "buy"
@@ -1102,7 +1190,11 @@ class Orchestrator:
                         amount=pos.size,
                     )
 
-                    await self.order_manager.cancel_open_orders(pos.symbol)
+                    _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
+                    if not _all_ok:
+                        logger.warning("Trailing stop: partial cancel for %s, retrying", pos.symbol)
+                        await asyncio.sleep(1)
+                        await self.order_manager.cancel_open_orders(pos.symbol)
                     self._trailing_stops.pop(pos.symbol, None)
                     self._persist_trailing_stop_state()
 
@@ -1169,7 +1261,11 @@ class Orchestrator:
                     amount=pos.size,
                 )
 
-                await self.order_manager.cancel_open_orders(pos.symbol)
+                _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
+                if not _all_ok:
+                    logger.warning("Time exit: partial cancel for %s, retrying", pos.symbol)
+                    await asyncio.sleep(1)
+                    await self.order_manager.cancel_open_orders(pos.symbol)
                 self._trailing_stops.pop(pos.symbol, None)
                 self._persist_trailing_stop_state()
 
@@ -1236,7 +1332,11 @@ class Orchestrator:
                 "Cancelling orphan orders and cleaning trailing state.", sym
             )
             try:
-                cancelled = await self.order_manager.cancel_open_orders(sym)
+                cancelled, _all_ok = await self.order_manager.cancel_open_orders(sym)
+                if not _all_ok:
+                    logger.warning("RECONCILE: partial cancel for %s, retrying", sym)
+                    await asyncio.sleep(1)
+                    await self.order_manager.cancel_open_orders(sym)
                 if cancelled > 0:
                     logger.info(
                         "RECONCILE: Cancelled %d orphan orders for %s",
@@ -1388,9 +1488,13 @@ class Orchestrator:
                         n_orders, close_pos.unrealized_pnl,
                     )
                     try:
-                        await self.order_manager.cancel_open_orders(
+                        _cnt, _all_ok = await self.order_manager.cancel_open_orders(
                             close_pos.symbol,
                         )
+                        if not _all_ok:
+                            logger.warning("RECONCILE: partial cancel for excess %s, retrying", close_pos.symbol)
+                            await asyncio.sleep(1)
+                            await self.order_manager.cancel_open_orders(close_pos.symbol)
                         await self.order_manager.place_market_order(
                             symbol=close_pos.symbol,
                             side=close_side,
@@ -1405,6 +1509,36 @@ class Orchestrator:
                         )
         except Exception as e:
             logger.error("RECONCILE: Excess position check failed: %s", e)
+
+        # 4. Orphan order cleanup: cancel orders for symbols with NO position.
+        #    Live monitoring found DOGE orders lingering with no position.
+        try:
+            for pair in TRADING_PAIRS:
+                if pair in open_symbols:
+                    continue  # has a position — orders are expected
+                try:
+                    orphan_orders = await self.order_manager.get_open_orders(pair)
+                    if orphan_orders:
+                        logger.warning(
+                            "RECONCILE: %d orphan orders for %s (no position) "
+                            "— cancelling all.",
+                            len(orphan_orders), pair,
+                        )
+                        cancelled, _all_ok = await self.order_manager.cancel_open_orders(pair)
+                        logger.info(
+                            "RECONCILE: Cancelled %d orphan orders for %s",
+                            cancelled, pair,
+                        )
+                        if not _all_ok:
+                            logger.warning("RECONCILE: partial orphan cancel for %s, retrying", pair)
+                            await asyncio.sleep(1)
+                            await self.order_manager.cancel_open_orders(pair)
+                except Exception as e:
+                    logger.error(
+                        "RECONCILE: Orphan check failed for %s: %s", pair, e
+                    )
+        except Exception as e:
+            logger.error("RECONCILE: Orphan order scan failed: %s", e)
 
     async def _place_emergency_stop_loss(self, pos: Position) -> None:
         """Place emergency stop-loss for unprotected positions.
@@ -1573,7 +1707,11 @@ class Orchestrator:
         """
         try:
             close_side = "sell" if pos.side == "long" else "buy"
-            await self.order_manager.cancel_open_orders(pos.symbol)
+            _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
+            if not _all_ok:
+                logger.warning("[%s] SWAP: partial cancel for %s, retrying", trigger, pos.symbol)
+                await asyncio.sleep(1)
+                await self.order_manager.cancel_open_orders(pos.symbol)
             result = await self.order_manager.place_market_order(
                 symbol=pos.symbol,
                 side=close_side,
@@ -1692,7 +1830,12 @@ class Orchestrator:
 
         try:
             # Quick CB gate — skip heavy work if trading is halted
-            balance = self.state.current_balance
+            # Fetch FRESH balance (stale self.state.current_balance may be hours old)
+            try:
+                balance = await self.market_data.get_margin_balance()
+                self.state.current_balance = balance
+            except Exception:
+                balance = self.state.current_balance
             if balance < Decimal("30"):
                 return
 

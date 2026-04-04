@@ -141,8 +141,8 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 1.5:
-            return self._no_signal(f"R/R {rr:.2f} below 1.5 minimum")
+        if rr < 2.0:
+            return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum")
 
         # Confidence scoring
         confidence = self._compute_confidence(
@@ -318,8 +318,8 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 1.5:
-            return self._no_signal(f"R/R {rr:.2f} below 1.5 minimum")
+        if rr < 2.0:
+            return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum")
 
         # Confidence: lower base for continuation (30 vs 40), no flip bonus
         ema9 = self._safe_last(df_4h[self.COL_EMA9])

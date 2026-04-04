@@ -2,7 +2,7 @@
 
 regime_classification:
   trending:
-    adx_min: 25
+    adx_min: 20
     bb_width: "normal"
     atr_ratio: "normal"
     volume: "normal_or_rising"

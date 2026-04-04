@@ -600,8 +600,9 @@ class TestCancelAndQuery:
         # verify_orders=False so cancel_order skips the verify step
         om = _make_connected_om(mock_ex)
 
-        count = await om.cancel_open_orders("ETH/USDT:USDT")
+        count, all_ok = await om.cancel_open_orders("ETH/USDT:USDT")
         assert count == 2
+        assert all_ok is True
         assert mock_ex.cancel_order.await_count == 2
         cancel_calls = mock_ex.cancel_order.await_args_list
         assert cancel_calls[0].args == ("aaa", "ETH/USDT:USDT")
@@ -664,3 +665,143 @@ class TestCancelAndQuery:
         # _exchange is None by default (not connected)
         with pytest.raises(RuntimeError, match="not connected"):
             om._require_exchange()
+
+    # ─── cancel_open_orders raises when ALL cancel attempts fail ───
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_cancel_open_orders_raises_on_total_failure(
+        self, _mock_sleep: AsyncMock,
+    ):
+        mock_ex = MagicMock()
+        om = _make_connected_om(mock_ex)
+        # Mock get_open_orders to return 2 orders
+        om.get_open_orders = AsyncMock(
+            return_value=[
+                OrderStatus(
+                    order_id="o1", symbol="ETH/USDT:USDT",
+                    side=OrderSide.SELL, order_type="STOP_MARKET",
+                    amount=Decimal("0.05"), filled=Decimal("0"),
+                    remaining=Decimal("0.05"), status=OrderState.OPEN,
+                    timestamp=datetime.now(timezone.utc),
+                    is_conditional=True,
+                ),
+                OrderStatus(
+                    order_id="o2", symbol="ETH/USDT:USDT",
+                    side=OrderSide.SELL, order_type="TAKE_PROFIT_MARKET",
+                    amount=Decimal("0.05"), filled=Decimal("0"),
+                    remaining=Decimal("0.05"), status=OrderState.OPEN,
+                    timestamp=datetime.now(timezone.utc),
+                    is_conditional=True,
+                ),
+            ]
+        )
+        # Mock cancel_order to always fail
+        om.cancel_order = AsyncMock(
+            side_effect=ccxt_async.ExchangeError("cancel failed"),
+        )
+
+        with pytest.raises(RuntimeError, match="all .* cancel attempts failed"):
+            await om.cancel_open_orders("ETH/USDT:USDT")
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_cancel_open_orders_returns_zero_for_no_orders(
+        self, _mock_sleep: AsyncMock,
+    ):
+        mock_ex = MagicMock()
+        om = _make_connected_om(mock_ex)
+        om.get_open_orders = AsyncMock(return_value=[])
+
+        result = await om.cancel_open_orders("ETH/USDT:USDT")
+        assert result == (0, True)
+
+    # ─── _query_by_client_order_id retries on network error ───
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_query_by_client_oid_retries_on_network_error(
+        self, _mock_sleep: AsyncMock,
+    ):
+        mock_ex = MagicMock()
+        market_info = {"id": "ETHUSDT", "symbol": "ETH/USDT:USDT"}
+        mock_ex.market = MagicMock(return_value=market_info)
+
+        # First call: NetworkError, second call: success
+        order_resp = _raw_order_response(
+            id="found123", status="closed", filled=0.05,
+        )
+        mock_ex.fapiPrivateGetOrder = AsyncMock(
+            side_effect=[
+                ccxt_async.NetworkError("timeout"),
+                order_resp,
+            ]
+        )
+        mock_ex.parse_order = MagicMock(return_value=order_resp)
+        om = _make_connected_om(mock_ex)
+
+        result = await om._query_by_client_order_id(
+            "ETH/USDT:USDT", "cq_test123"
+        )
+        assert result is not None
+        assert mock_ex.fapiPrivateGetOrder.call_count == 2
+
+    # ─── cancel_open_orders partial failure returns (count, False) ───
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_cancel_open_orders_partial_failure(
+        self, _mock_sleep: AsyncMock,
+    ):
+        """When one cancel succeeds and another raises, return
+        (1, False) — partial success."""
+        mock_ex = MagicMock()
+        # Two orders: regular + conditional
+        mock_ex.fetch_open_orders = AsyncMock(
+            side_effect=[
+                [_raw_order_response(id="ok1", status="open")],
+                [
+                    _raw_order_response(
+                        id="fail1",
+                        status="open",
+                        info={"algoId": "fail1", "algoType": "CONDITIONAL"},
+                    )
+                ],
+            ]
+        )
+        # First cancel succeeds, second raises
+        mock_ex.cancel_order = AsyncMock(
+            side_effect=[None, ccxt_async.ExchangeError("order not found")]
+        )
+        om = _make_connected_om(mock_ex)
+
+        count, all_ok = await om.cancel_open_orders("ETH/USDT:USDT")
+        assert count == 1
+        assert all_ok is False
+
+    # ─── _query_by_client_order_id retries on NOT_FOUND ───
+
+    @patch("src.execution.order_manager.asyncio.sleep", new_callable=AsyncMock)
+    async def test_query_by_client_oid_retries_on_not_found(
+        self, _mock_sleep: AsyncMock,
+    ):
+        """When the first query raises a generic exception (NOT_FOUND),
+        it should retry once (settlement lag). On success, return the order."""
+        mock_ex = MagicMock()
+        market_info = {"id": "ETHUSDT", "symbol": "ETH/USDT:USDT"}
+        mock_ex.market = MagicMock(return_value=market_info)
+
+        order_resp = _raw_order_response(
+            id="delayed123", status="closed", filled=0.05,
+        )
+        # First call: NOT_FOUND (generic exception), second call: success
+        mock_ex.fapiPrivateGetOrder = AsyncMock(
+            side_effect=[
+                ccxt_async.OrderNotFound("order does not exist"),
+                order_resp,
+            ]
+        )
+        mock_ex.parse_order = MagicMock(return_value=order_resp)
+        om = _make_connected_om(mock_ex)
+
+        result = await om._query_by_client_order_id(
+            "ETH/USDT:USDT", "cq_delayed"
+        )
+        assert result is not None
+        assert mock_ex.fapiPrivateGetOrder.call_count == 2
