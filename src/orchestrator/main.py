@@ -1400,20 +1400,58 @@ class Orchestrator:
                 )
                 _orders_cache[pos.symbol] = open_orders
 
-                # Discriminate SL vs TP by order type
-                has_sl = any(
-                    "stop" in o.order_type.lower()
-                    and "profit" not in o.order_type.lower()
-                    for o in open_orders
-                )
-                has_tp = any(
-                    "profit" in o.order_type.lower()
-                    for o in open_orders
-                )
+                # Discriminate SL vs TP by stop_price relative to entry.
+                # Binance testnet returns order_type="market" for both
+                # STOP_MARKET and TAKE_PROFIT_MARKET, so string matching
+                # on order_type is unreliable.  Use price position instead:
+                #   LONG: SL.stopPrice < entry, TP.stopPrice > entry
+                #   SHORT: SL.stopPrice > entry, TP.stopPrice < entry
+                entry_px = float(pos.entry_price)
+                has_sl = False
+                has_tp = False
+                for o in open_orders:
+                    sp = float(o.stop_price) if o.stop_price else None
+                    if sp is None:
+                        continue
+                    if pos.side == "long":
+                        if sp < entry_px:
+                            has_sl = True
+                        elif sp > entry_px:
+                            has_tp = True
+                    else:  # short
+                        if sp > entry_px:
+                            has_sl = True
+                        elif sp < entry_px:
+                            has_tp = True
 
                 # Treat tp_pending as missing TP (retry failed placements)
                 ts_state = self._trailing_stops.get(pos.symbol)
                 if ts_state and ts_state.tp_pending:
+                    has_tp = False
+
+                # Cap: if more than 2 conditional orders exist,
+                # duplicates accumulated. Cancel all and re-place
+                # exactly one SL + one TP.
+                if len(open_orders) > 2:
+                    logger.warning(
+                        "RECONCILE: %s has %d orders (expected ≤2) — "
+                        "cancelling duplicates and re-placing.",
+                        pos.symbol, len(open_orders),
+                    )
+                    try:
+                        _cnt, _all_ok = await self.order_manager.cancel_open_orders(
+                            pos.symbol,
+                        )
+                        if not _all_ok:
+                            await asyncio.sleep(1)
+                            await self.order_manager.cancel_open_orders(pos.symbol)
+                    except Exception as cancel_err:
+                        logger.error(
+                            "RECONCILE: cancel duplicates failed for %s: %s",
+                            pos.symbol, cancel_err,
+                        )
+                    # Force re-placement of both
+                    has_sl = False
                     has_tp = False
 
                 if not has_sl:

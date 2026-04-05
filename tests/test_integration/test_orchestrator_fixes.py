@@ -172,8 +172,8 @@ def test_load_trailing_stops_persists_tp_pending(
 # ────────────────────────────────────────────────────────────────────
 
 
-def _make_order(order_type: str) -> SimpleNamespace:
-    return SimpleNamespace(order_type=order_type)
+def _make_order(order_type: str, stop_price: float | None = None) -> SimpleNamespace:
+    return SimpleNamespace(order_type=order_type, stop_price=stop_price)
 
 
 @pytest.mark.asyncio
@@ -194,9 +194,9 @@ async def test_reconcile_places_emergency_sl_when_missing(
         entry_price=2000.0, best_price=2050.0, atr_4h=30.0,
         take_profit=2180.0,
     )
-    # Only a TP order, no SL
+    # Only a TP order (stop_price above entry=2000 → detected as TP for long), no SL
     isolated_orchestrator.order_manager.get_open_orders = AsyncMock(
-        return_value=[_make_order("take_profit_market")]
+        return_value=[_make_order("take_profit_market", stop_price=2180.0)]
     )
     isolated_orchestrator.order_manager.place_stop_loss = AsyncMock(
         return_value=SimpleNamespace(order_id="sl1")
@@ -230,9 +230,9 @@ async def test_reconcile_places_emergency_tp_when_missing(
         entry_price=150.0, best_price=145.0, atr_4h=5.0,
         take_profit=120.0,
     )
-    # Only an SL order, no TP
+    # Only an SL order (stop_price above entry=150 → detected as SL for short), no TP
     isolated_orchestrator.order_manager.get_open_orders = AsyncMock(
-        return_value=[_make_order("stop_market")]
+        return_value=[_make_order("stop_market", stop_price=165.0)]
     )
     isolated_orchestrator.order_manager.place_stop_loss = AsyncMock()
     isolated_orchestrator.order_manager.place_take_profit = AsyncMock(
@@ -264,8 +264,12 @@ async def test_reconcile_no_action_when_both_orders_present(
         entry_price=95000.0, best_price=96000.0, atr_4h=500.0,
         take_profit=98000.0,
     )
+    # SL below entry=95000, TP above entry=95000 → both detected for long
     isolated_orchestrator.order_manager.get_open_orders = AsyncMock(
-        return_value=[_make_order("stop_market"), _make_order("take_profit_market")]
+        return_value=[
+            _make_order("stop_market", stop_price=93500.0),
+            _make_order("take_profit_market", stop_price=98000.0),
+        ]
     )
     isolated_orchestrator.order_manager.place_stop_loss = AsyncMock()
     isolated_orchestrator.order_manager.place_take_profit = AsyncMock()
@@ -562,9 +566,9 @@ async def test_reconcile_retries_tp_pending(
         entry_price=10.0, best_price=10.5, atr_4h=0.2,
         take_profit=11.2, tp_pending=True,
     )
-    # Has SL only
+    # Has SL only (stop_price below entry=10 → detected as SL for long)
     isolated_orchestrator.order_manager.get_open_orders = AsyncMock(
-        return_value=[_make_order("stop_market")]
+        return_value=[_make_order("stop_market", stop_price=9.4)]
     )
     isolated_orchestrator.order_manager.place_stop_loss = AsyncMock()
     isolated_orchestrator.order_manager.place_take_profit = AsyncMock(
