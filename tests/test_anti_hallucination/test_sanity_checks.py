@@ -89,9 +89,9 @@ class TestSanityChecker:
         assert valid is False
 
     def test_position_exactly_15_percent_boundary(self):
-        """Margin quantized to exactly 15% of balance should pass (BUG 5 regression)."""
+        """Margin quantized to exactly 15% of balance should pass (well under 25% cap)."""
         # balance * 0.15 = 5061.725 * 0.15 = 759.25875
-        # Orchestrator quantizes to 759.26 (HALF_UP)  — used to exceed unquantized max
+        # Orchestrator quantizes to 759.26 (HALF_UP) — well within 25% cap
         balance = Decimal("5061.725")
         margin = (balance * Decimal("0.15")).quantize(Decimal("0.01"))  # 759.26
         leverage = 5
@@ -100,12 +100,12 @@ class TestSanityChecker:
         valid, details = SanityChecker.check_position_math(
             balance=balance, size=margin, leverage=leverage, notional=notional,
         )
-        assert valid is True, f"15% boundary should pass after quantization fix: {details}"
+        assert valid is True, f"15% should pass under 25% cap: {details}"
 
-    def test_position_slightly_over_15_percent(self):
-        """Margin genuinely above 15% should still fail."""
+    def test_position_slightly_over_25_percent(self):
+        """Margin genuinely above 25% should fail."""
         balance = Decimal("100.00")
-        margin = Decimal("15.01")  # > 15% of 100
+        margin = Decimal("25.01")  # > 25% of 100
         leverage = 3
         notional = margin * Decimal(str(leverage))
 

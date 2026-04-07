@@ -40,7 +40,7 @@ class SanityChecker:
         size: Decimal,
         leverage: int,
         notional: Decimal,
-        max_position_pct: Decimal = Decimal("0.15"),
+        max_position_pct: Decimal = Decimal("0.25"),
     ) -> SanityResult:
         """Verify: ``notional == size * leverage`` and ``size <= balance * max_position_pct``.
 
@@ -55,8 +55,7 @@ class SanityChecker:
         notional : Decimal
             Total notional value of the position.
         max_position_pct : Decimal
-            Maximum allowed fraction of balance (default 0.15 = 15%).
-            Can be raised for high-confidence opportunistic trades.
+            Maximum allowed fraction of balance (default 0.25 = 25%, raised from 15% in v6.16).
 
         Returns
         -------

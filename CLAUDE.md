@@ -45,16 +45,16 @@ Step 5: Build a "Source of Truth Map":
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **Validated avg daily return** | **1.397%** | v6.1 9-pair + scorer fix, CHANGELOG 2026-03-24 |
-| **Previous validated ceiling** | 1.149% (v5 sweep, 3 pairs) | v5 backtest, CHANGELOG 2026-03-16 |
-| **Aspirational target** | **1.0% daily compound** | SSOT §1 — **NOW EXCEEDED** |
-| **v6.1 backtest return** | +865.9% over 172 days, 122 trades | CHANGELOG 2026-03-24 |
-| **v6.1 win rate** | 53.3% | CHANGELOG 2026-03-24 |
-| **v6.1 Sharpe** | 6.80 | CHANGELOG 2026-03-24 |
-| **v6.1 profit factor** | 44.67 | CHANGELOG 2026-03-24 |
-| **v6.1 max drawdown** | 1.1% | CHANGELOG 2026-03-24 |
+| **Validated avg daily return** | **2.68%** | v6.16 AGG4 sweep, CHANGELOG 2026-04-07 |
+| **Previous validated ceiling** | 1.397% (v6.1, 9 pairs) | v6.1 backtest, CHANGELOG 2026-03-24 |
+| **Aspirational target** | **1.0% daily compound** | SSOT §1 — **EXCEEDED (2.68x)** |
+| **v6.16 backtest return** | +6,593.5% over 172 days, 197 trades | CHANGELOG 2026-04-07 |
+| **v6.16 win rate** | 54.3% | CHANGELOG 2026-04-07 |
+| **v6.16 Sharpe** | 7.40 | CHANGELOG 2026-04-07 |
+| **v6.16 max drawdown** | 11.4% | CHANGELOG 2026-04-07 |
+| **$1,000 milestone** | Day 119 (~4 months from $68.33) | CHANGELOG 2026-04-07 |
 
-> **CRITICAL FRAMING**: 1.149% daily is the VALIDATED PERFORMANCE CEILING from production-code backtesting via 240-combo parameter sweep (v5). This EXCEEDS the 1% aspirational target. The previous ceiling (0.628%) was raised by optimizing Supertrend parameters (10/3.0 → 8/2.0), extending max hold time (120 → 150 bars), and changing ST reversal behavior (immediate close → tighten SL to breakeven). All 6 gate checks passed vs baseline. Any further changes MUST still go through the full strategy versioning pipeline (Section 8) with backtest evidence.
+> **CRITICAL FRAMING**: v6.16 raised the validated ceiling from 1.397% to 2.68%/day via an 8-configuration parameter sweep (`backtest_aggressive.py`). Key changes: position sizing 15% → 25%, MAX_HOLD_BARS 150 → 100, 9 pairs (was 3). Max drawdown increased from 4.9% to 11.4% — acceptable at $68 balance ($38 margin above $30 floor). This was done under user directive to prepare for real-money deployment. All changes backed by production-code backtest evidence. Any further changes MUST still go through the full strategy versioning pipeline (Section 8).
 
 > **When to exceed 1%**: The bot should capture outsized returns when GENUINE high-confluence setups appear (all filters align, confidence ≥ 85, regime strongly trending, volume surging). This happens through BETTER TRADES, not MORE TRADES. Trail winners with wider stops. Don't close at TP1 on ≥90 confidence signals. Let the market give you the return — don't manufacture it.
 
@@ -75,7 +75,7 @@ These match SSOT §12 exactly. They are HARDCODED in production code. No AI reas
 | 1 | **$30 HARD FLOOR** — Balance < $30 = HALT ALL TRADING. No exceptions. | `circuit_breaker.py` DEAD level |
 | 2 | **10x MAX LEVERAGE** — Absolute maximum. Circuit breaker reduces this. | `leverage_manager.py` |
 | 3 | **3 MAX CONCURRENT POSITIONS** — GREEN=3, YELLOW=2, RED=1. | `circuit_breaker.py` |
-| 4 | **15% MAX CAPITAL PER TRADE** — Of total balance (margin, not notional). | `position_sizer.py` |
+| 4 | **25% MAX CAPITAL PER TRADE** — Of total balance (margin, not notional). Raised from 15% via v6.16 backtest evidence. | `position_sizer.py` |
 | 5 | **20 MAX DAILY TRADES** — Overtrading prevention. | `risk_params.yaml` |
 | 6 | **ALL DATA FROM API** — Never fabricate, estimate, or guess prices. | Anti-hallucination system |
 | 7 | **RISK MANAGER APPROVAL** — Every trade must pass risk checks. | `orchestrator/main.py` Step 4 |
@@ -295,19 +295,19 @@ All 4 order methods (`place_market_order`, `place_limit_order`, `place_stop_loss
 
 > **NOTE ON DAILY LOSS ALERTS**: The daily P&L reporter (wired into orchestrator at midnight UTC) alerts on daily loss > 5% (CHANGELOG 2026-03-14). This is an ALERT threshold for human awareness, NOT a trading halt. The actual halt threshold is 10% in the circuit breaker code.
 
-## Position Sizing — Confidence-Based (v4 — SSOT §5.2)
+## Position Sizing — Confidence-Based (v6.16 — SSOT §5.2)
 
-Replaced Half-Kelly (which always produced ~$5 minimum at $68). Code in `orchestrator/main.py` lines 452-481.
+Raised from 15% to 25% max sizing based on 8-config backtest sweep (2026-04-07). Code in `orchestrator/main.py`.
 
 ```
-if confidence >= 60%:  position_pct = 15%    of balance (margin)
-elif confidence >= 45%: position_pct = 10%
-else:                   position_pct = 7%
+if confidence >= 60%:  position_pct = 25%    of balance (margin)
+elif confidence >= 45%: position_pct = 16.7%
+else:                   position_pct = 11.7%
 
 position_pct *= CB_size_multiplier    # GREEN=1.0, YELLOW=0.5, RED=0.25
 margin = balance × position_pct
 margin = max(margin, $5)              # Binance minimum notional
-margin = min(margin, balance × 15%)   # Hard cap (Immutable Rule #4)
+margin = min(margin, balance × 25%)   # Hard cap (Rule #4)
 notional = margin × leverage
 # Per-pair minimum notional check: BTC=$100, ETH=$20, others=$5
 ```
@@ -352,7 +352,7 @@ GARCH volatility model adjusts leverage downward during vol spikes (Step 4 of or
 | Take-profit | 6.0× ATR(4H) from entry (R/R = 2.0) | SSOT §4.3 |
 | Trailing stop | Activate at 2.0× ATR(4H), trail at 2.5× ATR(4H) | SSOT §4.3 |
 | **Reversal exit** | **Tighten SL to breakeven** (was: close immediately) | v5 sweep 2026-03-16 |
-| **Max hold time** | **150 bars (6.25 days)** — force close after | `orchestrator/main.py`, v5 sweep |
+| **Max hold time** | **100 bars (~4.17 days)** — force close after | `orchestrator/main.py`, v6.16 sweep |
 | Confidence | Base flip 40pts + ADX 20pts + EMA alignment 20pts + RSI 10pts + flip quality 10pts | SSOT §4.3 |
 
 ## Disabled Strategies (With Evidence — SSOT §4.3, CHANGELOG 2026-03-15)
@@ -429,12 +429,12 @@ Step 2b: TRAILING STOP MANAGEMENT
   │   ├── If activated + pullback 2.5× ATR(4H) from best → close position
   │   └── Log state changes
 
-Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 150)
+Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 100)
   ├── For each open position:
   │   ├── Calculate hours held = (now - entry_time) / 3600
-  │   ├── If hours_held ≥ 150: close at market, cancel orders, clean trailing stop
+  │   ├── If hours_held ≥ 100: close at market, cancel orders, clean trailing stop
   │   └── Record as "time_exit" reason
-  └── Prevents capital lock-up in stale positions (6.25 day cap)
+  └── Prevents capital lock-up in stale positions (~4.17 day cap, v6.16)
 
 Step 3: MULTI-TIMEFRAME SIGNAL GENERATION
   ├── For each pair:

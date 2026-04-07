@@ -6,6 +6,44 @@ All notable changes to Claude Quant are documented here.
 
 ### 2026-04-07
 
+#### v6.16 — Aggressive Parameter Optimization for Real-Money Deployment
+
+**Origin**: User demanded the bot be made ready for real-money trading ($68.33 USDT on Binance mainnet). Paper trading was too slow (17 trades in 24 days, P&L tracking broken, 15+ bug-fix versions). User's goal: $68 → $1,000. An intensive backtest parameter sweep (8 configurations × 172 days of data) was run to find the optimal risk/reward configuration.
+
+**Evidence**: `scripts/backtest_aggressive.py` — 8-config parameter sweep on production code. `scripts/backtest_21day.py` — trade-by-trade first-30-day analysis.
+
+**Backtest results (AGG4 winner — 9 pairs, 25% sizing, 100-bar hold)**:
+- **Final balance**: $4,573.64 (+6,593.5%) over 172 days
+- **Trades**: 197 (1.15/day, up from 1.02/day)
+- **Win rate**: 54.3% (up from 51.1%)
+- **Max drawdown**: 11.4%
+- **Sharpe**: 7.40
+- **$1,000 milestone**: Day 119 (~4 months)
+- **21-day balance**: $95.25 (+39.4%)
+
+**Risk analysis**: At $68 start with 11.4% max drawdown, worst balance = ~$60 — still $30 above the $30 hard floor. 30% sizing was rejected (20.6% max DD = dangerous).
+
+**Feasibility**: $68 → $1,000 in 21 days requires 13.63%/day compound — impossible (best achievable: 1.59%/day). Realistic path: $1,000 at day 119, $4,574 at day 172.
+
+##### Changes
+
+| File | Change | Old → New |
+|------|--------|-----------|
+| `src/risk/position_sizer.py` | `_MAX_POSITION_PCT` | `0.15` → `0.25` |
+| `src/orchestrator/main.py` | Confidence sizing tiers | 15/10/7% → 25/16.7/11.7% |
+| `src/orchestrator/main.py` | `MAX_HOLD_BARS` | 150 → 100 |
+| `src/orchestrator/main.py` | `max_cap` (hard cap) | 0.15 → 0.25 |
+| `scripts/backtest_v4.py` | `PAIRS` | 3 pairs → 9 pairs |
+| `scripts/backtest_v4.py` | `MAX_HOLD_BARS` | 150 → 100 |
+| `scripts/backtest_v4.py` | Sizing tiers + hard cap | 15/10/7% → 25/16.7/11.7% |
+| `config/risk/risk_params.yaml` | `max_position_pct` | 0.15 → 0.25 |
+| `CLAUDE.md` | Rule #4, sizing table, hold bars, perf metrics | Updated |
+| `docs/SINGLE_SOURCE_OF_TRUTH.md` | §5.2, §6, §12 Rule #4, §15 | Updated |
+
+**Why this was done**: The user is in a dire financial situation. Paper trading at 0.88%/day with 15% sizing would take 159 days to reach $1,000. With 25% sizing and 100-bar hold on 9 pairs, the bot reaches $1,000 in 119 days — a 25% improvement. The 11.4% max drawdown is acceptable with $38 margin above the $30 floor. Every number in this entry is backed by production-code backtest (`backtest_aggressive.py` AGG4 configuration).
+
+**Test suite**: 598 tests passing. No regressions.
+
 #### v6.15 — Three Bug Fixes from 20-Hour Monitoring Session
 
 **Origin**: Bugs identified during the April 6-7 live monitoring session (23 cycles, zero crashes). Three SL-triggered exits (DOGE, LINK, ETH) all failed to record in the trade journal, consensus stayed at 1.00 during selloff, and opposing signals were wasted on already-positioned pairs.

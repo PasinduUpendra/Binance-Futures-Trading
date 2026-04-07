@@ -44,12 +44,16 @@ from src.strategies.base_strategy import SignalDirection
 from src.strategies.cross_asset_consensus import CrossAssetConsensus
 
 DATA_DIR = PROJECT_ROOT / "user_data" / "data"
-PAIRS = ["ETH_USDT_USDT", "SOL_USDT_USDT", "DOGE_USDT_USDT"]
+PAIRS = [
+    "BTC_USDT_USDT", "ETH_USDT_USDT", "SOL_USDT_USDT",
+    "DOGE_USDT_USDT", "XRP_USDT_USDT", "LINK_USDT_USDT",
+    "AVAX_USDT_USDT", "SUI_USDT_USDT", "ADA_USDT_USDT",
+]
 INITIAL_BALANCE = 68.33
 HARD_FLOOR = 30.0
 
-# Time-based exit: 120 1H bars = 5 days (matching v3)
-MAX_HOLD_BARS = 150
+# Time-based exit: 100 1H bars ≈ 4.17 days (v6.16 backtest evidence)
+MAX_HOLD_BARS = 100
 
 # Trailing stop params (matching v3 and production TrailingStopState)
 TRAIL_ACTIVATE_ATR_MULT = 2.0
@@ -342,16 +346,16 @@ def run_backtest():
             # ─── Position Sizing — confidence-based (v3 proven) ───
             confidence = signal.confidence
             if confidence >= 60:
-                position_pct = 0.15
+                position_pct = 0.25
             elif confidence >= 45:
-                position_pct = 0.10
+                position_pct = 0.167
             else:
-                position_pct = 0.07
+                position_pct = 0.117
             position_pct *= float(constraints.size_multiplier)
 
             margin = balance * position_pct
-            # Hard cap: 15% of balance
-            max_margin = balance * 0.15
+            # Hard cap: 25% of balance (v6.16)
+            max_margin = balance * 0.25
             if margin > max_margin:
                 margin = max_margin
             # Minimum $5
@@ -363,8 +367,13 @@ def run_backtest():
 
             notional = margin * leverage
 
-            # Minimum notional check
-            min_notional = 20.0 if "ETH" in pair else 5.0
+            # Minimum notional check (matching production MIN_NOTIONAL)
+            if "BTC" in pair:
+                min_notional = 100.0
+            elif "ETH" in pair:
+                min_notional = 20.0
+            else:
+                min_notional = 5.0
             if notional < min_notional:
                 continue
 

@@ -137,12 +137,19 @@ class MarketDataClient:
         api_secret: str | None = None,
         testnet: bool | None = None,
     ) -> None:
-        self._api_key = api_key or os.getenv("BINANCE_API_KEY", "")
-        self._api_secret = api_secret or os.getenv("BINANCE_API_SECRET", "")
-
         if testnet is None:
             testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
         self._testnet = testnet
+
+        if api_key:
+            self._api_key = api_key
+            self._api_secret = api_secret or ""
+        elif testnet:
+            self._api_key = os.getenv("BINANCE_API_KEY", "")
+            self._api_secret = os.getenv("BINANCE_API_SECRET", "")
+        else:
+            self._api_key = os.getenv("BINANCE_API_KEY_PROD", "")
+            self._api_secret = os.getenv("BINANCE_API_SECRET_PROD", "")
 
         self._exchange: ccxt_async.binanceusdm | None = None
         self._ws_connections: dict[str, asyncio.Task[None]] = {}

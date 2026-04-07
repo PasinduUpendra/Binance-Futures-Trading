@@ -5,7 +5,7 @@
 position_sizing:
   method: "half_kelly"
   kelly_fraction: 0.5  # Half-Kelly for safety
-  max_position_pct: 0.15  # Max 15% of balance per trade
+  max_position_pct: 0.25  # Max 25% of balance per trade (raised from 15% via v6.16 backtest)
   min_position_usd: 5.0  # Minimum viable position
 
 leverage:

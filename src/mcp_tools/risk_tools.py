@@ -168,9 +168,13 @@ async def _get_current_balance() -> Decimal:
     """Fetch the current account balance from Binance."""
     import ccxt.async_support as ccxt_async
 
-    api_key = os.getenv("BINANCE_API_KEY", "")
-    api_secret = os.getenv("BINANCE_API_SECRET", "")
     testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
+    if testnet:
+        api_key = os.getenv("BINANCE_API_KEY", "")
+        api_secret = os.getenv("BINANCE_API_SECRET", "")
+    else:
+        api_key = os.getenv("BINANCE_API_KEY_PROD", "")
+        api_secret = os.getenv("BINANCE_API_SECRET_PROD", "")
 
     exchange = ccxt_async.binanceusdm(
         {
@@ -197,9 +201,13 @@ async def _get_open_positions() -> list[dict[str, Any]]:
     """Fetch open positions from Binance."""
     import ccxt.async_support as ccxt_async
 
-    api_key = os.getenv("BINANCE_API_KEY", "")
-    api_secret = os.getenv("BINANCE_API_SECRET", "")
     testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
+    if testnet:
+        api_key = os.getenv("BINANCE_API_KEY", "")
+        api_secret = os.getenv("BINANCE_API_SECRET", "")
+    else:
+        api_key = os.getenv("BINANCE_API_KEY_PROD", "")
+        api_secret = os.getenv("BINANCE_API_SECRET_PROD", "")
 
     exchange = ccxt_async.binanceusdm(
         {
@@ -456,7 +464,7 @@ async def _handle_calculate_position_size(arguments: dict[str, Any]) -> dict[str
 
     # Position sizing: half-Kelly method
     max_risk_per_trade_pct = Decimal(str(rr_config.get("max_risk_per_trade_pct", 0.02)))
-    max_position_pct = Decimal(str(ps_config.get("max_position_pct", 0.15)))
+    max_position_pct = Decimal(str(ps_config.get("max_position_pct", 0.25)))
     kelly_fraction = Decimal(str(ps_config.get("kelly_fraction", 0.5)))
     min_position_usd = Decimal(str(ps_config.get("min_position_usd", 5.0)))
 
@@ -470,7 +478,7 @@ async def _handle_calculate_position_size(arguments: dict[str, Any]) -> dict[str
     else:
         position_notional = Decimal("0")
 
-    # Apply maximum position cap (15% of balance)
+    # Apply maximum position cap (25% of balance, v6.16)
     max_notional = balance * max_position_pct * size_multiplier
     position_notional = min(position_notional, max_notional)
 

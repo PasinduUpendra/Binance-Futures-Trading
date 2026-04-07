@@ -205,17 +205,17 @@ class TestTradingNotAllowed:
 
 
 # ---------------------------------------------------------------------------
-# 6. Hard cap — 15 % of balance
+# 6. Hard cap — 25 % of balance (raised from 15% via v6.16 backtest evidence)
 # ---------------------------------------------------------------------------
 class TestMaxPositionCap:
-    def test_cap_at_15_pct(self, sizer: PositionSizer) -> None:
-        """A high-edge bet (80%WR, 3:1RR) at GREEN should not exceed 15%."""
+    def test_cap_at_25_pct(self, sizer: PositionSizer) -> None:
+        """A high-edge bet (80%WR, 3:1RR) at GREEN should not exceed 25%."""
         cb = _make_cb_state("GREEN")
         result = sizer.calculate_size(
             _DEFAULT_BALANCE, "0.80", "3", cb, requested_leverage=1
         )
 
-        max_allowed = (_DEFAULT_BALANCE * Decimal("0.15")).quantize(
+        max_allowed = (_DEFAULT_BALANCE * Decimal("0.25")).quantize(
             Decimal("0.01")
         )
         assert result.usd_amount <= max_allowed

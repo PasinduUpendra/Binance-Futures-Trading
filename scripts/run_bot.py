@@ -7,13 +7,15 @@ Logs to both console and file.
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load env before any imports that use it
-load_dotenv()
+# Load env before any imports that use it — override=True ensures .env
+# values always win over stale shell exports (safety-critical for BINANCE_TESTNET).
+load_dotenv(override=True)
 
 # Add project root
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -63,8 +65,9 @@ async def main() -> None:
     logger = logging.getLogger("claude_quant.runner")
 
     logger.info("=" * 60)
-    logger.info("Claude Quant Paper Trading Bot — Starting")
-    logger.info("Mode: TESTNET (paper trading)")
+    logger.info("Claude Quant Trading Bot — Starting")
+    testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
+    logger.info("Mode: %s", "TESTNET (paper trading)" if testnet else "MAINNET (real money)")
     logger.info("=" * 60)
 
     orchestrator = Orchestrator()

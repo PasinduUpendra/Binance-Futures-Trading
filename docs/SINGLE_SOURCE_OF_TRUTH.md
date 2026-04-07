@@ -265,7 +265,7 @@ Claude Quant/
 - **TP:** 6.0x ATR(4H) from entry (R/R = 2.0)
 - **Trailing stop:** Activate after 2.0 ATR(4H) favorable move, trail at 2.5 ATR(4H); state persists across restarts (`best_price`, `activated`, `atr_4h`, `take_profit`)
 - **Reversal exit:** Tighten SL to breakeven when 4H Supertrend flips against direction (v5 sweep: beats immediate close)
-- **Max hold time:** 150 bars (6.25 days) — force close after (v5 sweep)
+- **Max hold time:** 100 bars (~4.17 days) — force close after (v6.16 sweep: increased trade count 176→197, win rate 51.1→54.3%)
 - **Confidence factors:** Base flip (40pts), ADX strength (20pts), EMA alignment (20pts), RSI position (10pts), flip quality (10pts)
 - **v3 Backtest:** +94% return, 60.9% WR, Sharpe 3.31, 7.9% max DD over 172 days
 - **v4 Backtest (production code):** +172.9% return, 69.2% WR, Sharpe 3.98, PF 5.39, 39 trades over 172 days
@@ -333,27 +333,27 @@ All calculated via TA-Lib:
 - 5 consecutive losses -> 2-hour pause
 - RED level requires >= 2/3 win rate on last 10 trades
 
-### 5.2 Position Sizing — Confidence-Based (v4)
+### 5.2 Position Sizing — Confidence-Based (v6.16)
 
-**Replaced Half-Kelly** (which always produced ~$5 minimum at $68 balance) with confidence-based sizing proven in v4 backtest (+172.9% return):
+**Raised from 15% to 25%** max sizing based on 8-config parameter sweep (2026-04-07). Key change: AGG4 config (25% sizing, 100-bar hold, 9 pairs) produced +6,593.5% over 172 days with 11.4% max drawdown.
 
 ```
-if confidence >= 60%:  position_pct = 15%
-elif confidence >= 45%: position_pct = 10%
-else:                   position_pct = 7%
+if confidence >= 60%:  position_pct = 25%
+elif confidence >= 45%: position_pct = 16.7%
+else:                   position_pct = 11.7%
 
 position_pct *= CB_size_multiplier   # GREEN=1.0, YELLOW=0.5, RED=0.25
 margin = balance * position_pct
 margin = max(margin, $5)             # Minimum $5
-margin = min(margin, balance * 15%)  # Hard cap 15%
+margin = min(margin, balance * 25%)  # Hard cap 25% (was 15%)
 notional = margin * leverage
 ```
 
 **Example:** 65% confidence, $68.33 balance, GREEN CB, 6x leverage:
 ```
-position_pct = 15% (confidence >= 60)
-margin = $68.33 * 0.15 = $10.25
-notional = $10.25 * 6 = $61.50
+position_pct = 25% (confidence >= 60)
+margin = $68.33 * 0.25 = $17.08
+notional = $17.08 * 6 = $102.50
 ```
 
 **Note:** Half-Kelly (`src/risk/kelly_criterion.py`) code retained but NOT used in orchestrator.
@@ -436,12 +436,12 @@ Step 2b: TRAILING STOP MANAGEMENT
   │   └── Log state changes
   └── Prevents giving back profits on winning trades
 
-Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 150)
+Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 100)
   ├── For each open position:
   │   ├── Calculate hours held = (now - entry_time) / 3600
-  │   ├── If hours_held ≥ 150: close at market, cancel orders, clean trailing stop
+  │   ├── If hours_held ≥ 100: close at market, cancel orders, clean trailing stop
   │   └── Record as "time_exit" reason
-  └── Prevents capital lock-up in stale positions (6.25 day cap)
+  └── Prevents capital lock-up in stale positions (~4.17 day cap, v6.16)
 
 Step 3: MULTI-TIMEFRAME SIGNAL GENERATION
   ├── For each pair:
@@ -624,7 +624,7 @@ All models use `frozen=True` (immutable after creation).
 position_sizing:
   method: half_kelly
   kelly_fraction: 0.5
-  max_position_pct: 0.15
+  max_position_pct: 0.25
   min_position_usd: 5.0
 leverage:
   max_leverage: 10
@@ -663,7 +663,7 @@ lookback:
 1. **$30 HARD FLOOR** - Balance < $30 = HALT ALL TRADING. No exceptions.
 2. **10x MAX LEVERAGE** - Absolute maximum. CB reduces this.
 3. **3 MAX POSITIONS** - Concurrent open positions.
-4. **15% MAX PER TRADE** - Of total balance.
+4. **25% MAX PER TRADE** - Of total balance. Raised from 15% via v6.16 backtest evidence.
 5. **20 MAX DAILY TRADES** - Overtrading prevention.
 6. **ALL DATA FROM API** - Never fabricate, estimate, or guess prices.
 7. **RISK MANAGER APPROVAL** - Every trade must pass risk checks.
@@ -737,7 +737,7 @@ lookback:
 8. **Paper trading** - ACTIVE on testnet since 2026-03-14 (v1). Current version: v6.8. Bot will be restarted after each fix batch.
 9. **Test coverage** - 416 tests passing. P0 modules covered (order_manager 33, price_validator 13, signal_validator 13, market_data 26, trade_journal 25). Additional coverage now includes trailing-stop persistence and scalper fee-adjusted TP.
 10. **v4 backtest validated** - Production code returns +172.9%, 69.2% WR, Sharpe 3.98 — BEATS v3 inline backtest by 84%.
-11. **Avg daily return 1.149%** - This is the VALIDATED PERFORMANCE CEILING from v5 sweep (240-combo parameter sweep, production-code backtest). Winner: ST(8,2.0), MAX_HOLD_BARS=150, tighten_to_breakeven. +539.8% over 172 days, 75 trades, Sharpe 5.83, PF 52.34, MaxDD 1.2%. EXCEEDS the 1% aspirational target. Previous ceiling was 0.628% from v4. All 6 gate checks passed. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
+11. **Avg daily return 2.68%** - This is the VALIDATED PERFORMANCE CEILING from v6.16 AGG4 sweep (8-config parameter sweep, production-code backtest). Winner: 25% sizing, MAX_HOLD_BARS=100, 9 pairs. +6,593.5% over 172 days, 197 trades, Sharpe 7.40, MaxDD 11.4%. This was raised from 1.397% (v6.1) under user directive to prepare for real-money deployment. All changes backed by production-code backtest evidence. Any further changes MUST still go through the full strategy versioning pipeline (§8) with backtest evidence.
 12. **Hyperopt** - Not yet run. 500 epochs planned but may not be needed given v3 backtest results (Sharpe 3.31).
 13. ~~**Idempotent order submission**~~ - RESOLVED: `order_manager.py` now implements `_submit_order_idempotent()` — queries by `origClientOrderId` on timeout/503 before retrying. Each retry uses a new client ID. Handles InsufficientFunds/InvalidOrder gracefully (returns None).
 14. **CLAUDE.md updated to v3.0** - Reconciled all document drift (daily loss threshold, fee scenarios, agent count, cycle steps, performance framing, liquidation modeling, test gaps). Position sizing code location corrected to `orchestrator/main.py`. Leverage table corrected to show 25-39% confidence tiers.

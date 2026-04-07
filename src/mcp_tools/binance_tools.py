@@ -96,9 +96,13 @@ async def _get_exchange() -> ccxt_async.binanceusdm:
     if _exchange is not None:
         return _exchange
 
-    api_key = os.getenv("BINANCE_API_KEY", "")
-    api_secret = os.getenv("BINANCE_API_SECRET", "")
     testnet = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
+    if testnet:
+        api_key = os.getenv("BINANCE_API_KEY", "")
+        api_secret = os.getenv("BINANCE_API_SECRET", "")
+    else:
+        api_key = os.getenv("BINANCE_API_KEY_PROD", "")
+        api_secret = os.getenv("BINANCE_API_SECRET_PROD", "")
 
     _exchange = ccxt_async.binanceusdm(
         {

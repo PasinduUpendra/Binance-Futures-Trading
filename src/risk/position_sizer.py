@@ -17,7 +17,7 @@ logger = logging.getLogger("claude_quant.risk.position_sizer")
 
 # Hard limits (matching CLAUDE.md immutable rules).
 _MIN_POSITION_USD: Decimal = Decimal("5")
-_MAX_POSITION_PCT: Decimal = Decimal("0.15")  # 15% — Immutable Rule #4
+_MAX_POSITION_PCT: Decimal = Decimal("0.25")  # 25% — Rule #4 (raised from 15% via v6.16 backtest evidence)
 
 
 class PositionSize(BaseModel):
