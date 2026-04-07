@@ -605,7 +605,7 @@ Minimal patch plan with rollback procedure.
 # SECTION 11: TEST COVERAGE STATUS & PRIORITY
 # ═══════════════════════════════════════════════════════════════════
 
-**Current**: 401 tests passing (~1.45s) — SSOT §14
+**Current**: 598 tests passing (~1.75s) — SSOT §14
 
 ### Covered Modules (with test counts)
 
@@ -714,7 +714,7 @@ Minimal patch plan with rollback procedure.
 | `src/risk/position_sizer.py` | Position sizing | CRITICAL |
 | `scripts/backtest_v4.py` | Production-code backtest | VALIDATION |
 | `.claude/agents/watchdog.md` | Watchdog agent (9th agent) | MONITORING |
-| `tests/` | 401 tests | QUALITY |
+| `tests/` | 598 tests | QUALITY |
 | `.learnings/` | Self-improving knowledge base | LEARNING |
 | `config/` | risk_params.yaml, regime_params.yaml, circuit_breakers.yaml | CONFIG |
 

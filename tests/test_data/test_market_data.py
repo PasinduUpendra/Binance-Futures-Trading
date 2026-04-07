@@ -191,6 +191,44 @@ class TestFetchTicker:
         assert ticker.last == Decimal("3500.2")
         assert ticker.symbol == "ETH/USDT:USDT"
 
+    @pytest.mark.asyncio
+    async def test_fetch_ticker_handles_none_values(self, client: MarketDataClient) -> None:
+        """Binance testnet sometimes returns None for ticker fields.
+
+        raw.get('last', 0) returns None when key exists with None value.
+        The fix uses `or 0` to handle both missing and None.
+        """
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_ticker.return_value = {
+            "bid": None,
+            "ask": None,
+            "last": None,
+            "high": None,
+            "low": None,
+            "quoteVolume": None,
+            "timestamp": 1710547200000,
+        }
+        client._exchange = mock_exchange
+
+        ticker = await client.fetch_ticker("ETH/USDT:USDT")
+        assert isinstance(ticker, TickerData)
+        assert ticker.last == Decimal("0")
+        assert ticker.bid == Decimal("0")
+        assert ticker.ask == Decimal("0")
+
+    @pytest.mark.asyncio
+    async def test_fetch_ticker_handles_missing_keys(self, client: MarketDataClient) -> None:
+        """Missing keys should default to 0."""
+        mock_exchange = AsyncMock()
+        mock_exchange.fetch_ticker.return_value = {
+            "timestamp": 1710547200000,
+        }
+        client._exchange = mock_exchange
+
+        ticker = await client.fetch_ticker("ETH/USDT:USDT")
+        assert ticker.last == Decimal("0")
+        assert ticker.volume == Decimal("0")
+
 
 # ---------------------------------------------------------------------------
 # fetch_orderbook

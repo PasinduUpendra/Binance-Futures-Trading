@@ -58,6 +58,8 @@ from src.anti_hallucination.decision_auditor import DecisionAuditor
 from src.anti_hallucination.sanity_checks import SanityChecker
 from src.reporting.daily_pnl import DailyPnLCalculator
 from src.reporting.dashboard import Dashboard
+from src.risk.funding_rate_filter import FundingRateFilter
+from src.strategies.cross_asset_consensus import CrossAssetConsensus
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.alert_system import AlertSystem
 
@@ -203,6 +205,7 @@ class Orchestrator:
         self.report_generator = ReportGenerator()
         self.alert_system = AlertSystem()
         self.alert_system.log_channel_status()
+        self.cross_asset_consensus = CrossAssetConsensus()
         self.db = DatabaseManager()  # consolidated DB at user_data/claude_quant.db
 
         AGENT_STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -482,9 +485,24 @@ class Orchestrator:
         best_signal = None
         best_pair = None
 
+        # ─── Cross-asset consensus (confidence adjustment) ───
+        consensus_adj = self.cross_asset_consensus.compute(pair_data_4h)
+
+        # Build map of currently positioned symbols → side for filtering
+        try:
+            _open_pos = await self.position_tracker.get_open_positions()
+            _positioned: dict[str, str] = {p.symbol: p.side for p in _open_pos}
+        except Exception:
+            _positioned = {}
+
         for pair in TRADING_PAIRS:
             if pair not in pair_data_4h or pair not in pair_data_1h:
                 continue
+
+            # Skip pairs where we already hold a same-direction position.
+            # Opposing-direction signals still compete for best so the
+            # orchestrator can detect and close the conflicting position.
+            existing_side = _positioned.get(pair)
 
             try:
                 df_4h = pair_data_4h[pair]
@@ -495,6 +513,20 @@ class Orchestrator:
 
                 if signal is None:
                     continue
+
+                # Skip same-direction signals for already-positioned pairs
+                if existing_side and signal.direction.value == existing_side:
+                    continue
+
+                # Apply cross-asset consensus adjustment
+                adj = consensus_adj.get(pair, 0.0)
+                if adj != 0.0:
+                    adjusted_conf = max(0.0, min(100.0, signal.confidence + adj))
+                    signal = signal.model_copy(update={"confidence": adjusted_conf})
+                    logger.info(
+                        "%s: consensus adjustment %.1f → confidence %.1f%%",
+                        pair, adj, adjusted_conf,
+                    )
 
                 # Detect regime for logging
                 regime = self.regime_detector.detect(df_4h)
@@ -635,8 +667,73 @@ class Orchestrator:
 
             for pos in open_positions:
                 if pos.symbol == symbol:
-                    logger.info(f"[{trigger}] Already positioned in {symbol}")
+                    if pos.side != signal.direction.value:
+                        # Opposing signal — close existing position
+                        logger.warning(
+                            "[%s] REVERSAL EXIT: %s %s conflicts with signal %s "
+                            "(confidence=%.1f%%). Closing existing position.",
+                            trigger, pos.symbol, pos.side,
+                            signal.direction.value, signal.confidence,
+                        )
+                        try:
+                            close_side = "sell" if pos.side == "long" else "buy"
+                            await self.order_manager.cancel_open_orders(pos.symbol)
+                            await self.order_manager.place_market_order(
+                                symbol=pos.symbol,
+                                side=close_side,
+                                amount=pos.size,
+                                params={"reduceOnly": True},
+                            )
+                            # Record exit
+                            entry_px = float(pos.entry_price)
+                            try:
+                                current_price = await self.market_data.get_current_price(pos.symbol)
+                                exit_px = float(current_price)
+                            except Exception:
+                                exit_px = entry_px  # Fallback
+                            if pos.side == "long":
+                                pnl_approx = exit_px - entry_px
+                            else:
+                                pnl_approx = entry_px - exit_px
+                            self._record_trade_exit(
+                                symbol=pos.symbol,
+                                exit_price=exit_px,
+                                pnl=pnl_approx,
+                                entry_price=entry_px,
+                                reason="reversal_exit",
+                            )
+                            self._trailing_stops.pop(pos.symbol, None)
+                            self._persist_trailing_stop_state()
+                        except Exception as e:
+                            logger.error(
+                                "[%s] REVERSAL EXIT failed for %s: %s",
+                                trigger, pos.symbol, e,
+                            )
+                    else:
+                        logger.info(f"[{trigger}] Already positioned in {symbol}")
                     return None
+
+            # ── Funding Rate Filter (Sprint 1.2) ──
+            try:
+                funding_rate = await self.market_data.fetch_funding_rate(symbol)
+                fr_result = FundingRateFilter.evaluate(
+                    funding_rate=float(funding_rate),
+                    signal_direction=signal.direction.value,
+                )
+                if not fr_result.should_trade:
+                    logger.warning(
+                        f"[{trigger}] Funding rate filter rejected: {fr_result.reason}"
+                    )
+                    return None
+                if fr_result.confidence_adjustment != 0:
+                    logger.info(
+                        f"[{trigger}] Funding rate adjustment: "
+                        f"{fr_result.confidence_adjustment:+.0f} ({fr_result.reason})"
+                    )
+            except Exception as e:
+                # Non-blocking: if funding rate fetch fails, proceed without filter
+                logger.debug(f"[{trigger}] Funding rate fetch skipped: {e}")
+                fr_result = None
 
             # ── Leverage ──
             leverage_result = LeverageManager.determine_leverage(
@@ -1349,9 +1446,19 @@ class Orchestrator:
             # trailing state. Exact fill comes from exchange trade history
             # but this is sufficient for win/loss streak tracking.
             if ts_state is not None:
+                # Get exit price: prefer live ticker, fall back to tracked price
                 try:
                     current_price = await self.market_data.get_current_price(sym)
                     exit_px = float(current_price)
+                except Exception as price_err:
+                    logger.warning(
+                        "RECONCILE: Price fetch failed for %s: %s — "
+                        "using tracked best_price %.6f",
+                        sym, price_err, ts_state.best_price,
+                    )
+                    exit_px = ts_state.best_price
+
+                try:
                     entry_px = ts_state.entry_price
                     direction = ts_state.direction
                     if direction == "long":

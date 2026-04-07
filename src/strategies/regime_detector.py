@@ -57,6 +57,12 @@ class RegimeState(BaseModel):
     volume_ratio: float = Field(
         description="Current volume divided by its rolling average"
     )
+    hurst: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Hurst exponent (H>0.6=trending, H~0.5=random, H<0.4=mean-reverting)",
+    )
 
     model_config = {"frozen": True}
 
@@ -111,6 +117,11 @@ class RegimeDetector:
     VOLUME_VERY_LOW_MULT: float = 0.5
     VOLUME_SPIKE_MULT: float = 1.5
 
+    # Hurst exponent thresholds
+    HURST_TRENDING_MIN: float = 0.6    # H > 0.6  → persistent / trending
+    HURST_MEAN_REVERT_MAX: float = 0.4 # H < 0.4  → anti-persistent / mean-reverting
+    HURST_LOOKBACK: int = 100          # candles for R/S calculation
+
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
@@ -145,8 +156,9 @@ class RegimeDetector:
         bb_width_ratio = self._bb_width_ratio(df)
         atr_ratio = self._atr_ratio(df)
         volume_ratio = self._volume_ratio(df)
+        hurst = self._compute_hurst(df)
 
-        regime, confidence = self._classify(adx, bb_width_ratio, atr_ratio, volume_ratio)
+        regime, confidence = self._classify(adx, bb_width_ratio, atr_ratio, volume_ratio, hurst)
 
         state = RegimeState(
             regime=regime,
@@ -155,16 +167,18 @@ class RegimeDetector:
             bb_width_ratio=round(bb_width_ratio, 4),
             atr_ratio=round(atr_ratio, 4),
             volume_ratio=round(volume_ratio, 4),
+            hurst=round(hurst, 4),
         )
 
         self.logger.info(
-            "Regime detected: %s (confidence=%.1f%%, ADX=%.2f, BBw=%.2f, ATRr=%.2f, Vr=%.2f)",
+            "Regime detected: %s (confidence=%.1f%%, ADX=%.2f, BBw=%.2f, ATRr=%.2f, Vr=%.2f, H=%.3f)",
             state.regime.value,
             state.confidence,
             state.adx,
             state.bb_width_ratio,
             state.atr_ratio,
             state.volume_ratio,
+            state.hurst,
         )
 
         return state
@@ -241,18 +255,109 @@ class RegimeDetector:
 
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def hurst_exponent(series: pd.Series, max_lag: int = 100) -> float:
+        """Compute the Hurst exponent via the Rescaled Range (R/S) method.
+
+        Parameters
+        ----------
+        series : pd.Series
+            Price or log-return series.  The function takes log-returns
+            internally if the input appears to be prices (all positive).
+        max_lag : int
+            Maximum sub-series length for R/S calculation.
+
+        Returns
+        -------
+        float
+            Hurst exponent in [0, 1].
+            H > 0.6  → persistent (trending)
+            H ≈ 0.5  → random walk
+            H < 0.4  → anti-persistent (mean-reverting)
+            Returns 0.5 when data is insufficient.
+        """
+        s = series.dropna()
+        if len(s) < 20:
+            return 0.5
+
+        # Convert prices to log-returns if series looks like prices
+        vals = s.values.astype(float)
+        if (vals > 0).all():
+            vals = np.diff(np.log(vals))
+        if len(vals) < 20:
+            return 0.5
+
+        # Build lag range: powers of 2 up to max_lag, min 4
+        max_k = min(max_lag, len(vals) // 2)
+        if max_k < 4:
+            return 0.5
+
+        lags: list[int] = []
+        rs_means: list[float] = []
+
+        k = 4
+        while k <= max_k:
+            lags.append(k)
+            k = int(k * 1.5) if k < 16 else k * 2
+        # Ensure we have the last lag
+        if lags and lags[-1] != max_k and max_k > lags[-1]:
+            lags.append(max_k)
+
+        for lag in lags:
+            n_chunks = len(vals) // lag
+            if n_chunks < 1:
+                continue
+            rs_vals: list[float] = []
+            for i in range(n_chunks):
+                chunk = vals[i * lag : (i + 1) * lag]
+                mean_c = chunk.mean()
+                devs = chunk - mean_c
+                cumdev = np.cumsum(devs)
+                R = cumdev.max() - cumdev.min()
+                S = chunk.std(ddof=1)
+                if S > 1e-12:
+                    rs_vals.append(R / S)
+            if rs_vals:
+                rs_means.append(np.mean(rs_vals))
+
+        if len(rs_means) < 2:
+            return 0.5
+
+        # OLS on log-log plot: log(R/S) = H * log(n) + c
+        log_lags = np.log(np.array(lags[: len(rs_means)], dtype=float))
+        log_rs = np.log(np.array(rs_means, dtype=float))
+
+        # np.polyfit returns [slope, intercept]
+        try:
+            slope, _ = np.polyfit(log_lags, log_rs, 1)
+        except (np.linalg.LinAlgError, ValueError):
+            return 0.5
+
+        # Clamp to [0, 1]
+        return float(np.clip(slope, 0.0, 1.0))
+
+    def _compute_hurst(self, df: pd.DataFrame) -> float:
+        """Compute Hurst exponent from close prices in the DataFrame."""
+        if self.COL_CLOSE not in df.columns:
+            return 0.5
+        close = df[self.COL_CLOSE].dropna()
+        if len(close) < 20:
+            return 0.5
+        return self.hurst_exponent(close, max_lag=self.HURST_LOOKBACK)
+
     def _classify(
         self,
         adx: float,
         bb_width_ratio: float,
         atr_ratio: float,
         volume_ratio: float,
+        hurst: float = 0.5,
     ) -> tuple[MarketRegime, float]:
         """Score each regime and return the best fit with a confidence level."""
 
         scores: dict[MarketRegime, float] = {
-            MarketRegime.TRENDING: self._score_trending(adx, bb_width_ratio, atr_ratio, volume_ratio),
-            MarketRegime.RANGING: self._score_ranging(adx, bb_width_ratio, atr_ratio, volume_ratio),
+            MarketRegime.TRENDING: self._score_trending(adx, bb_width_ratio, atr_ratio, volume_ratio, hurst),
+            MarketRegime.RANGING: self._score_ranging(adx, bb_width_ratio, atr_ratio, volume_ratio, hurst),
             MarketRegime.VOLATILE: self._score_volatile(adx, bb_width_ratio, atr_ratio, volume_ratio),
             MarketRegime.QUIET: self._score_quiet(adx, bb_width_ratio, atr_ratio, volume_ratio),
         }
@@ -269,7 +374,8 @@ class RegimeDetector:
     # --- Per-regime scoring (each sub-score in 0.0 .. 1.0) ----------------
 
     def _score_trending(
-        self, adx: float, bbr: float, atrr: float, volr: float
+        self, adx: float, bbr: float, atrr: float, volr: float,
+        hurst: float = 0.5,
     ) -> float:
         score = 0.0
         # ADX is the primary directional-strength signal
@@ -294,10 +400,16 @@ class RegimeDetector:
             score += 0.6 + min(0.4, (volr - 0.7) / 2.0)
         elif volr >= 0.2:
             score += 0.3  # low-volume trends exist, partial credit
+        # Hurst exponent: H > 0.6 indicates persistence (trend continuation)
+        if hurst >= self.HURST_TRENDING_MIN:
+            score += 0.5 + min(0.3, (hurst - self.HURST_TRENDING_MIN) / 0.4)
+        elif hurst >= 0.5:
+            score += 0.1  # neutral-ish, small credit
         return score
 
     def _score_ranging(
-        self, adx: float, bbr: float, atrr: float, volr: float
+        self, adx: float, bbr: float, atrr: float, volr: float,
+        hurst: float = 0.5,
     ) -> float:
         score = 0.0
         # ADX < 20
@@ -325,6 +437,11 @@ class RegimeDetector:
         # before continuation; ADX >= 20 means directional strength is real.
         if adx >= self.ADX_TRENDING_MIN:
             score *= 0.3
+        # Hurst exponent: H < 0.4 indicates mean-reversion (supports ranging)
+        if hurst <= self.HURST_MEAN_REVERT_MAX:
+            score += 0.5 + min(0.3, (self.HURST_MEAN_REVERT_MAX - hurst) / 0.4)
+        elif hurst <= 0.5:
+            score += 0.1  # neutral-ish, small credit
         return score
 
     def _score_volatile(

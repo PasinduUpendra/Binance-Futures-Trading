@@ -64,19 +64,43 @@ class SupertrendTrend(BaseStrategy):
     COL_ATR: str = "atr"
     COL_CLOSE: str = "close"
 
-    # Tunables
+    # Tunables (static defaults — used when regime is not specified)
     ADX_MIN: float = 18.0
     SL_ATR_MULT: float = 3.0
     TP_ATR_MULT: float = 6.0
+
+    # Dynamic SL/TP by regime (Sprint 1.3)
+    # All entries maintain minimum 2.0 R/R (Immutable Rule #9)
+    # NOTE: Trending SL kept at 3.0 (proven baseline) — tighter 2.5 caused
+    # excess stop-outs on backtest (-22% return regression).  Only TP is
+    # widened to let winners run further.
+    SL_TP_BY_REGIME: dict[str, dict[str, float]] = {
+        "trending": {"sl_mult": 3.0, "tp_mult": 6.0},  # R/R=2.0 — same as proven baseline
+        "volatile": {"sl_mult": 4.0, "tp_mult": 8.0},  # R/R=2.0 — wider SL for noise
+        "ranging":  {"sl_mult": 2.5, "tp_mult": 5.0},  # R/R=2.0 — tighter range
+        "quiet":    {"sl_mult": 2.0, "tp_mult": 4.0},  # R/R=2.0 — conservative
+    }
 
     # Minimum consecutive bars the 4H Supertrend must hold the same direction
     # to qualify as an "established trend" for 1H continuation entries.
     MIN_ESTABLISHED_BARS: int = 3
 
+    def _get_sl_tp_mults(self, regime: str | None) -> tuple[float, float]:
+        """Return (sl_mult, tp_mult) for the given regime.
+
+        Falls back to static ``SL_ATR_MULT`` / ``TP_ATR_MULT`` when regime
+        is not provided or not in the mapping.
+        """
+        if regime and regime in self.SL_TP_BY_REGIME:
+            params = self.SL_TP_BY_REGIME[regime]
+            return params["sl_mult"], params["tp_mult"]
+        return self.SL_ATR_MULT, self.TP_ATR_MULT
+
     def generate_signal(
         self,
         df: pd.DataFrame,
         entry_price: float | None = None,
+        regime: str | None = None,
     ) -> Signal:
         """Evaluate the Supertrend flip setup on 4H data.
 
@@ -126,9 +150,10 @@ class SupertrendTrend(BaseStrategy):
                 f"No Supertrend flip: prev_dir={prev_st_dir:.0f}, cur_dir={st_dir:.0f}"
             )
 
-        # Entry / SL / TP
-        sl_distance = atr * self.SL_ATR_MULT
-        tp_distance = atr * self.TP_ATR_MULT
+        # Entry / SL / TP (regime-aware)
+        sl_mult, tp_mult = self._get_sl_tp_mults(regime)
+        sl_distance = atr * sl_mult
+        tp_distance = atr * tp_mult
 
         if direction == SignalDirection.LONG:
             stop_loss = close - sl_distance
@@ -246,6 +271,7 @@ class SupertrendTrend(BaseStrategy):
         self,
         df_4h: pd.DataFrame,
         df_1h: pd.DataFrame,
+        regime: str | None = None,
     ) -> Signal:
         """Generate a continuation entry using a 1H Supertrend flip.
 
@@ -304,8 +330,9 @@ class SupertrendTrend(BaseStrategy):
         if np.isnan(atr):
             return self._no_signal("ATR is NaN")
 
-        sl_distance = atr * self.SL_ATR_MULT
-        tp_distance = atr * self.TP_ATR_MULT
+        sl_mult, tp_mult = self._get_sl_tp_mults(regime)
+        sl_distance = atr * sl_mult
+        tp_distance = atr * tp_mult
 
         if direction == SignalDirection.LONG:
             stop_loss = close - sl_distance

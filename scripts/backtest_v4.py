@@ -41,6 +41,7 @@ from src.risk.volatility_model import VolatilityModel
 from src.execution.fee_calculator import FeeCalculator
 from src.strategies.adaptive_strategy import AdaptiveStrategy
 from src.strategies.base_strategy import SignalDirection
+from src.strategies.cross_asset_consensus import CrossAssetConsensus
 
 DATA_DIR = PROJECT_ROOT / "user_data" / "data"
 PAIRS = ["ETH_USDT_USDT", "SOL_USDT_USDT", "DOGE_USDT_USDT"]
@@ -72,6 +73,7 @@ def run_backtest():
     vol_model = VolatilityModel(forecast_horizon=1)
     position_sizer = PositionSizer()
     adaptive = AdaptiveStrategy()
+    consensus = CrossAssetConsensus()
 
     # ─── Load data ───
     data_1h = {}
@@ -264,6 +266,16 @@ def run_backtest():
 
         open_pairs = {p["pair"] for p in open_positions}
 
+        # ─── Cross-asset consensus for this bar ───
+        current_ts = data_1h[PAIRS[0]]["timestamp"].iloc[i]
+        pair_4h_slices = {}
+        for p in PAIRS:
+            _df = data_4h_ind[p]
+            _valid = _df[_df["timestamp"] <= current_ts]
+            if len(_valid) >= 100:
+                pair_4h_slices[p] = _valid
+        consensus_adj = consensus.compute(pair_4h_slices)
+
         # ─── Signal Generation (PRODUCTION CODE) ───
         for pair in PAIRS:
             if pair in open_pairs:
@@ -288,6 +300,12 @@ def run_backtest():
 
             if signal is None:
                 continue
+
+            # ─── Apply cross-asset consensus adjustment ───
+            adj = consensus_adj.get(pair, 0.0)
+            if adj != 0.0:
+                adjusted_conf = max(0.0, min(100.0, signal.confidence + adj))
+                signal = signal.model_copy(update={"confidence": adjusted_conf})
 
             v4_signals["signals_generated"] += 1
             strat = signal.strategy_name

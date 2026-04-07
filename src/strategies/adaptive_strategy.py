@@ -25,6 +25,7 @@ from typing import Optional
 
 import pandas as pd
 
+from src.strategies.adaptive_trend import AdaptiveTrend
 from src.strategies.base_strategy import BaseStrategy, Signal, SignalDirection
 from src.strategies.breakout_trader import BreakoutTrader
 from src.strategies.mean_reversion import MeanReversion
@@ -35,7 +36,7 @@ from src.strategies.trend_follower import TrendFollower
 logger = logging.getLogger(__name__)
 
 # Strategies that operate on 4H data and accept an entry_price kwarg.
-_4H_STRATEGIES = (SupertrendTrend, MeanReversion)
+_4H_STRATEGIES = (SupertrendTrend, MeanReversion, AdaptiveTrend)
 
 
 class AdaptiveStrategy:
@@ -76,6 +77,7 @@ class AdaptiveStrategy:
         self._trend_follower = TrendFollower()
         self._mean_reversion = MeanReversion()
         self._breakout_trader = BreakoutTrader()
+        self._adaptive_trend = AdaptiveTrend()
 
     # ------------------------------------------------------------------
     # Public API
@@ -122,11 +124,11 @@ class AdaptiveStrategy:
                 )
                 return self._supertrend_trend
             self.logger.info(
-                "Regime RANGING (ADX=%.1f) -> NO TRADE "
-                "(MeanReversion disabled: 25%% WR in paper trading, 5.3%% WR historical)",
+                "Regime RANGING (ADX=%.1f) -> AdaptiveTrend "
+                "(MeanReversion disabled; momentum-based ranging strategy)",
                 regime.adx,
             )
-            return None
+            return self._adaptive_trend
 
         if regime.regime == MarketRegime.VOLATILE:
             # Re-enabled with ADX gate. BreakoutTrader's own volume surge
@@ -182,7 +184,13 @@ class AdaptiveStrategy:
             if isinstance(strategy, _4H_STRATEGIES):
                 # 4H strategies: use 4H data, 1H close as entry_price
                 close_1h = float(df_1h["close"].dropna().iloc[-1])
-                signal = strategy.generate_signal(df_4h, entry_price=close_1h)
+                regime_str = regime.regime.value  # e.g. "trending", "ranging"
+                if isinstance(strategy, (SupertrendTrend, AdaptiveTrend)):
+                    signal = strategy.generate_signal(
+                        df_4h, entry_price=close_1h, regime=regime_str,
+                    )
+                else:
+                    signal = strategy.generate_signal(df_4h, entry_price=close_1h)
 
                 # If 4H flip returned NONE and strategy is SupertrendTrend,
                 # try 1H continuation entry in established 4H trend.
@@ -190,7 +198,9 @@ class AdaptiveStrategy:
                     signal.direction == SignalDirection.NONE
                     and isinstance(strategy, SupertrendTrend)
                 ):
-                    signal = strategy.generate_continuation_signal(df_4h, df_1h)
+                    signal = strategy.generate_continuation_signal(
+                        df_4h, df_1h, regime=regime_str,
+                    )
             else:
                 # 1H strategies (TrendFollower, BreakoutTrader)
                 signal = strategy.generate_signal(df_1h)

@@ -199,8 +199,8 @@ def test_trending_low_adx_routes_to_none(adaptive: AdaptiveStrategy) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
-    """RANGING with ADX < 18 returns None (MeanReversion disabled)."""
+def test_ranging_routes_to_adaptive_trend(adaptive: AdaptiveStrategy) -> None:
+    """RANGING with ADX < 18 routes to AdaptiveTrend (momentum strategy)."""
     regime = RegimeState(
         regime=MarketRegime.RANGING,
         confidence=70.0,
@@ -210,7 +210,8 @@ def test_ranging_routes_to_mean_reversion(adaptive: AdaptiveStrategy) -> None:
         volume_ratio=0.6,
     )
     strategy = adaptive.select_strategy(regime)
-    assert strategy is None
+    assert strategy is not None
+    assert strategy.name == "AdaptiveTrend"
 
 
 def test_ranging_with_adx_18_routes_to_supertrend(adaptive: AdaptiveStrategy) -> None:

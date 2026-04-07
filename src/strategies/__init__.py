@@ -10,6 +10,7 @@ Public API
 - ``BaseStrategy``       – abstract base class for all concrete strategies
 - ``Signal``             – Pydantic model for a trading signal
 - ``SignalDirection``    – direction enum (LONG, SHORT, NONE)
+- ``AdaptiveTrend``      – momentum-based strategy for ranging markets
 - ``TrendFollower``      – trend-following strategy (EMA cross + ADX + Supertrend)
 - ``MeanReversion``      – mean-reversion strategy (BB + Z-score + RSI)
 - ``BreakoutTrader``     – breakout strategy (S/R + volume + BB squeeze)
@@ -22,6 +23,7 @@ Helpers
 - ``calculate_rr_ratio`` – compute reward-to-risk ratio
 """
 
+from src.strategies.adaptive_trend import AdaptiveTrend
 from src.strategies.adaptive_strategy import AdaptiveStrategy
 from src.strategies.base_strategy import (
     BaseStrategy,
@@ -50,6 +52,7 @@ __all__ = [
     "SignalDirection",
     # Concrete strategies
     "SupertrendTrend",
+    "AdaptiveTrend",
     "TrendFollower",
     "MeanReversion",
     "BreakoutTrader",

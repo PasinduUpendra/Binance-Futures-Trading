@@ -270,14 +270,17 @@ class MarketDataClient:
         """Fetch the latest 24-h ticker for *symbol*."""
         exchange = self._require_exchange()
         raw: dict[str, Any] = await exchange.fetch_ticker(symbol)
+        # Guard against None values: .get("key", 0) only uses the default
+        # when the key is ABSENT.  Binance testnet sometimes returns
+        # {"last": None, ...} — `or 0` handles both missing and None.
         return TickerData(
             symbol=symbol,
-            bid=self._to_decimal(raw.get("bid", 0)),
-            ask=self._to_decimal(raw.get("ask", 0)),
-            last=self._to_decimal(raw.get("last", 0)),
-            high=self._to_decimal(raw.get("high", 0)),
-            low=self._to_decimal(raw.get("low", 0)),
-            volume=self._to_decimal(raw.get("quoteVolume", raw.get("baseVolume", 0))),
+            bid=self._to_decimal(raw.get("bid") or 0),
+            ask=self._to_decimal(raw.get("ask") or 0),
+            last=self._to_decimal(raw.get("last") or 0),
+            high=self._to_decimal(raw.get("high") or 0),
+            low=self._to_decimal(raw.get("low") or 0),
+            volume=self._to_decimal(raw.get("quoteVolume") or raw.get("baseVolume") or 0),
             timestamp=self._utc_from_ms(raw.get("timestamp")),
         )
 
@@ -397,6 +400,19 @@ class MarketDataClient:
         """Return the last traded price for *symbol* as a Decimal."""
         ticker = await self.fetch_ticker(symbol)
         return ticker.last
+
+    @_retry
+    async def fetch_funding_rate(self, symbol: str) -> Decimal:
+        """Fetch the current funding rate for *symbol*.
+
+        Returns the funding rate as a Decimal (e.g. 0.0001 for 0.01%).
+        Positive = longs pay shorts.  Negative = shorts pay longs.
+        """
+        exchange = self._require_exchange()
+        raw = await exchange.fetch_funding_rate(symbol)
+        rate = self._to_decimal(raw.get("fundingRate", 0))
+        logger.info("Funding rate for %s: %s", symbol, rate)
+        return rate
 
     # -- Sentiment / aggregate data (infrastructure-only, NOT for trading) ---
 

@@ -375,3 +375,114 @@ def test_rr_below_2_rejected(strategy: SupertrendTrend) -> None:
     sig = strategy.generate_signal(df)
     # With SL=3×100=300, TP=6×100=600, R/R=2.0 — should NOT be rejected
     assert sig.direction != SignalDirection.NONE
+
+
+# -----------------------------------------------------------------------
+# Sprint 1.3: Dynamic SL/TP by regime
+# -----------------------------------------------------------------------
+
+
+class TestDynamicSlTp:
+    """Tests for regime-aware SL/TP multipliers."""
+
+    def setup_method(self):
+        self.strategy = SupertrendTrend()
+
+    # --- _get_sl_tp_mults() ---
+
+    def test_trending_multipliers(self):
+        sl, tp = self.strategy._get_sl_tp_mults("trending")
+        assert sl == 3.0
+        assert tp == 6.0
+
+    def test_volatile_multipliers(self):
+        sl, tp = self.strategy._get_sl_tp_mults("volatile")
+        assert sl == 4.0
+        assert tp == 8.0
+
+    def test_ranging_multipliers(self):
+        sl, tp = self.strategy._get_sl_tp_mults("ranging")
+        assert sl == 2.5
+        assert tp == 5.0
+
+    def test_quiet_multipliers(self):
+        sl, tp = self.strategy._get_sl_tp_mults("quiet")
+        assert sl == 2.0
+        assert tp == 4.0
+
+    def test_none_regime_uses_defaults(self):
+        sl, tp = self.strategy._get_sl_tp_mults(None)
+        assert sl == 3.0
+        assert tp == 6.0
+
+    def test_unknown_regime_uses_defaults(self):
+        sl, tp = self.strategy._get_sl_tp_mults("unknown")
+        assert sl == 3.0
+        assert tp == 6.0
+
+    # --- All regimes maintain min 2.0 R/R (Immutable Rule #9) ---
+
+    def test_all_regimes_maintain_min_rr(self):
+        """Every regime entry in SL_TP_BY_REGIME must have R/R >= 2.0."""
+        for regime, params in SupertrendTrend.SL_TP_BY_REGIME.items():
+            rr = params["tp_mult"] / params["sl_mult"]
+            assert rr >= 2.0, (
+                f"Regime '{regime}': R/R={rr:.2f} < 2.0 violates Immutable Rule #9"
+            )
+
+    # --- generate_signal with regime ---
+
+    def test_signal_long_trending_sl_tp(self):
+        """LONG with regime='trending' should use 3.0/6.0 multipliers."""
+        df = _make_df(st_dirs=[-1, 1], close=3000.0, atr=100.0)
+        sig = self.strategy.generate_signal(df, regime="trending")
+        assert sig.direction == SignalDirection.LONG
+        assert sig.stop_loss == pytest.approx(3000.0 - 3.0 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 + 6.0 * 100.0, abs=1e-4)
+
+    def test_signal_long_ranging_sl_tp(self):
+        """LONG with regime='ranging' should use 2.5/5.0 multipliers."""
+        df = _make_df(st_dirs=[-1, 1], close=3000.0, atr=100.0)
+        sig = self.strategy.generate_signal(df, regime="ranging")
+        assert sig.direction == SignalDirection.LONG
+        assert sig.stop_loss == pytest.approx(3000.0 - 2.5 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 + 5.0 * 100.0, abs=1e-4)
+
+    def test_signal_short_volatile_sl_tp(self):
+        """SHORT with regime='volatile' should use 4.0/8.0 multipliers."""
+        df = _make_df(
+            st_dirs=[1, -1], close=3000.0, atr=100.0,
+            ema9=2990.0, ema21=3010.0,
+        )
+        sig = self.strategy.generate_signal(df, regime="volatile")
+        assert sig.direction == SignalDirection.SHORT
+        assert sig.stop_loss == pytest.approx(3000.0 + 4.0 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 - 8.0 * 100.0, abs=1e-4)
+
+    def test_signal_no_regime_uses_static(self):
+        """Without regime param, should use static 3.0/6.0."""
+        df = _make_df(st_dirs=[-1, 1], close=3000.0, atr=100.0)
+        sig = self.strategy.generate_signal(df)
+        assert sig.stop_loss == pytest.approx(3000.0 - 3.0 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 + 6.0 * 100.0, abs=1e-4)
+
+    # --- generate_continuation_signal with regime ---
+
+    def test_continuation_trending_sl_tp(self):
+        """Continuation with regime='trending' should use trending multipliers."""
+        df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0, atr=100.0)
+        df_1h = _make_df(st_dirs=[-1, 1], close=3000.0, atr=100.0)
+        sig = self.strategy.generate_continuation_signal(df_4h, df_1h, regime="trending")
+        assert sig.direction == SignalDirection.LONG
+        # Uses 4H ATR for SL/TP calculation
+        assert sig.stop_loss == pytest.approx(3000.0 - 3.0 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 + 6.0 * 100.0, abs=1e-4)
+
+    def test_continuation_no_regime_uses_static(self):
+        """Continuation without regime should use static multipliers."""
+        df_4h = _make_df(st_dirs=[1, 1, 1, 1], adx=30.0, atr=100.0)
+        df_1h = _make_df(st_dirs=[-1, 1], close=3000.0, atr=100.0)
+        sig = self.strategy.generate_continuation_signal(df_4h, df_1h)
+        assert sig.direction == SignalDirection.LONG
+        assert sig.stop_loss == pytest.approx(3000.0 - 3.0 * 100.0, abs=1e-4)
+        assert sig.take_profit == pytest.approx(3000.0 + 6.0 * 100.0, abs=1e-4)

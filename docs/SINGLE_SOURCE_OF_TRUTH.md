@@ -6,7 +6,7 @@
 > **Paper Trading Started:** 2026-03-14 12:47 UTC (v1), restarted 2026-03-15 (v2), 2026-03-22 (v3), 2026-03-24 (v4 — post-audit)
 > **Bot PID:** 32036 (restarted 2026-03-24, 5 bug fixes + log noise fix — see CHANGELOG 2026-03-24)
 > **Watchdog:** Claude agent monitoring bot in real-time
-> **Tests:** 416 passing (5.02s)
+> **Tests:** 598 passing (~1.75s)
 
 ---
 
@@ -189,7 +189,7 @@ Claude Quant/
 │   ├── LEARNINGS.md                    # 12 learnings (LRN-001 through LRN-012)
 │   └── ERRORS.md                       # 4 resolved errors (ERR-001 through ERR-004)
 │
-├── tests/                              # 416 tests, all passing (5.02s)
+├── tests/                              # 598 tests, all passing (~1.75s)
 │   ├── conftest.py                     # Fixtures, markers
 │   ├── test_strategies/
 │   │   ├── test_regime_detector.py     # 5 tests — regime classification
@@ -687,7 +687,7 @@ lookback:
 ## 14. TESTING
 
 **Run all:** `.venv/bin/python -m pytest tests/ -v`
-**Current status:** 418 tests passing (2.65s) — as of 2026-03-26
+**Current status:** 598 tests passing (~1.75s) — as of 2026-04-07
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
