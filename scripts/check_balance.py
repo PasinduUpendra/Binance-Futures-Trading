@@ -16,6 +16,25 @@ import ccxt.async_support as ccxt_async
 
 
 async def main() -> None:
+    # Check bot process
+    import subprocess
+    import datetime
+
+    result = subprocess.run(
+        ["pgrep", "-f", "run_bot.py"], capture_output=True, text=True
+    )
+    pids = result.stdout.strip()
+    if pids:
+        pid = pids.split("\n")[0]
+        ps = subprocess.run(["ps", "-o", "etime=", "-p", pid], capture_output=True, text=True)
+        uptime = ps.stdout.strip()
+        print(f"Bot PID: {pid} (uptime: {uptime})")
+    else:
+        print("WARNING: Bot process NOT running!")
+
+    print(f"Check time: {datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print()
+
     api_key = os.getenv("BINANCE_API_KEY_PROD")
     api_secret = os.getenv("BINANCE_API_SECRET_PROD")
 
@@ -49,8 +68,21 @@ async def main() -> None:
             for p in open_pos:
                 print(
                     f"  {p['symbol']} {p['side']} {p['contracts']} contracts, "
-                    f"PnL: {p.get('unrealizedPnl', '?')}"
+                    f"PnL: {p.get('unrealizedPnl', '?')}, entry: {p.get('entryPrice', '?')}"
                 )
+                # Show conditional/trigger orders (SL/TP)
+                sym = p["symbol"]
+                trigger_orders = await exchange.fetch_open_orders(
+                    sym, params={"trigger": True}
+                )
+                if trigger_orders:
+                    for o in trigger_orders:
+                        print(
+                            f"    -> {o.get('type','?')} {o['side']} "
+                            f"stopPrice={o.get('stopPrice','?')} status={o['status']}"
+                        )
+                else:
+                    print("    -> WARNING: NO SL/TP orders!")
         else:
             print("\nNo open positions.")
     except Exception as e:
