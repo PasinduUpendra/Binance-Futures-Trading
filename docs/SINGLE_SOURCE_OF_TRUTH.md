@@ -259,14 +259,21 @@ Claude Quant/
 #### SupertrendTrend (`src/strategies/supertrend_trend.py`) — **ONLY ACTIVE STRATEGY**
 - **Regime:** TRENDING (ADX >= 18)
 - **Timeframe:** 4H indicators, 1H close for entry price
-- **Entry LONG:** 4H Supertrend flips from bearish to bullish AND ADX >= 18
-- **Entry SHORT:** 4H Supertrend flips from bullish to bearish AND ADX >= 18
-- **SL:** 3.0x ATR(4H) from entry
-- **TP:** 6.0x ATR(4H) from entry (R/R = 2.0)
+- **Signal Cascade (v6.19):**
+  1. **4H Flip:** Supertrend flips direction on exact last candle AND ADX >= 18 (highest confidence)
+  2. **1H Continuation:** 4H established + 1H flip within 5-bar lookback window (confidence decays with age)
+  3. **15m Fast Entry:** 4H established + 1H aligned + 15m flip within 3-bar lookback window
+  4. **Aligned Trend Entry:** ALL TFs aligned, no flip needed — RSI pullback recovery filter (ceiling 55)
+- **Entry LONG:** Any cascade level triggers with direction=1
+- **Entry SHORT:** Any cascade level triggers with direction=-1
+- **SL:** 3.0x ATR from entry (4H ATR for flip/continuation, 1H ATR for fast/aligned)
+- **TP:** 6.0x ATR from entry (R/R = 2.0)
 - **Trailing stop:** Activate after 2.0 ATR(4H) favorable move, trail at 2.5 ATR(4H); state persists across restarts (`best_price`, `activated`, `atr_4h`, `take_profit`)
-- **Reversal exit:** Tighten SL to breakeven when 4H Supertrend flips against direction (v5 sweep: beats immediate close)
-- **Max hold time:** 100 bars (~4.17 days) — force close after (v6.16 sweep: increased trade count 176→197, win rate 51.1→54.3%)
+- **Partial TP:** 50% closed at 1:1 R/R, SL moved to breakeven (v6.18)
+- **Reversal exit:** Tighten SL to breakeven when 4H Supertrend flips against direction — applies to ALL positions including pre-existing (v6.19)
+- **Max hold time:** 100 bars (~4.17 days) — force close after (v6.16 sweep)
 - **Confidence factors:** Base flip (40pts), ADX strength (20pts), EMA alignment (20pts), RSI position (10pts), flip quality (10pts)
+- **Position swap:** Min confidence 60, delta >= 15 points over entry confidence, reduce_only=True (v6.19)
 - **v3 Backtest:** +94% return, 60.9% WR, Sharpe 3.31, 7.9% max DD over 172 days
 - **v4 Backtest (production code):** +172.9% return, 69.2% WR, Sharpe 3.98, PF 5.39, 39 trades over 172 days
 - **v5 Backtest (sweep winner):** +539.8% return, 61.3% WR, Sharpe 5.83, PF 52.34, MaxDD 1.2%, 75 trades, ST(8,2.0)
@@ -291,8 +298,8 @@ Claude Quant/
 
 ### 4.4 AdaptiveStrategy Router (`src/strategies/adaptive_strategy.py`)
 - **MIN_CONFIDENCE gate:** 25% (each strategy has own quality gates)
-- **Entry point:** `get_signal_multi_tf(df_4h, df_1h)` — multi-timeframe
-- TRENDING (ADX >= 18) -> SupertrendTrend (4H data + 1H entry price) — **ONLY ACTIVE ROUTE**
+- **Entry point:** `get_signal_multi_tf(df_4h, df_1h, df_15m)` — multi-timeframe with 4-level cascade
+- TRENDING (ADX >= 18) -> SupertrendTrend cascade: 4H flip → 1H continuation (5-bar) → 15m fast (3-bar) → aligned trend entry — **ONLY ACTIVE ROUTE**
 - TRENDING (ADX < 18) -> None (TrendFollower disabled, 30% WR)
 - RANGING -> None (MeanReversion disabled, 5.3% WR)
 - VOLATILE -> None (BreakoutTrader disabled, 23.9% WR)

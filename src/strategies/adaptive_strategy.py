@@ -155,6 +155,7 @@ class AdaptiveStrategy:
         self,
         df_4h: pd.DataFrame,
         df_1h: pd.DataFrame,
+        df_15m: Optional[pd.DataFrame] = None,
     ) -> Optional[Signal]:
         """Multi-timeframe signal generation (preferred entry point).
 
@@ -166,6 +167,8 @@ class AdaptiveStrategy:
         df_1h : DataFrame
             1H indicator-enriched data for entry price timing and
             BreakoutTrader / TrendFollower signal generation.
+        df_15m : DataFrame, optional
+            15m indicator-enriched data for fast continuation entries.
         """
         # 1. Detect regime on 4H
         try:
@@ -199,6 +202,27 @@ class AdaptiveStrategy:
                     and isinstance(strategy, SupertrendTrend)
                 ):
                     signal = strategy.generate_continuation_signal(
+                        df_4h, df_1h, regime=regime_str,
+                    )
+
+                # If 1H continuation also returned NONE, try 15m fast entry
+                # (requires 4H established + 1H aligned + 15m flip).
+                if (
+                    signal.direction == SignalDirection.NONE
+                    and isinstance(strategy, SupertrendTrend)
+                    and df_15m is not None
+                ):
+                    signal = strategy.generate_fast_signal(
+                        df_4h, df_1h, df_15m, regime=regime_str,
+                    )
+
+                # If 15m fast also returned NONE, try aligned trend entry
+                # (all TFs aligned, no recent flip — RSI pullback recovery).
+                if (
+                    signal.direction == SignalDirection.NONE
+                    and isinstance(strategy, SupertrendTrend)
+                ):
+                    signal = strategy.generate_aligned_signal(
                         df_4h, df_1h, regime=regime_str,
                     )
             else:

@@ -411,10 +411,10 @@ async def test_emergency_sl_falls_back_to_breakeven(
 
 
 @pytest.mark.asyncio
-async def test_swap_requires_confidence_70(
+async def test_swap_requires_minimum_confidence(
     isolated_orchestrator: Orchestrator,
 ) -> None:
-    """Low-confidence signals should not trigger swap."""
+    """Signals below the absolute minimum gate (40) should not trigger swap."""
     positions = [
         SimpleNamespace(
             symbol="ADA/USDT:USDT", side="long",
@@ -427,7 +427,7 @@ async def test_swap_requires_confidence_70(
         entry_price=0.30, best_price=0.30, atr_4h=0.01,
     )
     result = await isolated_orchestrator._find_swap_candidate(
-        new_confidence=65.0, open_positions=positions,
+        new_confidence=35.0, open_positions=positions,
     )
     assert result is None
 
@@ -480,10 +480,10 @@ async def test_swap_rejects_activated_trailing(
 
 
 @pytest.mark.asyncio
-async def test_swap_requires_confidence_delta_20(
+async def test_swap_requires_confidence_delta_15(
     isolated_orchestrator: Orchestrator,
 ) -> None:
-    """New signal needs >= 20 point confidence advantage to swap."""
+    """New signal needs >= 15 point confidence advantage to swap."""
     positions = [
         SimpleNamespace(
             symbol="ADA/USDT:USDT", side="long",
@@ -495,7 +495,7 @@ async def test_swap_requires_confidence_delta_20(
         symbol="ADA/USDT:USDT", direction="long",
         entry_price=0.30, best_price=0.30, atr_4h=0.01,
     )
-    # Entry confidence = 60, new = 75 → delta = 15 < 20
+    # Entry confidence = 60, new = 70 → delta = 10 < 15
     mock_trade = SimpleNamespace(
         symbol="ADA/USDT:USDT", exit_price=None, confidence=Decimal("60"),
     )
@@ -503,13 +503,13 @@ async def test_swap_requires_confidence_delta_20(
         return_value=[mock_trade]
     )
     result = await isolated_orchestrator._find_swap_candidate(
-        new_confidence=75.0, open_positions=positions,
+        new_confidence=70.0, open_positions=positions,
     )
     assert result is None
 
-    # Now with delta >= 20 (new=85 - old=60 = 25)
+    # Now with delta >= 15 (new=80 - old=60 = 20)
     result = await isolated_orchestrator._find_swap_candidate(
-        new_confidence=85.0, open_positions=positions,
+        new_confidence=80.0, open_positions=positions,
     )
     assert result is not None
     assert result.symbol == "ADA/USDT:USDT"
@@ -896,3 +896,218 @@ async def test_orphan_orders_cleaned_on_reconciliation(
         call.args[0] for call in orch.order_manager.cancel_open_orders.await_args_list
     ]
     assert "DOGE/USDT:USDT" in cancel_symbols
+
+
+# ────────────────────────────────────────────────────────────────────
+# v6.20: Wrong-side swap path
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_swap_wrong_side_at_confidence_40(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Wrong-side swap should trigger at confidence >= 40 when direction opposes."""
+    positions = [
+        SimpleNamespace(
+            symbol="DOGE/USDT:USDT", side="short",
+            unrealized_pnl=Decimal("-8"), current_price=Decimal("0.18"),
+            entry_price=Decimal("0.15"), size=Decimal("200"),
+        ),
+    ]
+    isolated_orchestrator._trailing_stops["DOGE/USDT:USDT"] = TrailingStopState(
+        symbol="DOGE/USDT:USDT", direction="short",
+        entry_price=0.15, best_price=0.15, atr_4h=0.005,
+    )
+    isolated_orchestrator.trade_journal.get_recent_trades = MagicMock(
+        return_value=[
+            SimpleNamespace(
+                symbol="DOGE/USDT:USDT", exit_price=None,
+                confidence=Decimal("69"),
+            ),
+        ]
+    )
+    # Long signal at 45% confidence — wrong-side swap should work
+    result = await isolated_orchestrator._find_swap_candidate(
+        new_confidence=45.0, open_positions=positions,
+        new_direction="long",
+    )
+    assert result is not None
+    assert result.symbol == "DOGE/USDT:USDT"
+
+
+@pytest.mark.asyncio
+async def test_swap_wrong_side_requires_negative_pnl(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Wrong-side swap should NOT trigger if position is profitable."""
+    positions = [
+        SimpleNamespace(
+            symbol="ETH/USDT:USDT", side="short",
+            unrealized_pnl=Decimal("5"), current_price=Decimal("1900"),
+            entry_price=Decimal("2000"), size=Decimal("0.01"),
+        ),
+    ]
+    isolated_orchestrator._trailing_stops["ETH/USDT:USDT"] = TrailingStopState(
+        symbol="ETH/USDT:USDT", direction="short",
+        entry_price=2000.0, best_price=1900.0, atr_4h=50.0,
+    )
+    isolated_orchestrator.trade_journal.get_recent_trades = MagicMock(return_value=[])
+    result = await isolated_orchestrator._find_swap_candidate(
+        new_confidence=60.0, open_positions=positions,
+        new_direction="long",
+    )
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_swap_same_direction_needs_delta_15(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Same-direction swap requires confidence >= 50 AND delta >= 15."""
+    positions = [
+        SimpleNamespace(
+            symbol="ADA/USDT:USDT", side="long",
+            unrealized_pnl=Decimal("-3"), current_price=Decimal("0.28"),
+            entry_price=Decimal("0.30"), size=Decimal("100"),
+        ),
+    ]
+    isolated_orchestrator._trailing_stops["ADA/USDT:USDT"] = TrailingStopState(
+        symbol="ADA/USDT:USDT", direction="long",
+        entry_price=0.30, best_price=0.30, atr_4h=0.01,
+    )
+    mock_trade = SimpleNamespace(
+        symbol="ADA/USDT:USDT", exit_price=None, confidence=Decimal("50"),
+    )
+    isolated_orchestrator.trade_journal.get_recent_trades = MagicMock(
+        return_value=[mock_trade]
+    )
+    # Same direction, confidence 60, delta = 60-50 = 10 < 15 → reject
+    result = await isolated_orchestrator._find_swap_candidate(
+        new_confidence=60.0, open_positions=positions,
+        new_direction="long",
+    )
+    assert result is None
+
+    # Same direction, confidence 70, delta = 70-50 = 20 >= 15 → swap OK
+    result = await isolated_orchestrator._find_swap_candidate(
+        new_confidence=70.0, open_positions=positions,
+        new_direction="long",
+    )
+    assert result is not None
+
+
+# ────────────────────────────────────────────────────────────────────
+# v6.20: Dynamic position limit
+# ────────────────────────────────────────────────────────────────────
+
+
+def test_dynamic_pos_limit_green_high_confidence(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """GREEN + high confidence + sufficient balance → +1 position."""
+    from src.risk.circuit_breaker import CircuitBreakerConstraints, CircuitBreakerLevel
+
+    constraints = CircuitBreakerConstraints(
+        level=CircuitBreakerLevel.GREEN,
+        max_leverage=10, max_positions=3,
+        size_multiplier=Decimal("1.0"), trading_allowed=True,
+    )
+    eff = isolated_orchestrator._get_effective_max_positions(
+        constraints, signal_confidence=65.0, balance=Decimal("100"),
+    )
+    assert eff == 4
+
+
+def test_dynamic_pos_limit_low_confidence_stays_base(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Confidence below 60 should not trigger dynamic increase."""
+    from src.risk.circuit_breaker import CircuitBreakerConstraints, CircuitBreakerLevel
+
+    constraints = CircuitBreakerConstraints(
+        level=CircuitBreakerLevel.GREEN,
+        max_leverage=10, max_positions=3,
+        size_multiplier=Decimal("1.0"), trading_allowed=True,
+    )
+    eff = isolated_orchestrator._get_effective_max_positions(
+        constraints, signal_confidence=55.0, balance=Decimal("200"),
+    )
+    assert eff == 3
+
+
+def test_dynamic_pos_limit_yellow_not_increased(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Non-GREEN levels must never get dynamic increase."""
+    from src.risk.circuit_breaker import CircuitBreakerConstraints, CircuitBreakerLevel
+
+    constraints = CircuitBreakerConstraints(
+        level=CircuitBreakerLevel.YELLOW,
+        max_leverage=5, max_positions=2,
+        size_multiplier=Decimal("0.5"), trading_allowed=True,
+    )
+    eff = isolated_orchestrator._get_effective_max_positions(
+        constraints, signal_confidence=80.0, balance=Decimal("200"),
+    )
+    assert eff == 2
+
+
+def test_dynamic_pos_limit_insufficient_balance(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Balance too low should prevent dynamic increase."""
+    from src.risk.circuit_breaker import CircuitBreakerConstraints, CircuitBreakerLevel
+
+    constraints = CircuitBreakerConstraints(
+        level=CircuitBreakerLevel.GREEN,
+        max_leverage=10, max_positions=3,
+        size_multiplier=Decimal("1.0"), trading_allowed=True,
+    )
+    # Need $15 per slot × 4 = $60. Balance=$50 → stays at 3
+    eff = isolated_orchestrator._get_effective_max_positions(
+        constraints, signal_confidence=70.0, balance=Decimal("50"),
+    )
+    assert eff == 3
+
+
+# ────────────────────────────────────────────────────────────────────
+# v6.20: Reversal exit deduplication
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_reversal_exit_dedup_skips_when_sl_at_breakeven(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """If SL is already at breakeven (within 0.1%), skip redundant cancel+replace."""
+    orch = isolated_orchestrator
+    pos = SimpleNamespace(
+        symbol="SUI/USDT:USDT", side="long",
+        entry_price=Decimal("3.50"), current_price=Decimal("3.40"),
+        size=Decimal("10"), unrealized_pnl=Decimal("-1"),
+    )
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[pos])
+    orch.adaptive_strategy.check_supertrend_reversal = MagicMock(return_value=True)
+
+    # SL already at entry price (breakeven) — within 0.1%
+    existing_sl = SimpleNamespace(
+        order_type="STOP_MARKET",
+        stop_price=Decimal("3.50"),  # exactly at entry = breakeven
+    )
+    orch.order_manager.get_open_orders = AsyncMock(return_value=[existing_sl])
+    orch.order_manager.cancel_open_orders = AsyncMock()
+    orch.order_manager.place_stop_loss = AsyncMock()
+
+    # Build pair data with at least a 4H dataframe
+    pair_data_4h = {"SUI/USDT:USDT": pd.DataFrame({"close": [3.5]})}
+    pair_data_1h = {"SUI/USDT:USDT": pd.DataFrame({"close": [3.4]})}
+    result = SimpleNamespace(positions_closed=[], errors=[])
+
+    await orch._check_supertrend_reversal_exits(
+        pair_data_4h, pair_data_1h, result,
+    )
+
+    # Should NOT cancel/replace since SL is already at breakeven
+    orch.order_manager.cancel_open_orders.assert_not_called()
+    orch.order_manager.place_stop_loss.assert_not_called()

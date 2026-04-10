@@ -4,6 +4,145 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-04-10
+
+#### v6.20 — Position Management Overhaul (Fix v6.19 Deadlock)
+
+**Origin**: 3-hour v6.19 monitoring session (7 cycles × 30 min) revealed critical deadlocks. C1/C2 produced 3 APPROVED signals (BTC LONG 51%, ETH LONG 48%, SOL LONG 46%) but all blocked by 3/3 position cap. C3-C7 produced ZERO signals after 4H candle boundary reset. Bot held 2 losing SHORTs (DOGE -18.5%, LINK -22.5% of margin) in a fully bullish market. Balance: $66.04 → $65.53 = -$0.51 (0.77% loss). Zero trades executed.
+
+##### Signal Generation Fixes
+
+| Change | File | Impact |
+|--------|------|--------|
+| **RSI pullback threshold 45→55 (LONG), 55→45 (SHORT)** | `supertrend_trend.py` | RSI<45 was impossible in bullish markets (BTC min RSI=57.2). Raised to 55 so aligned entry signals fire during normal pullbacks. Symmetric adjustment for SHORTs. |
+| **1H continuation lookback 5→8 bars** | `supertrend_trend.py` | Survives 2 full 4H candle transitions (8 hours) instead of just 1 (5 hours). Prevents signal death at 4H candle boundaries. |
+
+##### Position Management Fixes
+
+| Change | File | Impact |
+|--------|------|--------|
+| **Two-path swap logic** | `main.py` | Rewrote `_find_swap_candidate()`. Path 1 (wrong-side): confidence ≥ 40 AND position opposes signal direction. Path 2 (same-direction): confidence ≥ 50 AND delta ≥ 15. Fixes deadlock where BTC LONG 51% couldn't swap DOGE SHORT 69% despite being wrong-side. |
+| **Wrong-side force-close (2 cycles)** | `main.py` | New Step 2d: `_check_wrong_side_force_close()`. When ≥60% of signals point one direction for 2 consecutive cycles, force-closes losing positions on the opposite side. Per-position counter, only triggers on negative PnL. |
+| **Dynamic position limit (+1 in GREEN)** | `main.py` | `_get_effective_max_positions()` allows 4 positions (instead of 3) when CB=GREEN, signal confidence ≥ 60%, and balance ≥ $60 ($15 per slot). CB constants remain IMMUTABLE — override is orchestrator-level only. |
+| **Reversal exit deduplication** | `main.py` | Before cancel+replace SL cycle, checks if existing SL is already within 0.1% of entry price (breakeven). If so, skips. Fixes SUI reversal exit firing 7× across monitoring session. |
+
+##### Test Updates
+- Updated `test_swap_requires_confidence_70` → `test_swap_requires_minimum_confidence` (threshold 60→40 absolute gate)
+- Added 8 new tests: wrong-side swap path (2), same-direction delta requirement, dynamic position limit GREEN/YELLOW/low-confidence/low-balance (4), reversal exit deduplication
+- **606 tests passing** (2.04s)
+
+##### $100 Capital Injection Impact Analysis
+
+| Metric | Current ($66) | After +$100 ($166) | Change |
+|--------|--------------|---------------------|--------|
+| Position sizing (25% tier, ≥60% conf) | $16.50 margin | $41.50 margin | +152% |
+| Position sizing (16.7% tier, 45-59% conf) | $11.02 margin | $27.72 margin | +152% |
+| Dynamic position limit | 3→4 (if conf ≥ 60%) | 4 (auto at $60+) | More headroom |
+| Notional per trade (5× leverage) | $82.50 | $207.50 | +152% |
+| Distance from $30 floor | $36 (54%) | $136 (82%) | +278% |
+| Daily loss halt (10%) | $6.60 | $16.60 | More room to recover |
+| v6.16 backtest avg daily return | 2.68% | 2.68% (same strategy) | — |
+| Estimated daily dollar return (2.68%) | $1.77 | $4.45 | +152% |
+| Conservative daily return (1.0%) | $0.66 | $1.66 | +152% |
+| 30-day compound at 1.0%/day | $88.50 | $222.50 | +152% |
+| 90-day compound at 1.0%/day | $161.20 | $405.70 | +152% |
+| Time to $500 (1.0%/day) | ~202 days | ~111 days | -91 days |
+
+**Key benefits of +$100**: (1) 4 concurrent positions instead of 3 deadlock, (2) 82% distance from $30 floor vs 54% — far safer drawdown buffer, (3) larger position sizes produce proportionally larger dollar returns, (4) same R/R and strategy — just more capital per trade.
+
+**Risk**: At $166, a 10% daily loss = $16.60 halt instead of $6.60. Max drawdown (v6.16 backtest: 11.4%) = $18.92 peak-to-trough. Still $147+ above $30 floor. Acceptable.
+
+---
+
+### 2026-04-09
+
+#### v6.19 — Signal Architecture Overhaul (Fix Dead-Zone Problem)
+
+**Origin**: 10-hour v6.18 monitoring session (09:41–18:30 UTC) revealed 874/874 signal evaluations returned NONE — zero trades in 8.8 hours. Root cause: flip-only signal detection requires Supertrend direction change on the EXACT last candle boundary (prev != cur). Once a flip is established for 2+ candles, the signal vanishes permanently. With 30-min polling, both 1H and 15m signals have narrow detection windows.
+
+##### Signal Generation Fixes
+
+| Change | File | Impact |
+|--------|------|--------|
+| **Extended 1H flip detection from 1 bar to 5 bars** | `supertrend_trend.py` | `_find_recent_flip()` helper scans last 5 1H transitions (5-hour window vs 1-hour). Confidence decay: 100% at age=1, down to 60% at age=5. |
+| **Extended 15m flip detection from 1 bar to 3 bars** | `supertrend_trend.py` | 15m detection window extended from 15 min to 45 min, covering the 30-min polling cycle gap. Same confidence decay applied. |
+| **New: Aligned trend entry signal** | `supertrend_trend.py` | 4th fallback in cascade. Fires when ALL TFs aligned (4H established + 1H aligned + EMA aligned) but NO recent flip exists. Uses 1H RSI pullback recovery as entry trigger (RSI dipped below 45 and recovered for LONG). Confidence ceiling 55. Uses 1H ATR for SL/TP. |
+| **Wired aligned signal in cascade** | `adaptive_strategy.py` | Signal cascade: 4H flip → 1H continuation (5-bar) → 15m fast (3-bar) → aligned trend entry. |
+
+##### Position Management Fixes
+
+| Change | File | Impact |
+|--------|------|--------|
+| **Lowered swap thresholds** | `main.py` | Minimum confidence 70→60, delta 20→15 points. Enables position rotation when at 3/3 cap. |
+| **Added reduce_only to swap close** | `main.py` | `_close_position_for_swap()` now passes `reduce_only=True` to prevent accidentally opening reverse positions. |
+| **Fixed reversal exit for pre-existing positions** | `main.py` | Removed `strategy_name != "SupertrendTrend"` gate. All positions (including "pre_existing" and "reconciled") now receive Supertrend reversal exit protection. |
+| **Position-level PnL alerts** | `main.py` | Per-position monitoring in trailing stop loop: WARNING at -3% of margin, ALERT at -5% of margin. |
+
+##### Test Updates
+- Updated `test_swap_requires_confidence_70` → `test_swap_requires_confidence_delta_15` (new thresholds: 60 min, 15 delta)
+- **598 tests passing** (1.72s)
+
+---
+
+#### v6.18 — Critical Bug Fixes + 15m Signals + Partial TP + Orderbook Check
+
+**Origin**: 10-hour monitoring session (2026-04-08 15:38–2026-04-09 01:07 UTC) revealed 3 critical bugs and systematic deficiencies. Zero new trades generated in 9.5 hours. All 9 pairs stuck in dead zone (4H Supertrend BULLISH, 1H BEARISH). SUI position gave back 65% of unrealized gains with no partial TP mechanism.
+
+##### Bug Fixes
+
+| Bug | Impact | Fix |
+|-----|--------|-----|
+| **Reversal exit TypeError** (`main.py:703`) | `place_market_order()` called with `params={"reduceOnly": True}` but method only accepts `(symbol, side, amount)`. Reversal exits crashed with TypeError, leaving positions stuck. | Added `reduce_only: bool = False` parameter to `place_market_order()`, forwards to `extra_params={"reduceOnly": True}` in `_submit_order_idempotent()`. All reversal/trailing/time exit calls updated. |
+| **Trade recording None→Decimal** (`main.py:1071`) | `Decimal(str(None))` throws `InvalidOperation`. Trade DB had 0 rows despite 14 placements. Win/loss streak tracking broken. | Added None guard before Decimal conversion with early return and warning log. |
+| **Position closes missing reduceOnly** | Trailing stop, time exit, and excess position closes used bare `place_market_order()` without `reduce_only=True`. Risk of accidentally opening reverse positions. | All 4 position-closing market order calls now pass `reduce_only=True`. |
+
+##### Features
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **15m Fast Entry Signals** | When 4H flip and 1H continuation both return NONE, try 15m Supertrend flip (requires 4H established + 1H aligned + 15m flip). Max confidence 70. Uses 15m ATR for tightest SL/TP. | `supertrend_trend.py`, `adaptive_strategy.py`, `main.py` |
+| **1H ATR for Continuation SL/TP** | Continuation entries now use 1H ATR instead of 4H ATR. 4H ATR was 2.1-2.5x wider than 1H, creating swing-trade level stops for intra-trend entries. | `supertrend_trend.py` |
+| **Partial Take-Profit at 1:1 R/R** | When price reaches 1× SL distance in favor, close 50% of position and move SL to breakeven. Locks in profits while letting remainder ride to full TP. | `main.py` (TrailingStopState + _manage_trailing_stops) |
+| **Orderbook Depth Check** | Slippage estimation via VWAP-based orderbook analysis before every market order. Rejects if slippage > 0.5% or book too shallow. Uses existing `SlippageEstimator` + `MarketDataClient.fetch_orderbook()`. | `main.py` |
+
+##### Data Model Changes
+
+| Field | Model | Description |
+|-------|-------|-------------|
+| `partial_tp_taken: bool` | `TrailingStopState` | Tracks whether 50% has been scaled out at 1:1 R/R |
+| `stop_loss: float` | `TrailingStopState` | Original SL price (needed for 1:1 R/R distance calculation) |
+| `TIMEFRAME_FAST = "15m"` | Constant | New 15m timeframe for fast entry signals |
+
+### 2026-04-08
+
+#### v6.17 — Multi-Signal Execution + 30-Min Cycles (Trade Frequency Fix)
+
+**Origin**: After 24h of mainnet trading (started 2026-04-07), bot made only 3 trades with net P&L of -$0.15 (-0.21%). User identified critical gap: backtest showed 1.15 trades/day over 172 days but the live bot's architecture was fundamentally limiting trade frequency.
+
+**Root cause analysis**: Two critical bottlenecks discovered:
+
+1. **Single-best-signal execution (CRITICAL DIVERGENCE)**: The live bot's `_run_cycle()` iterated all 9 pairs but only executed the single highest-confidence signal, discarding all others. The backtest (`backtest_v4.py`) executed ALL valid signals per bar up to `max_positions`. This meant the backtest could fill 3 position slots in one bar, while the live bot took 3 separate hours.
+
+2. **1-hour cycle interval**: With only 1 signal check per hour and the single-best limitation, max throughput was 1 trade/hour × 24h = 24 possible, but regime filtering + confidence gates reduced this to ~3/day.
+
+3. **Pre-existing crash bug**: `cross_asset_consensus.py` had a logging format string with 5 `%` specifiers but 6 arguments (duplicate `len(directions)`). On Python 3.14 this caused a `TypeError` that propagated through `_run_cycle()` and crashed the bot. The `except Exception` in the main loop caught it but the cycle failed.
+
+##### Changes
+
+| File | Change | Old → New |
+|------|--------|-----------|
+| `src/orchestrator/main.py` | Signal execution | Single best signal → ALL valid signals (sorted by confidence, executed sequentially up to position limit) |
+| `src/orchestrator/main.py` | `CYCLE_INTERVAL_SECONDS` | `3600` (1h) → `1800` (30min) |
+| `src/strategies/cross_asset_consensus.py` | Logging format bug | Removed duplicate `len(directions)` argument (6 args for 5 specifiers) |
+
+**Backtest validation**: Identical to v6.16 (197 trades, 54.3% WR, Sharpe 7.40, +6,593%) — because the backtest already did multi-signal execution. The live bot was the one lagging behind.
+
+**Expected impact**: Trade frequency from ~3/day → 6-9/day. Position slots fill faster, capital utilization increases.
+
+**Test suite**: 598 tests passing. No regressions.
+
+**Bot**: Restarted as PID 52685 on mainnet. Cycle 1 completed successfully.
+
 ### 2026-04-07
 
 #### v6.16 — Aggressive Parameter Optimization for Real-Money Deployment

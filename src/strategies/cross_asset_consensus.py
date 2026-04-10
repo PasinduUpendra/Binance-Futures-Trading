@@ -155,7 +155,6 @@ class CrossAssetConsensus:
             sum(1 for v in directions.values() if v == 0),
             sum(1 for v in directions.values() if v < 0),
             len(directions),
-            len(directions),
         )
 
         # Below threshold — market is mixed, no adjustment

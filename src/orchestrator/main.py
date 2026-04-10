@@ -18,10 +18,11 @@ import logging
 import os
 import signal
 import sys
+from collections import Counter
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 import numpy as np
 import pandas as pd
@@ -41,7 +42,12 @@ from src.data.database import DatabaseManager, CycleHistoryRow, DailyReportRow
 from src.strategies.base_strategy import SignalDirection, calculate_rr_ratio
 from src.strategies.regime_detector import RegimeDetector
 from src.strategies.adaptive_strategy import AdaptiveStrategy
-from src.risk.circuit_breaker import CircuitBreaker, CircuitBreakerLevel, TradeResult
+from src.risk.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConstraints,
+    CircuitBreakerLevel,
+    TradeResult,
+)
 from src.risk.position_sizer import PositionSizer
 from src.risk.leverage_manager import LeverageManager
 from src.risk.volatility_model import VolatilityModel
@@ -49,6 +55,7 @@ from src.risk.drawdown_monitor import DrawdownMonitor
 from src.execution.order_manager import OrderManager, OrderState
 from src.execution.position_tracker import Position, PositionTracker
 from src.execution.fee_calculator import FeeCalculator
+from src.execution.slippage_estimator import SlippageEstimator
 from src.memory.trade_journal import TradeJournal
 from src.memory.performance_tracker import PerformanceTracker
 from src.memory.bias_detector import BiasDetector
@@ -91,6 +98,8 @@ class TrailingStopState(BaseModel):
     strategy_name: str = ""
     take_profit: float = 0.0  # Original TP price for re-placement after ST reversal
     tp_pending: bool = False  # True when TP placement failed and needs retry
+    partial_tp_taken: bool = False  # True once 50% scaled out at 1:1 R/R
+    stop_loss: float = 0.0  # Original SL price (needed for 1:1 R/R calculation)
 
     # Trailing stop parameters (from v3 backtest)
     ACTIVATE_ATR_MULT: float = 2.0
@@ -154,8 +163,18 @@ DEFAULT_MIN_NOTIONAL: float = 5.0
 # Daily trading is more robust to transaction costs than intraday (ScienceDirect).
 TIMEFRAME_DIRECTION = "4h"  # Primary: trend direction + regime detection
 TIMEFRAME_ENTRY = "1h"      # Secondary: entry timing with tighter stops
-CYCLE_INTERVAL_SECONDS = 3600  # 1 hour (aligned with 1H candle close)
+TIMEFRAME_FAST = "15m"      # Tertiary: fast-entry signals in established trends
+CYCLE_INTERVAL_SECONDS = 1800  # 30 min — 2x more signal checks (v6.17: trade frequency fix)
 MAX_HOLD_BARS = 100  # Max 1H bars to hold a position (100 × 1H ≈ 4.17 days) — v6.16 backtest evidence
+WRONG_SIDE_FORCE_CLOSE_CYCLES = 2  # Force-close wrong-side positions after N consecutive opposing cycles
+
+# v6.20: Dynamic position limit — allow +1 position beyond CB cap when
+# (a) CB level is GREEN, (b) signal confidence >= threshold, and
+# (c) balance can still support the extra position ($15 min per slot).
+# This prevents the 3-position deadlock observed in v6.19 monitoring.
+DYNAMIC_POS_CONFIDENCE_MIN: Final[float] = 60.0
+DYNAMIC_POS_BALANCE_PER_SLOT: Final[Decimal] = Decimal("15")
+DYNAMIC_POS_ABSOLUTE_MAX: Final[int] = 5
 AGENT_STATE_DIR = PROJECT_ROOT / "user_data" / "agent_state"
 
 
@@ -177,6 +196,11 @@ class Orchestrator:
         self._daily_trade_count: int = 0
         self._daily_trade_date: date = datetime.now(timezone.utc).date()
 
+        # v6.20: Track consecutive cycles where all signals oppose held positions.
+        # Maps symbol → count of consecutive cycles where ALL approved signals
+        # are in the opposite direction. Force-close after threshold.
+        self._wrong_side_cycle_count: dict[str, int] = {}
+
         # Initialize all components
         self.market_data = MarketDataClient()
         self.indicator_engine = IndicatorEngine()
@@ -191,6 +215,7 @@ class Orchestrator:
         self.order_manager = OrderManager()
         self.position_tracker = PositionTracker()
         self.fee_calculator = FeeCalculator(use_bnb_discount=False)
+        self.slippage_estimator = SlippageEstimator()
         self.trade_journal = TradeJournal()
         self.performance_tracker = PerformanceTracker(journal=self.trade_journal)
         self.bias_detector = BiasDetector()
@@ -421,6 +446,7 @@ class Orchestrator:
         # ─── Step 1b: Fetch 4H data for all pairs (shared across steps) ───
         pair_data_4h: dict[str, pd.DataFrame] = {}
         pair_data_1h: dict[str, pd.DataFrame] = {}
+        pair_data_15m: dict[str, pd.DataFrame] = {}
 
         for pair in TRADING_PAIRS:
             try:
@@ -446,6 +472,14 @@ class Orchestrator:
                     logger.warning(f"1H data validation failed for {pair}: {validation_1h.reasons}")
                     continue
                 pair_data_1h[pair] = self.indicator_engine.calculate_all(df_1h)
+
+                # 15m data for fast-entry continuation signals
+                raw_15m = await self.market_data.fetch_ohlcv(pair, TIMEFRAME_FAST, limit=200)
+                if raw_15m and len(raw_15m) >= 50:
+                    df_15m = pd.DataFrame(raw_15m)
+                    validation_15m = self.data_validator.validate_ohlcv(df_15m)
+                    if validation_15m.passed:
+                        pair_data_15m[pair] = self.indicator_engine.calculate_all(df_15m)
 
             except Exception as e:
                 logger.error(f"Data fetch failed for {pair}: {e}")
@@ -481,9 +515,24 @@ class Orchestrator:
             logger.error(f"Time-based exit check failed: {e}")
             errors.append(f"Time exit: {e}")
 
+        # ─── Step 2d: Wrong-side Force Close (v6.20) ───
+        # When ALL approved signals consistently point one direction but we
+        # hold positions on the opposite side, force-close after N cycles.
+        # This prevents the position-cap deadlock observed in v6.19 monitoring
+        # (3-hour session: held 2 losing SHORTs in fully bullish market).
+        try:
+            await self._check_wrong_side_force_close(
+                pair_data_4h, pair_data_1h, pair_data_15m, result,
+            )
+        except Exception as e:
+            logger.error(f"Wrong-side force-close check failed: {e}")
+            errors.append(f"Wrong-side: {e}")
+
         # ─── Step 3: Multi-Timeframe Signal Generation ───
-        best_signal = None
-        best_pair = None
+        # v6.17: Collect ALL valid signals, execute multiple (up to position limit).
+        # Previously: only the single best signal was executed, discarding all others.
+        # This matches backtest_v4.py behavior which opens multiple positions per bar.
+        all_signals: list[tuple[Any, str]] = []  # (signal, pair)
 
         # ─── Cross-asset consensus (confidence adjustment) ───
         consensus_adj = self.cross_asset_consensus.compute(pair_data_4h)
@@ -507,9 +556,10 @@ class Orchestrator:
             try:
                 df_4h = pair_data_4h[pair]
                 df_1h = pair_data_1h[pair]
+                df_15m = pair_data_15m.get(pair)
 
                 # Multi-timeframe: 4H regime → strategy selection → appropriate data
-                signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h)
+                signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h, df_15m)
 
                 if signal is None:
                     continue
@@ -533,42 +583,58 @@ class Orchestrator:
                 result.regime = regime.regime.value
                 logger.info(f"{pair}: Regime={regime.regime.value} (4H)")
 
-                # Keep best signal (highest confidence)
-                if best_signal is None or signal.confidence > best_signal.confidence:
-                    best_signal = signal
-                    best_pair = pair
+                # Collect ALL valid signals (not just best)
+                all_signals.append((signal, pair))
 
             except Exception as e:
                 logger.error(f"Analysis failed for {pair}: {e}")
                 errors.append(f"Analysis {pair}: {e}")
 
-        if best_signal is None:
+        if not all_signals:
             logger.info("No valid signals this cycle")
             result.signal_generated = False
             result.errors = errors
             result.duration_seconds = (datetime.now(timezone.utc) - cycle_start).total_seconds()
             return result
 
+        # Sort by confidence (highest first) — best signals get priority
+        all_signals.sort(key=lambda x: x[0].confidence, reverse=True)
+
         result.signal_generated = True
         logger.info(
-            f"Best signal: {best_pair} {best_signal.direction} "
-            f"confidence={best_signal.confidence}% strategy={best_signal.strategy_name}"
+            f"Found {len(all_signals)} valid signal(s) this cycle: "
+            + ", ".join(f"{p} {s.direction} {s.confidence:.0f}%" for s, p in all_signals)
         )
 
-        # ─── Steps 4-7: Risk, Audit, Execute, Memory — delegated to shared method ───
-        trade_result = await self._execute_signal(
-            signal=best_signal,
-            symbol=best_pair,
-            df_4h=pair_data_4h[best_pair],
-            df_1h=pair_data_1h[best_pair],
-            cb_state=cb_state,
-            trigger="hourly_cycle",
-        )
-        if trade_result is not None:
-            result.trade_placed = True
-            result.trade_details = trade_result
+        # ─── Steps 4-7: Execute ALL signals (up to position limit) ───
+        trades_placed = 0
+        for sig, sig_pair in all_signals:
+            trade_result = await self._execute_signal(
+                signal=sig,
+                symbol=sig_pair,
+                df_4h=pair_data_4h[sig_pair],
+                df_1h=pair_data_1h[sig_pair],
+                cb_state=cb_state,
+                trigger="hourly_cycle",
+            )
+            if trade_result is not None:
+                trades_placed += 1
+                result.trade_placed = True
+                result.trade_details = trade_result  # Last successful trade details
+                logger.info(
+                    f"Trade {trades_placed} placed: {sig_pair} {sig.direction} "
+                    f"confidence={sig.confidence:.0f}%"
+                )
+            else:
+                logger.info(
+                    f"Signal rejected by risk/execution: {sig_pair} {sig.direction} "
+                    f"confidence={sig.confidence:.0f}%"
+                )
+
+        if trades_placed > 0:
+            logger.info(f"Cycle placed {trades_placed} trade(s) from {len(all_signals)} signal(s)")
         else:
-            result.signal_generated = True  # signal existed, but execution rejected
+            logger.info(f"All {len(all_signals)} signal(s) rejected by risk checks")
 
         result.errors = errors
         result.duration_seconds = (datetime.now(timezone.utc) - cycle_start).total_seconds()
@@ -641,18 +707,22 @@ class Orchestrator:
                 )
                 return None
 
-            # ── Position count gate ──
+            # ── Position count gate (v6.20: dynamic limit) ──
             open_positions = await self.position_tracker.get_open_positions()
-            if len(open_positions) >= constraints.max_positions:
+            effective_max = self._get_effective_max_positions(
+                constraints, signal.confidence, balance,
+            )
+            if len(open_positions) >= effective_max:
                 # Try smart swap: close worst position if new signal is much better
                 swap_pos = await self._find_swap_candidate(
                     new_confidence=signal.confidence,
                     open_positions=open_positions,
+                    new_direction=signal.direction.value,
                 )
                 if swap_pos is None:
                     logger.info(
                         f"[{trigger}] Max positions reached "
-                        f"({len(open_positions)}/{constraints.max_positions})"
+                        f"({len(open_positions)}/{effective_max})"
                     )
                     return None
 
@@ -682,7 +752,7 @@ class Orchestrator:
                                 symbol=pos.symbol,
                                 side=close_side,
                                 amount=pos.size,
-                                params={"reduceOnly": True},
+                                reduce_only=True,
                             )
                             # Record exit
                             entry_px = float(pos.entry_price)
@@ -882,12 +952,44 @@ class Orchestrator:
             except Exception as e:
                 logger.warning(f"[{trigger}] Audit failed (non-blocking): {e}")
 
+            # ── Orderbook Slippage Check ──
+            order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
+            side = "buy" if signal.direction.value == "long" else "sell"
+            try:
+                orderbook = await self.market_data.fetch_orderbook(symbol, limit=20)
+                slip = self.slippage_estimator.estimate_slippage(
+                    symbol=symbol,
+                    order_size=order_qty,
+                    orderbook=orderbook.model_dump(),
+                    side=side,
+                )
+                MAX_SLIPPAGE_PCT = Decimal("0.50")  # reject if > 0.5%
+                if slip.slippage_pct > MAX_SLIPPAGE_PCT:
+                    logger.warning(
+                        f"[{trigger}] Slippage {slip.slippage_pct}%% > "
+                        f"{MAX_SLIPPAGE_PCT}%% for {symbol} ({slip.levels_consumed} "
+                        f"levels consumed) — rejecting"
+                    )
+                    return None
+                if not slip.fully_fillable:
+                    logger.warning(
+                        f"[{trigger}] Orderbook too shallow for {symbol}: "
+                        f"order={order_qty}, fillable levels={slip.levels_consumed}"
+                    )
+                    return None
+                logger.info(
+                    f"[{trigger}] Slippage OK: {slip.slippage_pct}%% "
+                    f"({slip.levels_consumed} levels, VWAP={slip.expected_fill_price})"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{trigger}] Orderbook slippage check failed (non-blocking): {e}"
+                )
+
             # ── Execute ──
             try:
                 await self.order_manager.set_leverage(symbol, leverage)
 
-                order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
-                side = "buy" if signal.direction.value == "long" else "sell"
                 order_result = await self.order_manager.place_market_order(
                     symbol=symbol, side=side, amount=order_qty,
                 )
@@ -942,6 +1044,7 @@ class Orchestrator:
                             symbol=symbol,
                             side=close_side,
                             amount=order_result.filled,
+                            reduce_only=True,
                         )
                         logger.info(
                             f"[{trigger}] Emergency close sent for naked {symbol}"
@@ -1004,6 +1107,7 @@ class Orchestrator:
                     atr_4h=atr_4h,
                     strategy_name=signal.strategy_name,
                     take_profit=signal.take_profit,
+                    stop_loss=signal.stop_loss,
                 )
 
                 logger.info(
@@ -1066,6 +1170,14 @@ class Orchestrator:
         never propagate — exit recording must not block position management.
         """
         try:
+            # Guard against None values that crash Decimal(str(None))
+            if exit_price is None or pnl is None or entry_price is None:
+                logger.warning(
+                    "Cannot record exit for %s: exit_price=%s, pnl=%s, "
+                    "entry_price=%s — one or more values are None",
+                    symbol, exit_price, pnl, entry_price,
+                )
+                return
             # pnl_pct: approximate as pnl / margin (entry_price is a proxy)
             pnl_pct = (pnl / entry_price * 100) if entry_price else 0.0
             self.trade_journal.update_trade_exit(
@@ -1106,7 +1218,7 @@ class Orchestrator:
                 continue
 
             ts_state = self._trailing_stops.get(pos.symbol)
-            if ts_state is None or ts_state.strategy_name != "SupertrendTrend":
+            if ts_state is None:
                 continue
 
             df_4h = pair_data_4h[pos.symbol]
@@ -1117,6 +1229,30 @@ class Orchestrator:
 
             if should_exit:
                 entry_price = float(pos.entry_price)
+
+                # v6.20: Deduplicate — if SL is already at breakeven, skip
+                # redundant cancel+replace cycle. The monitoring session showed
+                # SUI reversal exit triggering 7 times with ~35 wasted API calls.
+                existing_orders = await self.order_manager.get_open_orders(
+                    pos.symbol, conditional_only=True,
+                )
+                sl_already_at_breakeven = False
+                for order in existing_orders:
+                    if order.get("type") in ("stop_market", "stop") and order.get("stopPrice"):
+                        sl_price = float(order["stopPrice"])
+                        # Within 0.1% of entry = already at breakeven
+                        if abs(sl_price - entry_price) / entry_price < 0.001:
+                            sl_already_at_breakeven = True
+                            break
+
+                if sl_already_at_breakeven:
+                    logger.debug(
+                        "SUPERTREND REVERSAL: SL already at breakeven for "
+                        "%s %s (entry=%s) — skipping duplicate",
+                        pos.symbol, pos.side, entry_price,
+                    )
+                    continue
+
                 logger.info(
                     f"SUPERTREND REVERSAL: Tightening SL to breakeven for "
                     f"{pos.symbol} {pos.side} (entry={entry_price})"
@@ -1190,6 +1326,139 @@ class Orchestrator:
                     )
 
     # ------------------------------------------------------------------
+    # Wrong-Side Force Close (v6.20)
+    # ------------------------------------------------------------------
+
+    async def _check_wrong_side_force_close(
+        self,
+        pair_data_4h: dict[str, pd.DataFrame],
+        pair_data_1h: dict[str, pd.DataFrame],
+        pair_data_15m: dict[str, pd.DataFrame],
+        result: CycleResult,
+    ) -> None:
+        """Force-close positions that oppose the dominant signal direction.
+
+        When ALL approved signals across all pairs consistently point one
+        direction (e.g., ALL LONG) but the bot holds positions on the
+        opposite side (e.g., SHORTs), this force-closes afterN consecutive
+        opposing cycles. Prevents the deadlock where wrong-side positions
+        block new trades and bleed against the market.
+
+        The counter is per-position, not global: each wrong-side position
+        gets its own countdown. Reset when signals are mixed or absent.
+        """
+        # Generate signals (lightweight — just direction check, don't execute)
+        signal_directions: list[str] = []
+        for pair in TRADING_PAIRS:
+            if pair not in pair_data_4h or pair not in pair_data_1h:
+                continue
+            try:
+                df_15m = pair_data_15m.get(pair)
+                signal = self.adaptive_strategy.get_signal_multi_tf(
+                    pair_data_4h[pair], pair_data_1h[pair], df_15m,
+                )
+                if signal is not None:
+                    signal_directions.append(signal.direction.value)
+            except Exception:
+                continue
+
+        if not signal_directions:
+            # No signals — reset all counters
+            self._wrong_side_cycle_count.clear()
+            return
+
+        # Check if there's a dominant direction (>= 60% of signals agree)
+        dir_counts = Counter(signal_directions)
+        dominant_dir, dominant_count = dir_counts.most_common(1)[0]
+        if dominant_count / len(signal_directions) < 0.6:
+            # Mixed signals — no dominant direction, reset
+            self._wrong_side_cycle_count.clear()
+            return
+
+        # Check open positions against dominant direction
+        open_positions = await self.position_tracker.get_open_positions()
+
+        for pos in open_positions:
+            is_wrong_side = (
+                (dominant_dir == "long" and pos.side == "short")
+                or (dominant_dir == "short" and pos.side == "long")
+            )
+            if not is_wrong_side:
+                # Position is aligned — reset counter
+                self._wrong_side_cycle_count.pop(pos.symbol, None)
+                continue
+
+            # Only count if position has negative PnL
+            if float(pos.unrealized_pnl) >= 0:
+                self._wrong_side_cycle_count.pop(pos.symbol, None)
+                continue
+
+            self._wrong_side_cycle_count[pos.symbol] = (
+                self._wrong_side_cycle_count.get(pos.symbol, 0) + 1
+            )
+            count = self._wrong_side_cycle_count[pos.symbol]
+
+            logger.warning(
+                "WRONG-SIDE ALERT: %s %s opposes dominant %s direction "
+                "(cycle %d/%d, PnL=$%.2f)",
+                pos.symbol, pos.side, dominant_dir,
+                count, WRONG_SIDE_FORCE_CLOSE_CYCLES,
+                float(pos.unrealized_pnl),
+            )
+
+            if count >= WRONG_SIDE_FORCE_CLOSE_CYCLES:
+                logger.warning(
+                    "WRONG-SIDE FORCE CLOSE: %s %s after %d opposing cycles "
+                    "(PnL=$%.2f). Dominant direction: %s (%d/%d signals).",
+                    pos.symbol, pos.side, count,
+                    float(pos.unrealized_pnl), dominant_dir,
+                    dominant_count, len(signal_directions),
+                )
+                try:
+                    close_side = "sell" if pos.side == "long" else "buy"
+                    await self.order_manager.cancel_open_orders(pos.symbol)
+                    await self.order_manager.place_market_order(
+                        symbol=pos.symbol,
+                        side=close_side,
+                        amount=pos.size,
+                        reduce_only=True,
+                    )
+                    self._record_trade_exit(
+                        symbol=pos.symbol,
+                        exit_price=float(pos.current_price),
+                        pnl=float(pos.unrealized_pnl),
+                        entry_price=float(pos.entry_price),
+                        reason="wrong_side_force_close",
+                    )
+                    self._trailing_stops.pop(pos.symbol, None)
+                    self._persist_trailing_stop_state()
+
+                    result.positions_closed.append({
+                        "symbol": pos.symbol,
+                        "reason": "wrong_side_force_close",
+                        "direction": pos.side,
+                        "opposing_direction": dominant_dir,
+                        "pnl": float(pos.unrealized_pnl),
+                        "cycles_opposing": count,
+                    })
+
+                    await self.alert_system.send_alert(
+                        f"WRONG-SIDE FORCE CLOSE: {pos.symbol} {pos.side} "
+                        f"(PnL=${float(pos.unrealized_pnl):.2f}). "
+                        f"Market dominant: {dominant_dir}.",
+                        level="warning",
+                    )
+
+                    # Reset counter after close
+                    self._wrong_side_cycle_count.pop(pos.symbol, None)
+
+                except Exception as e:
+                    logger.error(
+                        "Failed to force-close wrong-side position %s: %s",
+                        pos.symbol, e,
+                    )
+
+    # ------------------------------------------------------------------
     # Trailing Stop Management
     # ------------------------------------------------------------------
 
@@ -1242,6 +1511,113 @@ class Orchestrator:
                     ts_state.best_price = current_price
                     state_changed = True
 
+            # ── Position-level PnL monitoring ──
+            pnl_val = float(pos.unrealized_pnl)
+            margin_val = float(pos.margin) if pos.margin > 0 else None
+            if margin_val and margin_val > 0:
+                pnl_pct = pnl_val / margin_val * 100.0
+                if pnl_pct <= -5.0:
+                    logger.warning(
+                        "PNL ALERT: %s %s unrealized=%.4f (%.1f%% of margin) — CRITICAL",
+                        pos.symbol, pos.side, pnl_val, pnl_pct,
+                    )
+                    await self.alert_system.send_alert(
+                        f"Position PnL CRITICAL: {pos.symbol} {pos.side} "
+                        f"PnL={pnl_val:.4f} USDT ({pnl_pct:.1f}% of margin)",
+                        level="warning",
+                    )
+                elif pnl_pct <= -3.0:
+                    logger.warning(
+                        "PNL WARN: %s %s unrealized=%.4f (%.1f%% of margin)",
+                        pos.symbol, pos.side, pnl_val, pnl_pct,
+                    )
+
+            # ── Partial Take-Profit at 1:1 R/R (scale out 50%) ──
+            # When price has moved 1× the SL distance in favor, close half
+            # the position to lock in profits.  This reduces exposure while
+            # letting the remaining 50% ride toward the full TP.
+            if not ts_state.partial_tp_taken and ts_state.stop_loss > 0:
+                sl_distance = abs(ts_state.entry_price - ts_state.stop_loss)
+                if ts_state.direction == "long":
+                    partial_tp_price = ts_state.entry_price + sl_distance
+                    reached_partial = current_price >= partial_tp_price
+                else:
+                    partial_tp_price = ts_state.entry_price - sl_distance
+                    reached_partial = current_price <= partial_tp_price
+
+                if reached_partial and sl_distance > 0:
+                    half_size = pos.size / Decimal("2")
+                    if half_size > Decimal("0"):
+                        logger.info(
+                            "PARTIAL TP: %s %s reached 1:1 R/R (%.6f). "
+                            "Closing 50%% (%.6f of %.6f)",
+                            pos.symbol, ts_state.direction,
+                            partial_tp_price, half_size, pos.size,
+                        )
+                        try:
+                            close_side = "sell" if ts_state.direction == "long" else "buy"
+                            ptp_result = await self.order_manager.place_market_order(
+                                symbol=pos.symbol,
+                                side=close_side,
+                                amount=half_size,
+                                reduce_only=True,
+                            )
+                            if ptp_result:
+                                ts_state.partial_tp_taken = True
+                                state_changed = True
+
+                                # Move SL to breakeven after partial TP
+                                try:
+                                    _cnt, _ = await self.order_manager.cancel_open_orders(pos.symbol)
+                                    sl_side = "sell" if ts_state.direction == "long" else "buy"
+                                    remaining_size = pos.size - half_size
+                                    await self.order_manager.place_stop_loss(
+                                        symbol=pos.symbol,
+                                        side=sl_side,
+                                        amount=remaining_size,
+                                        stop_price=Decimal(str(ts_state.entry_price)),
+                                    )
+                                    # Re-place TP for remaining size
+                                    if ts_state.take_profit > 0:
+                                        tp_valid = (
+                                            (ts_state.direction == "long" and ts_state.take_profit > ts_state.entry_price)
+                                            or (ts_state.direction == "short" and ts_state.take_profit < ts_state.entry_price)
+                                        )
+                                        if tp_valid:
+                                            await self.order_manager.place_take_profit(
+                                                symbol=pos.symbol,
+                                                side=sl_side,
+                                                amount=remaining_size,
+                                                stop_price=Decimal(str(ts_state.take_profit)),
+                                            )
+                                    logger.info(
+                                        "PARTIAL TP: %s SL moved to breakeven %.6f, "
+                                        "remaining size=%.6f",
+                                        pos.symbol, ts_state.entry_price,
+                                        remaining_size,
+                                    )
+                                except Exception as sl_err:
+                                    logger.error(
+                                        "PARTIAL TP: Failed to adjust SL/TP for %s: %s",
+                                        pos.symbol, sl_err,
+                                    )
+
+                                await self.alert_system.send_alert(
+                                    f"Partial TP: {pos.symbol} {ts_state.direction} "
+                                    f"50% closed at 1:1 R/R ({current_price:.6f}). "
+                                    f"SL moved to breakeven.",
+                                    level="info",
+                                )
+                            else:
+                                logger.warning(
+                                    "PARTIAL TP: Market order returned None for %s",
+                                    pos.symbol,
+                                )
+                        except Exception as e:
+                            logger.error(
+                                "PARTIAL TP: Failed for %s: %s", pos.symbol, e,
+                            )
+
             # Check activation: has price moved 2.0 ATR favorable from entry?
             favorable_move = (
                 ts_state.best_price - ts_state.entry_price
@@ -1285,6 +1661,7 @@ class Orchestrator:
                         symbol=pos.symbol,
                         side=close_side,
                         amount=pos.size,
+                        reduce_only=True,
                     )
 
                     _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
@@ -1357,6 +1734,7 @@ class Orchestrator:
                     symbol=pos.symbol,
                     side=close_side,
                     amount=pos.size,
+                    reduce_only=True,
                 )
 
                 _cnt, _all_ok = await self.order_manager.cancel_open_orders(pos.symbol)
@@ -1645,6 +2023,7 @@ class Orchestrator:
                             symbol=close_pos.symbol,
                             side=close_side,
                             amount=close_pos.size,
+                            reduce_only=True,
                         )
                         self._trailing_stops.pop(close_pos.symbol, None)
                         self._persist_trailing_stop_state()
@@ -1795,21 +2174,66 @@ class Orchestrator:
                 ts_state.tp_pending = True
                 self._persist_trailing_stop_state()
 
+    def _get_effective_max_positions(
+        self,
+        constraints: CircuitBreakerConstraints,
+        signal_confidence: float,
+        balance: Decimal,
+    ) -> int:
+        """Return the effective position limit, potentially +1 over CB cap.
+
+        Allows one extra position when ALL of:
+        - CB level is GREEN (non-stressed market)
+        - Signal confidence >= DYNAMIC_POS_CONFIDENCE_MIN (60%)
+        - Balance supports the extra slot ($15 per position slot minimum)
+
+        Never exceeds DYNAMIC_POS_ABSOLUTE_MAX (5). Does not override
+        YELLOW/RED/DEAD caps — safety-critical levels remain immutable.
+        """
+        base = constraints.max_positions
+        if constraints.level != CircuitBreakerLevel.GREEN:
+            return base
+
+        if signal_confidence < DYNAMIC_POS_CONFIDENCE_MIN:
+            return base
+
+        required_balance = DYNAMIC_POS_BALANCE_PER_SLOT * (base + 1)
+        if balance < required_balance:
+            return base
+
+        effective = min(base + 1, DYNAMIC_POS_ABSOLUTE_MAX)
+        if effective > base:
+            logger.info(
+                "DYNAMIC POSITION LIMIT: %d → %d (confidence=%.1f%%, "
+                "balance=$%.2f, required=$%.2f)",
+                base, effective, signal_confidence,
+                float(balance), float(required_balance),
+            )
+        return effective
+
     async def _find_swap_candidate(
         self,
         new_confidence: float,
         open_positions: list[Position],
+        new_direction: str | None = None,
     ) -> Position | None:
         """Find the best swap candidate among open positions.
 
         Returns the position to close for swap, or None if no suitable candidate.
-        Requirements:
-        - New signal confidence >= 70%
+
+        Two swap paths (v6.20):
+        1. **Same-direction swap** (original): new_confidence >= 50 AND
+           new_confidence - entry_confidence >= 15 AND position PnL < 0.
+        2. **Wrong-side swap** (new): new_direction opposes the position
+           direction AND new_confidence >= 40 AND position PnL < 0.
+           Wrong-side positions are bleeding against the market — swap
+           threshold is lower because closing them is inherently valuable.
+
+        Shared gates:
         - Position has NEGATIVE unrealized PnL
         - Trailing stop NOT activated
-        - New confidence exceeds entry confidence by >= 20 points
         """
-        if new_confidence < 70:
+        if new_confidence < 40:
             return None
 
         candidates: list[tuple[Position, float]] = []
@@ -1831,7 +2255,21 @@ class Orchestrator:
                     entry_confidence = float(trade.confidence)
                     break
 
-            if new_confidence - entry_confidence >= 20:
+            # Path 1: Wrong-side swap (position opposes signal direction)
+            # e.g., holding SHORT but signal is LONG in bullish market
+            is_wrong_side = (
+                new_direction is not None
+                and (
+                    (new_direction == "long" and pos.side == "short")
+                    or (new_direction == "short" and pos.side == "long")
+                )
+            )
+            if is_wrong_side and new_confidence >= 40:
+                candidates.append((pos, entry_confidence))
+                continue
+
+            # Path 2: Same-direction swap (original logic, threshold lowered 60→50)
+            if new_confidence >= 50 and new_confidence - entry_confidence >= 15:
                 candidates.append((pos, entry_confidence))
 
         if not candidates:
@@ -1862,6 +2300,7 @@ class Orchestrator:
                 symbol=pos.symbol,
                 side=close_side,
                 amount=pos.size,
+                reduce_only=True,
             )
             if result:
                 logger.info(
@@ -2001,6 +2440,12 @@ class Orchestrator:
             df_1h = pd.DataFrame(raw_1h)
             df_1h = self.indicator_engine.calculate_all(df_1h)
 
+            # 15m data for fast entries
+            df_15m = None
+            raw_15m = await self.market_data.fetch_ohlcv(symbol, TIMEFRAME_FAST, limit=200)
+            if raw_15m and len(raw_15m) >= 50:
+                df_15m = self.indicator_engine.calculate_all(pd.DataFrame(raw_15m))
+
             pair_data_4h = {symbol: df_4h}
             pair_data_1h = {symbol: df_1h}
 
@@ -2016,7 +2461,7 @@ class Orchestrator:
             await self._manage_trailing_stops(pair_data_4h, pair_data_1h, mini_result)
 
             # Attempt signal generation for this pair
-            signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h)
+            signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h, df_15m)
             if signal is None:
                 logger.info(f"4H close {symbol}: no signal")
                 return

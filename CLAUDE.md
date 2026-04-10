@@ -38,7 +38,7 @@ Step 5: Build a "Source of Truth Map":
 | **Stack** | Python 3.11+ · ccxt async · Claude API · Binance WebSocket | SSOT §13 |
 | **Phase** | Paper Trading on Testnet ($5000 balance) | SSOT §1 |
 | **Production Balance** | $68.33 USDT (as of 2026-03-13) | SSOT §2, verified via API |
-| **Bot PID** | 53698 (v6.2, restarted 2026-03-24) | CHANGELOG 2026-03-24 |
+| **Bot PID** | 52685 (v6.17, restarted 2026-04-08) | CHANGELOG 2026-04-08 |
 | **Pairs** | BTC, ETH, SOL, DOGE, XRP, LINK, AVAX, SUI, ADA /USDT:USDT | SSOT §6, v6 backtest |
 
 ### Performance Reality
@@ -397,7 +397,7 @@ GARCH volatility model adjusts leverage downward during vol spikes (Step 4 of or
 # SECTION 6: ORCHESTRATOR — 7-STEP CYCLE (SSOT §6)
 # ═══════════════════════════════════════════════════════════════════
 
-**Cycle interval**: 1 hour (3600 seconds) — `src/orchestrator/main.py`
+**Cycle interval**: 30 minutes (1800 seconds) — `src/orchestrator/main.py` (v6.17: reduced from 1h)
 
 ```
 Step 1: SENTINEL (Circuit Breaker)
@@ -436,13 +436,14 @@ Step 2c: TIME-BASED EXITS (MAX_HOLD_BARS = 100)
   │   └── Record as "time_exit" reason
   └── Prevents capital lock-up in stale positions (~4.17 day cap, v6.16)
 
-Step 3: MULTI-TIMEFRAME SIGNAL GENERATION
+Step 3: MULTI-TIMEFRAME SIGNAL GENERATION (v6.17: multi-signal)
   ├── For each pair:
   │   ├── AdaptiveStrategy.get_signal_multi_tf(df_4h, df_1h)
   │   ├── Regime detection on 4H data
   │   ├── Route: SupertrendTrend gets 4H (only active route)
   │   └── Keep signals with confidence ≥ 25%
-  └── Select best signal by confidence
+  ├── Collect ALL valid signals (not just best)
+  └── Sort by confidence, execute ALL up to position limit
 
 Step 4: RISK MANAGEMENT
   ├── Check position count vs CB max
@@ -742,8 +743,8 @@ When encountering corrections, API quirks, failed assumptions, or bugs:
 
 ---
 
-**Last Updated**: 2026-03-15
-**Version**: 3.0.0
+**Last Updated**: 2026-04-08
+**Version**: 3.1.0
 **Reconciled Against**: SINGLE_SOURCE_OF_TRUTH.md (2026-03-15), CHANGELOG.md (2026-03-15)
 **Fixes Applied**: Daily loss threshold (10% not 3%), fee scenario clarification, agent count (9), cycle steps (7), idempotent order submission, liquidation heuristic caveat, Smart Money labeling, test coverage gaps, performance framing
 **Next Review**: After paper trading completes (~2026-03-21) or any CRITICAL incident

@@ -691,6 +691,7 @@ class OrderManager:
         symbol: str,
         side: str,
         amount: Decimal,
+        reduce_only: bool = False,
     ) -> OrderResult | None:
         """Place a market order with idempotent retry on Binance Futures.
 
@@ -702,18 +703,25 @@ class OrderManager:
             ``"buy"`` or ``"sell"``.
         amount : Decimal
             Order size in base currency units.
+        reduce_only : bool
+            If True, passes ``reduceOnly=True`` to Binance so the order
+            can only reduce an existing position.
 
         Returns
         -------
         OrderResult | None
             Verified order result, or None if InsufficientFunds/InvalidOrder.
         """
+        extra: dict[str, object] | None = None
+        if reduce_only:
+            extra = {"reduceOnly": True}
         return await self._submit_order_idempotent(
             symbol=symbol,
             order_type="market",
             side=side.lower(),
             amount=float(amount),
             log_prefix="MARKET_ORDER",
+            extra_params=extra,
         )
 
     # -- limit order ---------------------------------------------------------
