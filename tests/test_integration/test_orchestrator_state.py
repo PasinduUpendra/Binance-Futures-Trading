@@ -16,7 +16,11 @@ def isolated_orchestrator(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Or
     monkeypatch.setattr(orchestrator_main, "AGENT_STATE_DIR", tmp_path)
     monkeypatch.setattr(Orchestrator, "_DAILY_STATE_FILE", tmp_path / "daily_state.json")
     monkeypatch.setattr(Orchestrator, "_TRAILING_STATE_FILE", tmp_path / "trailing_stops.json")
-    return Orchestrator()
+    orch = Orchestrator()
+    # Isolate trade journal so tests never write to production DB
+    from src.memory.trade_journal import TradeJournal
+    orch.trade_journal = TradeJournal(db_path=tmp_path / "test_trade_journal.db")
+    return orch
 
 
 def test_trailing_stop_state_round_trip_persists_best_price_and_activation(

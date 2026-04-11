@@ -29,6 +29,9 @@ def isolated_orchestrator(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Or
     # Use isolated DB to avoid loading production data
     from src.data.database import DatabaseManager
     orch.db = DatabaseManager(db_path=tmp_path / "test.db")
+    # Isolate trade journal so tests never write to production DB
+    from src.memory.trade_journal import TradeJournal
+    orch.trade_journal = TradeJournal(db_path=tmp_path / "test_trade_journal.db")
     return orch
 
 
