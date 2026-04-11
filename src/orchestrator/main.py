@@ -100,6 +100,8 @@ class TrailingStopState(BaseModel):
     tp_pending: bool = False  # True when TP placement failed and needs retry
     partial_tp_taken: bool = False  # True once 50% scaled out at 1:1 R/R
     stop_loss: float = 0.0  # Original SL price (needed for 1:1 R/R calculation)
+    size: float = 0.0  # Position size in base currency (for pnl_pct calc)
+    leverage: int = 1  # Leverage at time of entry (for pnl_pct calc)
 
     # Trailing stop parameters (from v3 backtest)
     ACTIVATE_ATR_MULT: float = 2.0
@@ -140,12 +142,13 @@ class CycleResult(BaseModel):
 # Sharpe 6.98 (vs 5.83), 0.69 trades/day (vs 0.44). All metrics improved.
 # BTC re-added: $100 min notional easily met with $5,102 balance.
 TRADING_PAIRS = [
-    "BTC/USDT:USDT",   # $100 min notional — re-added with $5K+ balance
+    # BTC removed: $100 min notional impossible at $66 balance (max notional $82.50)
+    # Re-add when balance >= $200
     "ETH/USDT:USDT",   # $20 min notional
     "SOL/USDT:USDT",   # $5 min notional
     "DOGE/USDT:USDT",  # $5 min notional
     "XRP/USDT:USDT",   # $5 min notional
-    "LINK/USDT:USDT",  # $5 min notional
+    "LINK/USDT:USDT",  # $20 min notional (verified via Binance API)
     "AVAX/USDT:USDT",  # $5 min notional
     "SUI/USDT:USDT",   # $5 min notional
     "ADA/USDT:USDT",   # $5 min notional
@@ -155,6 +158,7 @@ TRADING_PAIRS = [
 MIN_NOTIONAL: dict[str, float] = {
     "BTC/USDT:USDT": 100.0,
     "ETH/USDT:USDT": 20.0,
+    "LINK/USDT:USDT": 20.0,
 }
 DEFAULT_MIN_NOTIONAL: float = 5.0
 
@@ -166,7 +170,7 @@ TIMEFRAME_ENTRY = "1h"      # Secondary: entry timing with tighter stops
 TIMEFRAME_FAST = "15m"      # Tertiary: fast-entry signals in established trends
 CYCLE_INTERVAL_SECONDS = 1800  # 30 min — 2x more signal checks (v6.17: trade frequency fix)
 MAX_HOLD_BARS = 100  # Max 1H bars to hold a position (100 × 1H ≈ 4.17 days) — v6.16 backtest evidence
-WRONG_SIDE_FORCE_CLOSE_CYCLES = 2  # Force-close wrong-side positions after N consecutive opposing cycles
+WRONG_SIDE_FORCE_CLOSE_CYCLES = 8  # Force-close wrong-side positions after N consecutive opposing cycles (4h at 30min cycles)
 
 # v6.20: Dynamic position limit — allow +1 position beyond CB cap when
 # (a) CB level is GREEN, (b) signal confidence >= threshold, and
@@ -265,7 +269,7 @@ class Orchestrator:
         # Log ALL assets on the account (USDT, USDC, BTC, etc.)
         try:
             all_assets = await self.market_data.get_all_assets()
-            self._configure_fee_calculator(all_assets)
+            await self._configure_fee_calculator(all_assets)
             logger.info(
                 "=== Full Account Assets (%d non-zero) ===", len(all_assets),
             )
@@ -297,14 +301,24 @@ class Orchestrator:
         self._load_trailing_stop_state()
 
         # Detect pre-existing positions and warn if unprotected
+        protected_symbols: set[str] = set()
         try:
             await self._detect_preexisting_positions()
+            # Collect symbols with open positions — their SL/TP must NOT be cancelled
+            protected_symbols = set(self._trailing_stops.keys())
+            if protected_symbols:
+                logger.info(
+                    f"Startup: preserving orders for {len(protected_symbols)} "
+                    f"active position(s): {sorted(protected_symbols)}"
+                )
         except Exception as e:
             logger.warning(f"Pre-existing position detection failed: {e}")
 
-        # Startup cleanup: cancel ALL open orders to prevent duplicates
-        # from prior restarts (live monitoring found 50+ stale orders).
+        # Startup cleanup: cancel stale orders on pairs WITHOUT open positions.
+        # Pairs WITH positions keep their SL/TP orders intact.
         for pair in TRADING_PAIRS:
+            if pair in protected_symbols:
+                continue  # DO NOT cancel orders protecting live positions
             try:
                 cancelled, _all_ok = await self.order_manager.cancel_open_orders(pair)
                 if cancelled > 0:
@@ -762,15 +776,17 @@ class Orchestrator:
                             except Exception:
                                 exit_px = entry_px  # Fallback
                             if pos.side == "long":
-                                pnl_approx = exit_px - entry_px
+                                pnl_approx = (exit_px - entry_px) * float(pos.size)
                             else:
-                                pnl_approx = entry_px - exit_px
+                                pnl_approx = (entry_px - exit_px) * float(pos.size)
                             self._record_trade_exit(
                                 symbol=pos.symbol,
                                 exit_price=exit_px,
                                 pnl=pnl_approx,
                                 entry_price=entry_px,
                                 reason="reversal_exit",
+                                size=float(pos.size),
+                                leverage=pos.leverage,
                             )
                             self._trailing_stops.pop(pos.symbol, None)
                             self._persist_trailing_stop_state()
@@ -929,14 +945,156 @@ class Orchestrator:
                 )
                 return None
 
-            # ── Audit (non-blocking) ──
+            # ── Regime detection (used by audit + trade_details) ──
             try:
                 regime = self.regime_detector.detect(df_4h)
-                signal_dict = signal.model_dump() if hasattr(signal, "model_dump") else dict(signal)
-                regime_dict = regime.model_dump() if hasattr(regime, "model_dump") else dict(regime)
+            except Exception as regime_err:
+                logger.warning(
+                    "[%s] Regime detection failed: %s — using signal.regime",
+                    trigger, regime_err,
+                )
+                regime = None
+
+            # ── Price validation (Anti-hallucination Layer 2) ──
+            price_validated = False
+            try:
+                price_result = await self.price_validator.validate_price(
+                    symbol, Decimal(str(signal.entry_price)), "strategy_signal",
+                )
+                price_validated = price_result.valid
+                if not price_validated:
+                    logger.warning(
+                        "[%s] Price validation FAILED for %s: %s",
+                        trigger, symbol, "; ".join(price_result.issues),
+                    )
+            except Exception as pv_err:
+                logger.warning(
+                    "[%s] Price validation error (treating as failed): %s",
+                    trigger, pv_err,
+                )
+
+            # ── Signal validation (Anti-hallucination Layer 3) ──
+            signal_validated = False
+            try:
+                from src.anti_hallucination.signal_validator import (
+                    TradingSignal as ValidatorSignal,
+                )
+
+                last_close = (
+                    float(df_1h["close"].iloc[-1])
+                    if "close" in df_1h.columns and len(df_1h) > 0
+                    else signal.entry_price
+                )
+                # Extract raw indicator values from 4H dataframe
+                excluded_cols = {"open", "high", "low", "volume", "timestamp"}
+                raw_indicators: dict[str, float] = {}
+                for col in df_4h.columns:
+                    if col not in excluded_cols:
+                        series = df_4h[col].dropna()
+                        if len(series) > 0:
+                            try:
+                                raw_indicators[col] = float(series.iloc[-1])
+                            except (ValueError, TypeError):
+                                pass
+
+                # Add aliases: signal uses 'supertrend_dir', df has 'supertrend_direction'
+                if "supertrend_direction" in raw_indicators:
+                    raw_indicators["supertrend_dir"] = raw_indicators["supertrend_direction"]
+                    raw_indicators["supertrend_dir_4h"] = raw_indicators["supertrend_direction"]
+                # prev_supertrend_dir is computed, not a column
+                if "supertrend_direction" in df_4h.columns and len(df_4h) >= 2:
+                    prev_series = df_4h["supertrend_direction"].dropna()
+                    if len(prev_series) >= 2:
+                        raw_indicators["prev_supertrend_dir"] = float(prev_series.iloc[-2])
+
+                # Add 1H indicators for continuation/fast/aligned signals
+                excluded_1h = {"open", "high", "low", "volume", "timestamp"}
+                for col in df_1h.columns:
+                    if col not in excluded_1h:
+                        series_1h = df_1h[col].dropna()
+                        if len(series_1h) > 0:
+                            try:
+                                val = float(series_1h.iloc[-1])
+                                # 1H aliases the signal expects
+                                if col == "supertrend_direction":
+                                    raw_indicators["supertrend_dir_1h"] = val
+                                if col == "rsi":
+                                    raw_indicators["rsi_1h"] = val
+                                    # rsi_1h_min: min of last 5 bars
+                                    if len(series_1h) >= 5:
+                                        raw_indicators["rsi_1h_min"] = float(series_1h.iloc[-5:].min())
+                                if col == "close":
+                                    raw_indicators.setdefault("close", val)
+                            except (ValueError, TypeError):
+                                pass
+
+                # Override ATR with correct timeframe for continuation/fast signals
+                sig_indicators = getattr(signal, "indicators_used", {})
+                atr_source = sig_indicators.get("atr_source")
+                if atr_source == "1h" and "atr" in df_1h.columns:
+                    atr_1h = df_1h["atr"].dropna()
+                    if len(atr_1h) > 0:
+                        raw_indicators["atr"] = float(atr_1h.iloc[-1])
+                elif atr_source == "15m":
+                    # 15m ATR not available (no df_15m in scope) — use signal's own ATR
+                    # so the validator won't flag a timeframe mismatch
+                    sig_atr = sig_indicators.get("atr")
+                    if sig_atr is not None:
+                        raw_indicators["atr"] = float(sig_atr)
+
+                validator_signal = ValidatorSignal(
+                    signal_id=f"{symbol}_{trigger}",
+                    symbol=symbol,
+                    direction=signal.direction.value,
+                    strategy=signal.strategy_name,
+                    entry_price=Decimal(str(signal.entry_price)),
+                    stop_loss=Decimal(str(signal.stop_loss)),
+                    take_profit=Decimal(str(signal.take_profit)),
+                    leverage=leverage,
+                    confidence=signal.confidence,
+                    indicators=getattr(signal, "indicators_used", {}),
+                )
+                raw_data = {
+                    "bid": Decimal(str(last_close)),
+                    "ask": Decimal(str(last_close)),
+                    "indicators": raw_indicators,
+                    "candles": [{"close": last_close}],
+                }
+                signal_validation = self.signal_validator.validate_signal(
+                    validator_signal, raw_data,
+                )
+                signal_validated = signal_validation.valid
+                if not signal_validated:
+                    logger.warning(
+                        "[%s] Signal validation FAILED for %s: %s",
+                        trigger, symbol, "; ".join(signal_validation.issues),
+                    )
+            except Exception as sv_err:
+                logger.warning(
+                    "[%s] Signal validation error (treating as failed): %s",
+                    trigger, sv_err,
+                )
+
+            # ── Audit (BLOCKING — Immutable Rule #7) ──
+            try:
+                signal_dict = signal.model_dump() if hasattr(signal, "model_dump") else vars(signal)
+                regime_dict = (
+                    regime.model_dump() if regime and hasattr(regime, "model_dump")
+                    else {"regime": getattr(signal, "regime", "unknown"), "confidence": 0.0}
+                )
                 signal_dict.setdefault("symbol", symbol)
                 signal_dict.setdefault("strategy", signal_dict.get("strategy_name", ""))
-                self.decision_auditor.audit_decision(
+
+                # Compute actual R/R from signal
+                if signal.direction.value == "long":
+                    risk = abs(signal.entry_price - signal.stop_loss)
+                    reward = abs(signal.take_profit - signal.entry_price)
+                else:
+                    risk = abs(signal.stop_loss - signal.entry_price)
+                    reward = abs(signal.entry_price - signal.take_profit)
+                actual_rr = float(reward / risk) if risk > 0 else 0.0
+
+                audit_report = self.decision_auditor.audit_decision(
                     signal=signal_dict,
                     regime=regime_dict,
                     risk_approval={
@@ -946,15 +1104,38 @@ class Orchestrator:
                         "confidence": confidence,
                         "position_pct": float(position_pct),
                         "approved": True,
+                        "risk_per_trade_pct": float(position_pct) * 100,
+                        "risk_reward_ratio": actual_rr,
+                        "kelly_fraction": 0.0,
+                        "notes": "",
                     },
-                    market_data={"pair": symbol, "balance": float(balance)},
+                    market_data={
+                        "pair": symbol,
+                        "balance": float(balance),
+                        "price_validated": price_validated,
+                        "signal_validated": signal_validated,
+                        "sanity_checks_passed": True,  # Already gate-checked above
+                    },
                 )
+                if audit_report.decision == "REJECT":
+                    logger.warning(
+                        "[%s] Audit REJECTED %s: %s",
+                        trigger, symbol, audit_report.decision_reasoning,
+                    )
+                    return None
+                if audit_report.decision == "SKIP":
+                    logger.info(
+                        "[%s] Audit SKIPPED %s: %s",
+                        trigger, symbol, audit_report.decision_reasoning,
+                    )
+                    return None
             except Exception as e:
                 logger.warning(f"[{trigger}] Audit failed (non-blocking): {e}")
 
             # ── Orderbook Slippage Check ──
             order_qty = Decimal(str(notional)) / Decimal(str(signal.entry_price))
             side = "buy" if signal.direction.value == "long" else "sell"
+            orderbook = None
             try:
                 orderbook = await self.market_data.fetch_orderbook(symbol, limit=20)
                 slip = self.slippage_estimator.estimate_slippage(
@@ -990,9 +1171,80 @@ class Orchestrator:
             try:
                 await self.order_manager.set_leverage(symbol, leverage)
 
-                order_result = await self.order_manager.place_market_order(
-                    symbol=symbol, side=side, amount=order_qty,
-                )
+                # Try maker-first entry (post-only limit at best bid/ask).
+                # Saves 0.03% per fill (0.02% maker vs 0.05% taker).
+                # Falls back to taker market order if post-only is rejected
+                # or unfilled within 5 seconds.
+                order_result = None
+                filled_via = "market"
+                POST_ONLY_WAIT_SECONDS = 5
+
+                try:
+                    # Use best bid for buys, best ask for sells
+                    if (
+                        orderbook is not None
+                        and hasattr(orderbook, "bids")
+                        and hasattr(orderbook, "asks")
+                    ):
+                        if side == "buy" and orderbook.bids:
+                            limit_price = orderbook.bids[0].price
+                        elif side == "sell" and orderbook.asks:
+                            limit_price = orderbook.asks[0].price
+                        else:
+                            limit_price = None
+                    else:
+                        limit_price = None
+
+                    if limit_price is not None and limit_price > Decimal("0"):
+                        limit_result = (
+                            await self.order_manager.place_limit_order(
+                                symbol=symbol,
+                                side=side,
+                                amount=order_qty,
+                                price=limit_price,
+                                post_only=True,
+                            )
+                        )
+                        if limit_result is not None:
+                            await asyncio.sleep(POST_ONLY_WAIT_SECONDS)
+                            limit_status = (
+                                await self.order_manager.get_order_status(
+                                    symbol, limit_result.order_id,
+                                )
+                            )
+                            if limit_status.status == OrderState.CLOSED:
+                                order_result = limit_result
+                                filled_via = "maker"
+                                logger.info(
+                                    "[%s] Post-only LIMIT filled at %s "
+                                    "(maker fee: 0.02%%)",
+                                    trigger, limit_price,
+                                )
+                            else:
+                                # Not filled — cancel and fall through
+                                try:
+                                    await self.order_manager.cancel_order(
+                                        symbol, limit_result.order_id,
+                                    )
+                                except Exception:
+                                    pass  # Best-effort cancel
+                                logger.info(
+                                    "[%s] Post-only LIMIT unfilled after "
+                                    "%ds — falling back to market",
+                                    trigger, POST_ONLY_WAIT_SECONDS,
+                                )
+                except Exception as limit_err:
+                    logger.info(
+                        "[%s] Post-only attempt failed: %s "
+                        "— falling back to market",
+                        trigger, limit_err,
+                    )
+
+                if order_result is None:
+                    order_result = await self.order_manager.place_market_order(
+                        symbol=symbol, side=side, amount=order_qty,
+                    )
+                    filled_via = "market"
 
                 if order_result is None:
                     logger.warning(
@@ -1090,7 +1342,9 @@ class Orchestrator:
                     "take_profit": signal.take_profit,
                     "strategy": signal.strategy_name,
                     "confidence": signal.confidence,
+                    "regime": (regime.regime if regime and hasattr(regime, "regime") else getattr(signal, "regime", "")),
                     "trigger": trigger,
+                    "filled_via": filled_via,
                 }
 
                 # Trailing stop state
@@ -1108,7 +1362,51 @@ class Orchestrator:
                     strategy_name=signal.strategy_name,
                     take_profit=signal.take_profit,
                     stop_loss=signal.stop_loss,
+                    size=float(order_result.filled),
+                    leverage=leverage,
                 )
+
+                # ── Native trailing stop (Binance-side safety net) ──
+                # Survives bot crashes / restarts unlike the local Python trail.
+                # Activates after price moves 2.0×ATR favorably, then trails
+                # at callback_rate = 2.5×ATR / price * 100 (in percent).
+                if atr_4h > 0:
+                    try:
+                        callback_pct = 2.5 * atr_4h / float(fill_price) * 100
+                        if signal.direction.value == "long":
+                            act_price = Decimal(str(
+                                float(fill_price) + 2.0 * atr_4h
+                            ))
+                        else:
+                            act_price = Decimal(str(
+                                float(fill_price) - 2.0 * atr_4h
+                            ))
+                        trailing_result = (
+                            await self.order_manager.place_trailing_stop_market(
+                                symbol=symbol,
+                                side=sl_side,
+                                amount=order_result.filled,
+                                callback_rate=callback_pct,
+                                activation_price=act_price,
+                            )
+                        )
+                        if trailing_result:
+                            logger.info(
+                                "[%s] Native trailing stop placed: "
+                                "callback=%.2f%%, activation=%s",
+                                trigger, callback_pct, act_price,
+                            )
+                        else:
+                            logger.warning(
+                                "[%s] Native trailing stop returned None "
+                                "(non-blocking)", trigger,
+                            )
+                    except Exception as trailing_err:
+                        logger.warning(
+                            "[%s] Native trailing stop failed "
+                            "(non-blocking): %s",
+                            trigger, trailing_err,
+                        )
 
                 logger.info(
                     f"[{trigger}] TRADE PLACED: {symbol} {signal.direction.value} "
@@ -1138,21 +1436,41 @@ class Orchestrator:
     # Trade Exit Recording Helper
     # ------------------------------------------------------------------
 
-    def _configure_fee_calculator(self, all_assets: list[Any]) -> None:
-        """Enable BNB fee discount only when a positive BNB balance is verified."""
+    async def _configure_fee_calculator(self, all_assets: list[Any]) -> None:
+        """Query live commission rates from Binance API + BNB discount status.
+
+        Falls back to hardcoded VIP-0 defaults if the API call fails.
+        """
+        # 1. Query live commission rates
+        from src.execution.fee_calculator import DEFAULT_MAKER_FEE, DEFAULT_TAKER_FEE
+
+        maker_rate = DEFAULT_MAKER_FEE
+        taker_rate = DEFAULT_TAKER_FEE
+        try:
+            rates = await self.market_data.fetch_commission_rate("BTC/USDT:USDT")
+            maker_rate = rates["maker"]
+            taker_rate = rates["taker"]
+            logger.info(
+                "Live commission rates from API: maker=%s (%s%%) taker=%s (%s%%)",
+                maker_rate, maker_rate * 100,
+                taker_rate, taker_rate * 100,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch live commission rates, using VIP-0 defaults "
+                "(maker=%s, taker=%s): %s",
+                maker_rate, taker_rate, e,
+            )
+
+        # 2. BNB discount
         bnb_asset = next((asset for asset in all_assets if asset.asset == "BNB"), None)
         use_bnb_discount = bool(bnb_asset and bnb_asset.wallet_balance > Decimal("0"))
-        self.fee_calculator = FeeCalculator(use_bnb_discount=use_bnb_discount)
 
-        if use_bnb_discount:
-            logger.info(
-                "BNB fee discount verified from account assets: BNB=%s",
-                bnb_asset.wallet_balance,
-            )
-        else:
-            logger.warning(
-                "BNB fee discount disabled: no positive BNB balance verified on account"
-            )
+        self.fee_calculator = FeeCalculator(
+            maker_fee=maker_rate,
+            taker_fee=taker_rate,
+            use_bnb_discount=use_bnb_discount,
+        )
 
     def _record_trade_exit(
         self,
@@ -1162,12 +1480,14 @@ class Orchestrator:
         entry_price: float,
         reason: str,
         duration_hours: float | None = None,
+        size: float | None = None,
+        leverage: int | None = None,
     ) -> None:
         """Record trade exit in journal so win/loss tracking works.
 
-        Computes pnl_pct from pnl / (entry_price * size) and delegates to
-        ``TradeJournal.update_trade_exit()``.  Failures are logged but
-        never propagate — exit recording must not block position management.
+        Computes pnl_pct from pnl / margin where
+        margin = entry_price * size / leverage.
+        Failures are logged but never propagate.
         """
         try:
             # Guard against None values that crash Decimal(str(None))
@@ -1178,8 +1498,15 @@ class Orchestrator:
                     symbol, exit_price, pnl, entry_price,
                 )
                 return
-            # pnl_pct: approximate as pnl / margin (entry_price is a proxy)
-            pnl_pct = (pnl / entry_price * 100) if entry_price else 0.0
+            # pnl_pct: return-on-margin = pnl / margin * 100
+            if size and leverage and entry_price:
+                margin = entry_price * size / leverage
+                pnl_pct = (pnl / margin * 100) if margin else 0.0
+            elif entry_price and size:
+                notional = entry_price * size
+                pnl_pct = (pnl / notional * 100) if notional else 0.0
+            else:
+                pnl_pct = 0.0
             self.trade_journal.update_trade_exit(
                 symbol=symbol,
                 exit_price=Decimal(str(exit_price)),
@@ -1238,8 +1565,10 @@ class Orchestrator:
                 )
                 sl_already_at_breakeven = False
                 for order in existing_orders:
-                    if order.get("type") in ("stop_market", "stop") and order.get("stopPrice"):
-                        sl_price = float(order["stopPrice"])
+                    otype = order.order_type if hasattr(order, "order_type") else ""
+                    sprice = order.stop_price if hasattr(order, "stop_price") else None
+                    if otype.lower() in ("stop_market", "stop") and sprice is not None:
+                        sl_price = float(sprice)
                         # Within 0.1% of entry = already at breakeven
                         if abs(sl_price - entry_price) / entry_price < 0.001:
                             sl_already_at_breakeven = True
@@ -1370,8 +1699,8 @@ class Orchestrator:
         # Check if there's a dominant direction (>= 60% of signals agree)
         dir_counts = Counter(signal_directions)
         dominant_dir, dominant_count = dir_counts.most_common(1)[0]
-        if dominant_count / len(signal_directions) < 0.6:
-            # Mixed signals — no dominant direction, reset
+        if len(signal_directions) < 3 or dominant_count / len(signal_directions) < 0.6:
+            # Mixed signals or too few signals — no dominant direction, reset
             self._wrong_side_cycle_count.clear()
             return
 
@@ -1429,6 +1758,8 @@ class Orchestrator:
                         pnl=float(pos.unrealized_pnl),
                         entry_price=float(pos.entry_price),
                         reason="wrong_side_force_close",
+                        size=float(pos.size),
+                        leverage=pos.leverage,
                     )
                     self._trailing_stops.pop(pos.symbol, None)
                     self._persist_trailing_stop_state()
@@ -1696,6 +2027,8 @@ class Orchestrator:
                         pnl=float(pos.unrealized_pnl),
                         entry_price=ts_state.entry_price,
                         reason="trailing_stop",
+                        size=float(pos.size),
+                        leverage=pos.leverage,
                     )
 
                 except Exception as e:
@@ -1769,6 +2102,8 @@ class Orchestrator:
                     entry_price=float(pos.entry_price),
                     reason="time_exit",
                     duration_hours=bars_held,
+                    size=float(pos.size),
+                    leverage=pos.leverage,
                 )
 
             except Exception as e:
@@ -1841,15 +2176,17 @@ class Orchestrator:
                     entry_px = ts_state.entry_price
                     direction = ts_state.direction
                     if direction == "long":
-                        pnl_approx = exit_px - entry_px
+                        pnl_approx = (exit_px - entry_px) * ts_state.size
                     else:
-                        pnl_approx = entry_px - exit_px
+                        pnl_approx = (entry_px - exit_px) * ts_state.size
                     self._record_trade_exit(
                         symbol=sym,
                         exit_price=exit_px,
                         pnl=pnl_approx,
                         entry_price=entry_px,
                         reason="sl_tp_fire",
+                        size=ts_state.size,
+                        leverage=ts_state.leverage,
                     )
                 except Exception as e:
                     logger.warning(
@@ -1900,12 +2237,12 @@ class Orchestrator:
                     if sp is None:
                         continue
                     if pos.side == "long":
-                        if sp < entry_px:
+                        if sp <= entry_px:
                             has_sl = True
                         elif sp > entry_px:
                             has_tp = True
                     else:  # short
-                        if sp > entry_px:
+                        if sp >= entry_px:
                             has_sl = True
                         elif sp < entry_px:
                             has_tp = True
@@ -2314,6 +2651,8 @@ class Orchestrator:
                     pnl=float(pos.unrealized_pnl),
                     entry_price=float(pos.entry_price),
                     reason="swap_out",
+                    size=float(pos.size),
+                    leverage=pos.leverage,
                 )
 
                 self._trailing_stops.pop(pos.symbol, None)

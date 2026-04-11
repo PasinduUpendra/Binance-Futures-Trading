@@ -805,3 +805,179 @@ class TestCancelAndQuery:
         )
         assert result is not None
         assert mock_ex.fapiPrivateGetOrder.call_count == 2
+
+
+# =========================================================================
+# F8/R-A1 — workingType=MARK_PRICE + priceProtect on SL/TP
+# =========================================================================
+
+
+class TestMarkPriceParams:
+    """Verify SL and TP orders include workingType=MARK_PRICE and priceProtect."""
+
+    @pytest.mark.asyncio
+    async def test_stop_loss_forwards_mark_price_params(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="sl_001", type="stop_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_stop_loss(
+            symbol="BTC/USDT:USDT",
+            side="sell",
+            amount=Decimal("0.001"),
+            stop_price=Decimal("60000"),
+        )
+
+        mock_ex.create_order.assert_called_once()
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert params["workingType"] == "MARK_PRICE", \
+            f"workingType must be MARK_PRICE, got {params.get('workingType')}"
+        assert params["priceProtect"] == "true", \
+            f"priceProtect must be 'true', got {params.get('priceProtect')}"
+        assert params["reduceOnly"] is True
+
+    @pytest.mark.asyncio
+    async def test_take_profit_forwards_mark_price_params(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="tp_001", type="take_profit_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_take_profit(
+            symbol="BTC/USDT:USDT",
+            side="sell",
+            amount=Decimal("0.001"),
+            stop_price=Decimal("70000"),
+        )
+
+        mock_ex.create_order.assert_called_once()
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert params["workingType"] == "MARK_PRICE"
+        assert params["priceProtect"] == "true"
+        assert params["reduceOnly"] is True
+
+
+# =========================================================================
+# R-A3 — Native TRAILING_STOP_MARKET order
+# =========================================================================
+
+
+class TestTrailingStopMarket:
+    """Verify TRAILING_STOP_MARKET orders are placed correctly."""
+
+    @pytest.mark.asyncio
+    async def test_trailing_stop_market_forwards_params(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="ts_001", type="trailing_stop_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_trailing_stop_market(
+            symbol="BTC/USDT:USDT",
+            side="sell",
+            amount=Decimal("0.001"),
+            callback_rate=2.5,
+            activation_price=Decimal("65000"),
+        )
+
+        mock_ex.create_order.assert_called_once()
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert params["callbackRate"] == 2.5
+        assert params["activationPrice"] == 65000.0
+        assert params["reduceOnly"] is True
+        assert params["workingType"] == "MARK_PRICE"
+
+    @pytest.mark.asyncio
+    async def test_trailing_stop_clamps_callback_rate(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="ts_002", type="trailing_stop_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        # Rate above max should be clamped to 5.0
+        await om.place_trailing_stop_market(
+            symbol="ETH/USDT:USDT",
+            side="sell",
+            amount=Decimal("0.1"),
+            callback_rate=8.0,
+        )
+
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert params["callbackRate"] == 5.0
+
+    @pytest.mark.asyncio
+    async def test_trailing_stop_without_activation_price(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="ts_003", type="trailing_stop_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_trailing_stop_market(
+            symbol="SOL/USDT:USDT",
+            side="buy",
+            amount=Decimal("10"),
+            callback_rate=1.5,
+        )
+
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert "activationPrice" not in params
+        assert params["callbackRate"] == 1.5
+
+
+# =========================================================================
+# R-A5 — GTX (post-only) limit orders
+# =========================================================================
+
+
+class TestGTXPostOnly:
+    """Verify GTX timeInForce on post-only limit orders."""
+
+    @pytest.mark.asyncio
+    async def test_post_only_sets_gtx(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="lmt_001", type="limit", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_limit_order(
+            symbol="BTC/USDT:USDT",
+            side="buy",
+            amount=Decimal("0.001"),
+            price=Decimal("60000"),
+            post_only=True,
+        )
+
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert params["timeInForce"] == "GTX"
+
+    @pytest.mark.asyncio
+    async def test_non_post_only_no_gtx(self):
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="lmt_002", type="limit", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_limit_order(
+            symbol="ETH/USDT:USDT",
+            side="sell",
+            amount=Decimal("0.1"),
+            price=Decimal("2500"),
+        )
+
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        assert "timeInForce" not in params

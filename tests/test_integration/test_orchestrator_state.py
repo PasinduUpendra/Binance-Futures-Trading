@@ -83,21 +83,70 @@ async def test_detect_preexisting_positions_preserves_persisted_trailing_state(
     assert restored.take_profit == 0.61
 
 
-def test_configure_fee_calculator_disables_discount_without_bnb(
+@pytest.mark.asyncio
+async def test_configure_fee_calculator_disables_discount_without_bnb(
     isolated_orchestrator: Orchestrator,
 ) -> None:
-    isolated_orchestrator._configure_fee_calculator(
+    # Mock fetch_commission_rate to return defaults (no real API call)
+    isolated_orchestrator.market_data.fetch_commission_rate = AsyncMock(
+        side_effect=Exception("no exchange")
+    )
+    await isolated_orchestrator._configure_fee_calculator(
         [SimpleNamespace(asset="USDT", wallet_balance=1)]
     )
 
     assert isolated_orchestrator.fee_calculator.taker_fee_rate == DEFAULT_TAKER_FEE
 
 
-def test_configure_fee_calculator_enables_discount_with_bnb(
+@pytest.mark.asyncio
+async def test_configure_fee_calculator_enables_discount_with_bnb(
     isolated_orchestrator: Orchestrator,
 ) -> None:
-    isolated_orchestrator._configure_fee_calculator(
+    isolated_orchestrator.market_data.fetch_commission_rate = AsyncMock(
+        side_effect=Exception("no exchange")
+    )
+    await isolated_orchestrator._configure_fee_calculator(
         [SimpleNamespace(asset="BNB", wallet_balance=0.5)]
     )
 
     assert isolated_orchestrator.fee_calculator.taker_fee_rate < DEFAULT_TAKER_FEE
+
+
+@pytest.mark.asyncio
+async def test_configure_fee_calculator_uses_live_rates(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """F7: Live commission rates from API override hardcoded defaults."""
+    from decimal import Decimal
+
+    isolated_orchestrator.market_data.fetch_commission_rate = AsyncMock(
+        return_value={
+            "maker": Decimal("0.00016"),
+            "taker": Decimal("0.00040"),
+        }
+    )
+    await isolated_orchestrator._configure_fee_calculator(
+        [SimpleNamespace(asset="USDT", wallet_balance=100)]
+    )
+
+    assert isolated_orchestrator.fee_calculator.maker_fee_rate == Decimal("0.00016")
+    assert isolated_orchestrator.fee_calculator.taker_fee_rate == Decimal("0.00040")
+
+
+@pytest.mark.asyncio
+async def test_configure_fee_calculator_falls_back_on_api_error(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """F7: If commission rate API fails, use hardcoded VIP-0 defaults safely."""
+    from decimal import Decimal
+    from src.execution.fee_calculator import DEFAULT_MAKER_FEE
+
+    isolated_orchestrator.market_data.fetch_commission_rate = AsyncMock(
+        side_effect=Exception("API timeout"),
+    )
+    await isolated_orchestrator._configure_fee_calculator(
+        [SimpleNamespace(asset="USDT", wallet_balance=100)]
+    )
+
+    assert isolated_orchestrator.fee_calculator.maker_fee_rate == DEFAULT_MAKER_FEE
+    assert isolated_orchestrator.fee_calculator.taker_fee_rate == DEFAULT_TAKER_FEE

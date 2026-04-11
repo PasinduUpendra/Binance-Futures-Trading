@@ -54,6 +54,18 @@ class TradeEntry(BaseModel):
     slippage: Decimal = Decimal("0")
     reasoning: str = ""
     lessons: str = ""
+    mode: str = Field(
+        default="",
+        description="Trading mode: 'testnet' or 'mainnet'",
+    )
+    signal_tag: str = Field(
+        default="",
+        description="Signal origin tag: e.g. '4h_flip', '1h_continuation', 'aligned_trend'",
+    )
+    exit_reason: str = Field(
+        default="",
+        description="Exit reason: e.g. 'sl_hit', 'tp_hit', 'trailing_stop', 'reversal', 'time_exit'",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +93,10 @@ CREATE TABLE IF NOT EXISTS trades (
     fees TEXT DEFAULT '0',
     slippage TEXT DEFAULT '0',
     reasoning TEXT DEFAULT '',
-    lessons TEXT DEFAULT ''
+    lessons TEXT DEFAULT '',
+    mode TEXT DEFAULT '',
+    signal_tag TEXT DEFAULT '',
+    exit_reason TEXT DEFAULT ''
 );
 """
 
@@ -96,11 +111,13 @@ _INSERT_TRADE = """
 INSERT OR REPLACE INTO trades (
     trade_id, timestamp, symbol, direction, entry_price, exit_price,
     size, leverage, pnl, pnl_pct, strategy, regime, confidence,
-    stop_loss, take_profit, duration, fees, slippage, reasoning, lessons
+    stop_loss, take_profit, duration, fees, slippage, reasoning, lessons,
+    mode, signal_tag, exit_reason
 ) VALUES (
     :trade_id, :timestamp, :symbol, :direction, :entry_price, :exit_price,
     :size, :leverage, :pnl, :pnl_pct, :strategy, :regime, :confidence,
-    :stop_loss, :take_profit, :duration, :fees, :slippage, :reasoning, :lessons
+    :stop_loss, :take_profit, :duration, :fees, :slippage, :reasoning, :lessons,
+    :mode, :signal_tag, :exit_reason
 );
 """
 
@@ -147,6 +164,9 @@ def _row_to_trade_entry(row: dict[str, Any]) -> TradeEntry:
         slippage=Decimal(row.get("slippage", "0")),
         reasoning=row.get("reasoning", ""),
         lessons=row.get("lessons", ""),
+        mode=row.get("mode", ""),
+        signal_tag=row.get("signal_tag", ""),
+        exit_reason=row.get("exit_reason", ""),
     )
 
 
@@ -183,6 +203,15 @@ class TradeJournal:
         """Create the database schema if it doesn't exist."""
         conn = self._get_conn()
         conn.executescript(_CREATE_TABLE + _CREATE_INDEXES)
+        # Migrate: add 'mode' column if missing (older databases)
+        cursor = conn.execute("PRAGMA table_info(trades)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "mode" not in columns:
+            conn.execute("ALTER TABLE trades ADD COLUMN mode TEXT DEFAULT ''")
+        if "signal_tag" not in columns:
+            conn.execute("ALTER TABLE trades ADD COLUMN signal_tag TEXT DEFAULT ''")
+        if "exit_reason" not in columns:
+            conn.execute("ALTER TABLE trades ADD COLUMN exit_reason TEXT DEFAULT ''")
         conn.commit()
 
     def _get_conn(self) -> sqlite3.Connection:
@@ -224,6 +253,9 @@ class TradeJournal:
             "slippage": str(entry.slippage),
             "reasoning": entry.reasoning,
             "lessons": entry.lessons,
+            "mode": entry.mode,
+            "signal_tag": entry.signal_tag,
+            "exit_reason": entry.exit_reason,
         }
 
     # -- public API ----------------------------------------------------------
@@ -234,6 +266,11 @@ class TradeJournal:
         Maps orchestrator keys (``pair``, ``direction``, …) to
         :class:`TradeEntry` fields and delegates to :meth:`record_trade`.
         """
+        # Auto-detect mode from env if not provided
+        mode = data.get("mode", "")
+        if not mode:
+            testnet = os.environ.get("BINANCE_TESTNET", "true").lower()
+            mode = "testnet" if testnet == "true" else "mainnet"
         entry = TradeEntry(
             symbol=data.get("pair", data.get("symbol", "")),
             direction=str(data.get("direction", "")),
@@ -243,7 +280,10 @@ class TradeJournal:
             stop_loss=Decimal(str(data["stop_loss"])) if data.get("stop_loss") else None,
             take_profit=Decimal(str(data["take_profit"])) if data.get("take_profit") else None,
             strategy=str(data.get("strategy", "")),
+            regime=str(data.get("regime", "")),
             confidence=Decimal(str(data.get("confidence", 0))),
+            mode=mode,
+            signal_tag=str(data.get("signal_tag", data.get("trigger", ""))),
         )
         self.record_trade(entry)
 
@@ -519,7 +559,8 @@ class TradeJournal:
                 pnl_pct = ?,
                 duration = ?,
                 fees = ?,
-                lessons = ?
+                lessons = ?,
+                exit_reason = ?
             WHERE trade_id = ?
             """,
             (
@@ -528,6 +569,7 @@ class TradeJournal:
                 str(pnl_pct),
                 duration,
                 str(fees),
+                reason,
                 reason,
                 trade_id,
             ),

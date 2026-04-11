@@ -36,7 +36,7 @@ Step 5: Build a "Source of Truth Map":
 | **Name** | Claude Quant | — |
 | **Purpose** | Autonomous AI trading bot for Binance USDT-M Perpetual Futures | — |
 | **Stack** | Python 3.11+ · ccxt async · Claude API · Binance WebSocket | SSOT §13 |
-| **Phase** | Paper Trading on Testnet ($5000 balance) | SSOT §1 |
+| **Phase** | Micro-Live on Mainnet ($68.33 balance) | SSOT §1, .env |
 | **Production Balance** | $68.33 USDT (as of 2026-03-13) | SSOT §2, verified via API |
 | **Bot PID** | 52685 (v6.17, restarted 2026-04-08) | CHANGELOG 2026-04-08 |
 | **Pairs** | BTC, ETH, SOL, DOGE, XRP, LINK, AVAX, SUI, ADA /USDT:USDT | SSOT §6, v6 backtest |

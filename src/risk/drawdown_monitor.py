@@ -193,3 +193,39 @@ class DrawdownMonitor:
             return Decimal("0")
         dd = (peak - current) / peak
         return max(dd, Decimal("0")).quantize(Decimal("0.0001"))
+
+    # ------------------------------------------------------------------
+    # Rolling equity drawdown halt (R-C2)
+    # ------------------------------------------------------------------
+    def should_halt_rolling(
+        self,
+        rolling_threshold: Decimal = Decimal("0.15"),
+    ) -> bool:
+        """Return True if current drawdown from peak exceeds rolling threshold.
+
+        The existing daily-loss halt covers intraday disasters. This check
+        covers multi-day equity erosion: if equity drops > *rolling_threshold*
+        (default 15%) from the all-time high-water mark, halt for 24h.
+
+        Parameters
+        ----------
+        rolling_threshold : Decimal
+            Maximum allowed drawdown from peak as a fraction (e.g. 0.15 = 15%).
+
+        Returns
+        -------
+        bool
+            True if trading should be halted.
+        """
+        dd = self._compute_drawdown(self._peak_balance, self._current_balance)
+        if dd >= rolling_threshold:
+            logger.warning(
+                "ROLLING DRAWDOWN HALT: %.2f%% drawdown from peak $%.2f "
+                "(current $%.2f, threshold %.0f%%)",
+                float(dd) * 100,
+                self._peak_balance,
+                self._current_balance,
+                float(rolling_threshold) * 100,
+            )
+            return True
+        return False

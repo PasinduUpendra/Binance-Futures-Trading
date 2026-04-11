@@ -287,7 +287,7 @@ class DecisionAuditor:
             )
 
         # Weak risk/reward
-        if report.risk_reward_ratio < Decimal("2"):
+        if report.risk_reward_ratio < Decimal("2") - Decimal("0.0001"):
             reasons.append(
                 f"Risk/reward ratio {report.risk_reward_ratio:.2f} is below 2.0"
             )
@@ -353,7 +353,7 @@ class DecisionAuditor:
             return "REJECT", "Signal not validated against raw data"
         if not report.sanity_checks_passed:
             return "REJECT", "Math sanity checks failed"
-        if report.risk_reward_ratio < Decimal("2"):
+        if report.risk_reward_ratio < Decimal("2") - Decimal("0.0001"):
             return "REJECT", f"R/R {report.risk_reward_ratio:.2f} below minimum 2.0"
 
         # Soft concerns — too many devil's advocate flags triggers SKIP

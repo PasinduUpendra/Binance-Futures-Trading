@@ -314,6 +314,32 @@ class MarketDataClient:
             timestamp=self._utc_from_ms(raw.get("timestamp")),
         )
 
+    async def fetch_commission_rate(
+        self, symbol: str = "BTC/USDT:USDT",
+    ) -> dict[str, Decimal]:
+        """Fetch the account's current maker/taker commission rates from Binance.
+
+        Calls ``GET /fapi/v1/commissionRate`` via ccxt's implicit API method.
+        Falls back to default VIP-0 rates on any error.
+
+        Returns
+        -------
+        dict with keys ``"maker"`` and ``"taker"`` as Decimal rates.
+        """
+        exchange = self._require_exchange()
+        # ccxt needs the raw Binance symbol (e.g. "BTCUSDT")
+        binance_symbol = symbol.replace("/", "").replace(":USDT", "")
+        raw = await exchange.fapiPrivateGetCommissionRate(
+            {"symbol": binance_symbol}
+        )
+        maker = self._to_decimal(raw.get("makerCommissionRate", "0.0002"))
+        taker = self._to_decimal(raw.get("takerCommissionRate", "0.0005"))
+        logger.info(
+            "Commission rates from API: maker=%s taker=%s (symbol=%s)",
+            maker, taker, binance_symbol,
+        )
+        return {"maker": maker, "taker": taker}
+
     @_retry
     async def get_account_balance(self) -> Decimal:
         """Fetch the total USDT balance from the Binance Futures account.

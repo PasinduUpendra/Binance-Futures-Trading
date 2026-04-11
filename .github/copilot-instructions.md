@@ -7,7 +7,7 @@
 
 Claude Quant is an autonomous AI trading bot for **Binance USDT-M Perpetual Futures**.
 Stack: Python 3.11+, ccxt async, Claude API, Binance WebSocket.
-Phase: Paper Trading on Testnet ($5000 balance).
+Phase: Micro-Live on Mainnet ($68.33 balance).
 
 ## Skills Registry
 

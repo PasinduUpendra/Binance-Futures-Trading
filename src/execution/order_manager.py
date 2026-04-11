@@ -732,6 +732,7 @@ class OrderManager:
         side: str,
         amount: Decimal,
         price: Decimal,
+        post_only: bool = False,
     ) -> OrderResult | None:
         """Place a limit order with idempotent retry on Binance Futures.
 
@@ -745,18 +746,25 @@ class OrderManager:
             Order size in base currency units.
         price : Decimal
             Limit price.
+        post_only : bool
+            If True, use ``timeInForce=GTX`` (post-only). Order is rejected
+            if it would immediately match, saving taker fee (0.05% → 0.02%).
 
         Returns
         -------
         OrderResult | None
             Verified order result, or None if InsufficientFunds/InvalidOrder.
         """
+        extra_params: dict[str, Any] = {}
+        if post_only:
+            extra_params["timeInForce"] = "GTX"
         return await self._submit_order_idempotent(
             symbol=symbol,
             order_type="limit",
             side=side.lower(),
             amount=float(amount),
             price=float(price),
+            extra_params=extra_params if extra_params else None,
             log_prefix="LIMIT_ORDER",
         )
 
@@ -792,7 +800,12 @@ class OrderManager:
             order_type="STOP_MARKET",
             side=side.lower(),
             amount=float(amount),
-            extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
+            extra_params={
+                "stopPrice": float(stop_price),
+                "reduceOnly": True,
+                "workingType": "MARK_PRICE",
+                "priceProtect": "true",
+            },
             log_prefix="STOP_LOSS",
             conditional=True,
         )
@@ -829,8 +842,62 @@ class OrderManager:
             order_type="TAKE_PROFIT_MARKET",
             side=side.lower(),
             amount=float(amount),
-            extra_params={"stopPrice": float(stop_price), "reduceOnly": True},
+            extra_params={
+                "stopPrice": float(stop_price),
+                "reduceOnly": True,
+                "workingType": "MARK_PRICE",
+                "priceProtect": "true",
+            },
             log_prefix="TAKE_PROFIT",
+            conditional=True,
+        )
+
+    # -- native trailing stop ------------------------------------------------
+
+    async def place_trailing_stop_market(
+        self,
+        symbol: str,
+        side: str,
+        amount: Decimal,
+        callback_rate: float,
+        activation_price: Decimal | None = None,
+    ) -> OrderResult | None:
+        """Place a native Binance TRAILING_STOP_MARKET order as a backstop.
+
+        Parameters
+        ----------
+        symbol : str
+            Trading pair (e.g. ``ETH/USDT:USDT``).
+        side : str
+            ``"buy"`` (for short trailing) or ``"sell"`` (for long trailing).
+        amount : Decimal
+            Order size in base currency units.
+        callback_rate : float
+            Callback rate in percent, clamped to [0.1, 5.0] by Binance.
+        activation_price : Decimal | None
+            Price at which the trailing stop activates. If None, activates
+            immediately at current mark price.
+
+        Returns
+        -------
+        OrderResult | None
+        """
+        callback_rate = max(0.1, min(5.0, callback_rate))
+        extra_params: dict[str, Any] = {
+            "callbackRate": callback_rate,
+            "reduceOnly": True,
+            "workingType": "MARK_PRICE",
+            "priceProtect": "true",
+        }
+        if activation_price is not None:
+            extra_params["activationPrice"] = float(activation_price)
+        return await self._submit_order_idempotent(
+            symbol=symbol,
+            order_type="TRAILING_STOP_MARKET",
+            side=side.lower(),
+            amount=float(amount),
+            extra_params=extra_params,
+            log_prefix="TRAILING_STOP",
             conditional=True,
         )
 

@@ -310,7 +310,7 @@ class AdaptiveTrend(BaseStrategy):
 
         # Validate R/R
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 2.0:
+        if rr < 2.0 - 1e-9:
             return self._no_signal(
                 f"R/R {rr:.2f} below minimum 2.0 (sl_mult={sl_mult}, tp_mult={tp_mult})"
             )

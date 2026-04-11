@@ -523,6 +523,7 @@ async def test_close_position_for_swap(
         symbol="ADA/USDT:USDT", side="long",
         unrealized_pnl=Decimal("-3"), current_price=Decimal("0.28"),
         entry_price=Decimal("0.30"), size=Decimal("100"),
+        leverage=5,
     )
     isolated_orchestrator._trailing_stops["ADA/USDT:USDT"] = TrailingStopState(
         symbol="ADA/USDT:USDT", direction="long",
@@ -836,6 +837,9 @@ async def test_startup_cancels_all_stale_orders(
     orch.order_manager.connect = AsyncMock()
     orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
     orch.market_data.get_all_assets = AsyncMock(return_value=[])
+    orch.market_data.fetch_commission_rate = AsyncMock(
+        side_effect=Exception("no exchange in test"),
+    )
     orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
     orch.order_manager.cancel_open_orders = AsyncMock(return_value=(0, True))
     orch.order_manager.get_open_orders = AsyncMock(return_value=[])
@@ -853,6 +857,60 @@ async def test_startup_cancels_all_stale_orders(
     ]
     for pair in TRADING_PAIRS:
         assert pair in called_symbols, f"cancel_open_orders not called for {pair}"
+
+
+@pytest.mark.asyncio
+async def test_startup_preserves_orders_for_active_positions(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Startup must NOT cancel SL/TP orders on symbols that have open positions."""
+    orch = isolated_orchestrator
+    orch.market_data.connect = AsyncMock()
+    orch.position_tracker.connect = AsyncMock()
+    orch.order_manager.connect = AsyncMock()
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.market_data.get_all_assets = AsyncMock(return_value=[])
+    orch.market_data.fetch_commission_rate = AsyncMock(
+        side_effect=Exception("no exchange in test"),
+    )
+
+    # SOL has an open position — its orders must NOT be wiped
+    sol_position = SimpleNamespace(
+        symbol="SOL/USDT:USDT",
+        side="long",
+        entry_price=Decimal("84.61"),
+        current_price=Decimal("84.80"),
+        contracts=Decimal("0.35"),
+        unrealized_pnl=Decimal("0.07"),
+        leverage=5,
+        margin=Decimal("5.92"),
+    )
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[sol_position])
+    orch.order_manager.cancel_open_orders = AsyncMock(return_value=(0, True))
+
+    # SOL has 2 conditional orders (SL+TP)
+    async def mock_get_open_orders(symbol, **kwargs):
+        if symbol == "SOL/USDT:USDT":
+            return [SimpleNamespace(order_id="sl1"), SimpleNamespace(order_id="tp1")]
+        return []
+    orch.order_manager.get_open_orders = AsyncMock(side_effect=mock_get_open_orders)
+    orch.market_data.subscribe_kline_close = AsyncMock()
+    orch._shutdown_event.set()
+
+    await orch.start()
+
+    from src.orchestrator.main import TRADING_PAIRS
+    called_symbols = [
+        call.args[0] for call in orch.order_manager.cancel_open_orders.await_args_list
+    ]
+    # SOL should NOT have been cancelled (has open position)
+    assert "SOL/USDT:USDT" not in called_symbols, (
+        "cancel_open_orders was called for SOL — should be skipped (has open position)"
+    )
+    # All OTHER pairs should have been cancelled
+    for pair in TRADING_PAIRS:
+        if pair != "SOL/USDT:USDT":
+            assert pair in called_symbols, f"cancel_open_orders not called for {pair}"
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -1088,11 +1146,16 @@ async def test_reversal_exit_dedup_skips_when_sl_at_breakeven(
         size=Decimal("10"), unrealized_pnl=Decimal("-1"),
     )
     orch.position_tracker.get_open_positions = AsyncMock(return_value=[pos])
+    orch._trailing_stops["SUI/USDT:USDT"] = TrailingStopState(
+        symbol="SUI/USDT:USDT", direction="long",
+        entry_price=3.50, best_price=3.60, atr_4h=0.1,
+        take_profit=4.0,
+    )
     orch.adaptive_strategy.check_supertrend_reversal = MagicMock(return_value=True)
 
     # SL already at entry price (breakeven) — within 0.1%
     existing_sl = SimpleNamespace(
-        order_type="STOP_MARKET",
+        order_type="stop_market",
         stop_price=Decimal("3.50"),  # exactly at entry = breakeven
     )
     orch.order_manager.get_open_orders = AsyncMock(return_value=[existing_sl])
@@ -1101,13 +1164,412 @@ async def test_reversal_exit_dedup_skips_when_sl_at_breakeven(
 
     # Build pair data with at least a 4H dataframe
     pair_data_4h = {"SUI/USDT:USDT": pd.DataFrame({"close": [3.5]})}
-    pair_data_1h = {"SUI/USDT:USDT": pd.DataFrame({"close": [3.4]})}
     result = SimpleNamespace(positions_closed=[], errors=[])
 
     await orch._check_supertrend_reversal_exits(
-        pair_data_4h, pair_data_1h, result,
+        pair_data_4h, result, Decimal("100"),
     )
 
     # Should NOT cancel/replace since SL is already at breakeven
     orch.order_manager.cancel_open_orders.assert_not_called()
     orch.order_manager.place_stop_loss.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_reversal_exit_dedup_handles_real_order_status_objects(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Regression test for F9: OrderStatus objects must not crash .get()."""
+    from src.execution.order_manager import OrderStatus, OrderState as OState
+
+    orch = isolated_orchestrator
+    pos = SimpleNamespace(
+        symbol="SUI/USDT:USDT", side="long",
+        entry_price=Decimal("3.50"), current_price=Decimal("3.40"),
+        size=Decimal("10"), unrealized_pnl=Decimal("-1"),
+    )
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[pos])
+    orch._trailing_stops["SUI/USDT:USDT"] = TrailingStopState(
+        symbol="SUI/USDT:USDT", direction="long",
+        entry_price=3.50, best_price=3.60, atr_4h=0.1,
+        take_profit=4.0,
+    )
+    orch.adaptive_strategy.check_supertrend_reversal = MagicMock(return_value=True)
+
+    # Use REAL OrderStatus objects (the crash was calling .get() on these)
+    from datetime import datetime, timezone
+    existing_sl = OrderStatus(
+        order_id="123",
+        symbol="SUI/USDT:USDT",
+        side="sell",
+        order_type="stop_market",
+        amount=Decimal("10"),
+        filled=Decimal("0"),
+        remaining=Decimal("10"),
+        stop_price=Decimal("3.50"),
+        status=OState.OPEN,
+        timestamp=datetime.now(tz=timezone.utc),
+        is_conditional=True,
+    )
+    orch.order_manager.get_open_orders = AsyncMock(return_value=[existing_sl])
+    orch.order_manager.cancel_open_orders = AsyncMock()
+    orch.order_manager.place_stop_loss = AsyncMock()
+
+    pair_data_4h = {"SUI/USDT:USDT": pd.DataFrame({"close": [3.5]})}
+    result = SimpleNamespace(positions_closed=[], errors=[])
+
+    # This must NOT raise 'OrderStatus' object has no attribute 'get'
+    await orch._check_supertrend_reversal_exits(
+        pair_data_4h, result, Decimal("100"),
+    )
+
+    # SL at breakeven → should skip
+    orch.order_manager.cancel_open_orders.assert_not_called()
+
+
+# ════════════════════════════════════════════════════════════════════════
+# F1/F2: Audit gate integration tests
+# ════════════════════════════════════════════════════════════════════════
+
+
+def _make_execute_signal_fixtures(orch: Orchestrator):
+    """Set up common mocks for _execute_signal tests."""
+    orch.state.daily_start_balance = Decimal("6000")
+    orch.drawdown_monitor._peak_balance = Decimal("6000")
+    orch.market_data.get_margin_balance = AsyncMock(return_value=Decimal("6000"))
+    orch.position_tracker.get_open_positions = AsyncMock(return_value=[])
+    orch.order_manager.set_leverage = AsyncMock()
+    orch.market_data.fetch_funding_rate = AsyncMock(return_value=Decimal("0.0001"))
+
+    signal = SimpleNamespace(
+        direction=SimpleNamespace(value="long"),
+        confidence=65,
+        entry_price=100.0,
+        stop_loss=97.0,
+        take_profit=106.0,
+        strategy_name="SupertrendTrend",
+        regime="trending",
+        indicators_used={"adx": 25.0, "atr": 1.5},
+    )
+    cb_state = SimpleNamespace(
+        level="GREEN",
+        constraints=SimpleNamespace(
+            trading_allowed=True,
+            max_positions=3,
+            max_leverage=10,
+            size_multiplier=Decimal("1.0"),
+            reason="",
+        ),
+    )
+    df = pd.DataFrame({"atr": [1.5], "close": [100.0], "adx": [25.0]})
+    return signal, cb_state, df
+
+
+@pytest.mark.asyncio
+async def test_audit_reject_blocks_execution(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """F1/F2: If audit_decision returns REJECT, _execute_signal returns None
+    and place_market_order is NEVER called."""
+    orch = isolated_orchestrator
+    signal, cb_state, df = _make_execute_signal_fixtures(orch)
+    orch.order_manager.place_market_order = AsyncMock()
+
+    # Validators pass — test the audit gate itself
+    orch.price_validator.validate_price = AsyncMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+    orch.signal_validator.validate_signal = MagicMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+
+    # Force audit REJECT
+    from src.anti_hallucination.decision_auditor import AuditReport
+
+    orch.decision_auditor.audit_decision = MagicMock(
+        return_value=AuditReport(
+            decision="REJECT",
+            decision_reasoning="Test: forced rejection",
+            price_validated=True,
+            signal_validated=True,
+            sanity_checks_passed=True,
+            risk_approved=True,
+        )
+    )
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+    orch.order_manager.place_market_order.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_validators_called_and_results_flow_into_audit(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """F1/F2: PriceValidator and SignalValidator are invoked before audit,
+    their real results flow into audit_decision's market_data dict."""
+    orch = isolated_orchestrator
+    signal, cb_state, df = _make_execute_signal_fixtures(orch)
+
+    # Price validator returns FAILED
+    orch.price_validator.validate_price = AsyncMock(
+        return_value=SimpleNamespace(valid=False, issues=["Price outside 24h range"])
+    )
+    orch.signal_validator.validate_signal = MagicMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+
+    # Spy on audit_decision to capture the market_data it receives
+    from src.anti_hallucination.decision_auditor import AuditReport
+
+    orch.decision_auditor.audit_decision = MagicMock(
+        return_value=AuditReport(
+            decision="REJECT",
+            decision_reasoning="Price not validated — possible hallucination",
+        )
+    )
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+    assert result is None
+
+    # Verify validators were actually called
+    orch.price_validator.validate_price.assert_awaited_once()
+    orch.signal_validator.validate_signal.assert_called_once()
+
+    # Verify the REAL validator result (False) flowed into audit
+    audit_kwargs = orch.decision_auditor.audit_decision.call_args.kwargs
+    assert audit_kwargs["market_data"]["price_validated"] is False
+    assert audit_kwargs["market_data"]["signal_validated"] is True
+
+
+# ════════════════════════════════════════════════════════════════════════
+# R-A3: Native trailing stop wired into post-entry path
+# ════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_native_trailing_stop_placed_on_new_position(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """R-A3: After SL+TP, place_trailing_stop_market is called with
+    callback_rate derived from ATR and activation_price from 2.0*ATR."""
+    orch = isolated_orchestrator
+    signal, cb_state, df = _make_execute_signal_fixtures(orch)
+
+    # Validators + audit pass
+    orch.price_validator.validate_price = AsyncMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+    orch.signal_validator.validate_signal = MagicMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+    from src.anti_hallucination.decision_auditor import AuditReport
+
+    orch.decision_auditor.audit_decision = MagicMock(
+        return_value=AuditReport(
+            decision="EXECUTE",
+            decision_reasoning="All checks passed",
+            price_validated=True,
+            signal_validated=True,
+            sanity_checks_passed=True,
+            risk_approved=True,
+            risk_reward_ratio=Decimal("3.0"),
+        )
+    )
+    # Mock orderbook slippage
+    orch.market_data.fetch_orderbook = AsyncMock(
+        return_value=SimpleNamespace(
+            model_dump=lambda: {
+                "bids": [{"price": 100.0, "amount": 10.0}],
+                "asks": [{"price": 100.01, "amount": 10.0}],
+            }
+        )
+    )
+    orch.slippage_estimator.estimate_slippage = MagicMock(
+        return_value=SimpleNamespace(
+            slippage_pct=Decimal("0.01"),
+            fully_fillable=True,
+            levels_consumed=1,
+            expected_fill_price=Decimal("100.0"),
+        )
+    )
+    # Execution mocks
+    orch.order_manager.place_market_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="fill1", filled=Decimal("0.5"),
+            average_fill_price=Decimal("100"),
+        )
+    )
+    orch.order_manager.get_order_status = AsyncMock(
+        return_value=SimpleNamespace(status=OrderState.CLOSED)
+    )
+    orch.order_manager.place_stop_loss = AsyncMock(
+        return_value=SimpleNamespace(order_id="sl1")
+    )
+    orch.order_manager.place_take_profit = AsyncMock(
+        return_value=SimpleNamespace(order_id="tp1")
+    )
+    orch.order_manager.place_trailing_stop_market = AsyncMock(
+        return_value=SimpleNamespace(order_id="trail1")
+    )
+    orch.alert_system.send_alert = AsyncMock()
+
+    result = await orch._execute_signal(
+        signal=signal, symbol="ETH/USDT:USDT",
+        df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+    )
+
+    assert result is not None
+    # Trailing stop must have been called
+    orch.order_manager.place_trailing_stop_market.assert_awaited_once()
+    call_kwargs = orch.order_manager.place_trailing_stop_market.call_args.kwargs
+    assert call_kwargs["symbol"] == "ETH/USDT:USDT"
+    assert call_kwargs["side"] == "sell"  # long position → sell trailing
+    assert call_kwargs["amount"] == Decimal("0.5")
+    # callback_rate = 2.5 * 1.5 / 100 * 100 = 3.75%
+    assert call_kwargs["callback_rate"] == pytest.approx(3.75, abs=0.01)
+    # activation_price = 100 + 2.0 * 1.5 = 103.0
+    assert float(call_kwargs["activation_price"]) == pytest.approx(103.0, abs=0.01)
+
+
+# ════════════════════════════════════════════════════════════════════════
+# R-A5: Post-only maker entry with taker fallback
+# ════════════════════════════════════════════════════════════════════════
+
+
+def _setup_full_execution_mocks(orch: Orchestrator):
+    """Configure mocks for a full _execute_signal happy path."""
+    signal, cb_state, df = _make_execute_signal_fixtures(orch)
+
+    orch.price_validator.validate_price = AsyncMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+    orch.signal_validator.validate_signal = MagicMock(
+        return_value=SimpleNamespace(valid=True, issues=[])
+    )
+    from src.anti_hallucination.decision_auditor import AuditReport
+
+    orch.decision_auditor.audit_decision = MagicMock(
+        return_value=AuditReport(
+            decision="EXECUTE",
+            decision_reasoning="All checks passed",
+            price_validated=True,
+            signal_validated=True,
+            sanity_checks_passed=True,
+            risk_approved=True,
+            risk_reward_ratio=Decimal("3.0"),
+        )
+    )
+    orch.market_data.fetch_orderbook = AsyncMock(
+        return_value=SimpleNamespace(
+            bids=[SimpleNamespace(price=Decimal("99.95"))],
+            asks=[SimpleNamespace(price=Decimal("100.05"))],
+            model_dump=lambda: {
+                "bids": [{"price": 99.95, "amount": 10.0}],
+                "asks": [{"price": 100.05, "amount": 10.0}],
+            },
+        )
+    )
+    orch.slippage_estimator.estimate_slippage = MagicMock(
+        return_value=SimpleNamespace(
+            slippage_pct=Decimal("0.01"),
+            fully_fillable=True,
+            levels_consumed=1,
+            expected_fill_price=Decimal("100.0"),
+        )
+    )
+    orch.order_manager.place_stop_loss = AsyncMock(
+        return_value=SimpleNamespace(order_id="sl1")
+    )
+    orch.order_manager.place_take_profit = AsyncMock(
+        return_value=SimpleNamespace(order_id="tp1")
+    )
+    orch.order_manager.place_trailing_stop_market = AsyncMock(
+        return_value=SimpleNamespace(order_id="trail1")
+    )
+    orch.alert_system.send_alert = AsyncMock()
+
+    return signal, cb_state, df
+
+
+@pytest.mark.asyncio
+async def test_post_only_limit_fills_uses_maker(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """R-A5: When post-only limit fills within timeout, no market order placed."""
+    orch = isolated_orchestrator
+    signal, cb_state, df = _setup_full_execution_mocks(orch)
+
+    # Post-only limit fills successfully
+    orch.order_manager.place_limit_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="limit1", filled=Decimal("0.5"),
+            average_fill_price=Decimal("99.95"),
+        )
+    )
+    orch.order_manager.get_order_status = AsyncMock(
+        return_value=SimpleNamespace(status=OrderState.CLOSED)
+    )
+    orch.order_manager.place_market_order = AsyncMock()
+
+    with patch("src.orchestrator.main.asyncio.sleep", new_callable=AsyncMock):
+        result = await orch._execute_signal(
+            signal=signal, symbol="ETH/USDT:USDT",
+            df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+        )
+
+    assert result is not None
+    assert result["filled_via"] == "maker"
+    # Limit order was used, market order should NOT have been called
+    orch.order_manager.place_limit_order.assert_awaited_once()
+    orch.order_manager.place_market_order.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_post_only_unfilled_falls_back_to_market(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """R-A5: When post-only remains OPEN after timeout, cancel it and use market."""
+    orch = isolated_orchestrator
+    signal, cb_state, df = _setup_full_execution_mocks(orch)
+
+    # Post-only limit does NOT fill (stays OPEN)
+    orch.order_manager.place_limit_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="limit1", filled=Decimal("0"),
+            average_fill_price=Decimal("0"),
+        )
+    )
+    # First call: check limit status (OPEN), later calls: verify market fill (CLOSED)
+    orch.order_manager.get_order_status = AsyncMock(
+        side_effect=[
+            SimpleNamespace(status=OrderState.OPEN),   # limit check
+            SimpleNamespace(status=OrderState.CLOSED),  # market verify
+        ]
+    )
+    orch.order_manager.cancel_order = AsyncMock()
+    orch.order_manager.place_market_order = AsyncMock(
+        return_value=SimpleNamespace(
+            order_id="mkt1", filled=Decimal("0.5"),
+            average_fill_price=Decimal("100"),
+        )
+    )
+
+    with patch("src.orchestrator.main.asyncio.sleep", new_callable=AsyncMock):
+        result = await orch._execute_signal(
+            signal=signal, symbol="ETH/USDT:USDT",
+            df_4h=df, df_1h=df, cb_state=cb_state, trigger="test",
+        )
+
+    assert result is not None
+    assert result["filled_via"] == "market"
+    # Limit tried and cancelled, then market used
+    orch.order_manager.place_limit_order.assert_awaited_once()
+    orch.order_manager.cancel_order.assert_awaited_once()
+    orch.order_manager.place_market_order.assert_awaited_once()

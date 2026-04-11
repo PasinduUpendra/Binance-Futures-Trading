@@ -261,3 +261,66 @@ class TestEntryPrice:
 
         assert result.valid is False
         assert any("missing bid/ask" in issue.lower() for issue in result.issues)
+
+
+# ---------------------------------------------------------------------------
+# Metadata keys skip + R/R boundary (v6.22)
+# ---------------------------------------------------------------------------
+
+
+class TestMetadataKeysSkip:
+    """Metadata keys in indicators_used must be skipped, not flagged."""
+
+    def test_entry_type_skipped(self):
+        """'entry_type' metadata key should not cause validation failure."""
+        validator = SignalValidator()
+        signal = _make_signal(indicators={
+            "ADX": 30.0, "entry_type": "continuation", "atr_source": "1h",
+        })
+        raw_data = _make_raw_data(indicators={"ADX": 30.0})
+        result = validator.validate_signal(signal, raw_data)
+        # entry_type and atr_source should not produce issues
+        assert not any("entry_type" in issue for issue in result.issues)
+        assert not any("atr_source" in issue for issue in result.issues)
+
+    def test_metadata_keys_not_in_indicator_checks(self):
+        """Metadata keys should not appear in indicator_checks dict."""
+        validator = SignalValidator()
+        signal = _make_signal(indicators={
+            "ADX": 30.0, "entry_type": "aligned_trend",
+        })
+        raw_data = _make_raw_data(indicators={"ADX": 30.0})
+        result = validator.validate_signal(signal, raw_data)
+        assert "entry_type" not in result.indicator_checks
+
+
+class TestRRBoundaryDecimal:
+    """R/R exactly at 2.0 boundary must pass, not fail."""
+
+    def test_rr_exactly_2_0_passes(self):
+        """R/R = 2.0 must pass (reward = 300, risk = 150 → 2.0)."""
+        validator = SignalValidator()
+        signal = _make_signal(
+            entry_price=Decimal("3000"),
+            stop_loss=Decimal("2850"),   # risk = 150
+            take_profit=Decimal("3300"), # reward = 300, R/R = 2.0
+        )
+        raw_data = _make_raw_data(
+            bid=Decimal("2999"), ask=Decimal("3001"),
+        )
+        result = validator.validate_signal(signal, raw_data)
+        assert not any("R/R ratio" in issue for issue in result.issues)
+
+    def test_rr_just_below_2_0_fails(self):
+        """R/R clearly below 2.0 (e.g. 1.5) must fail."""
+        validator = SignalValidator()
+        signal = _make_signal(
+            entry_price=Decimal("3000"),
+            stop_loss=Decimal("2800"),   # risk = 200
+            take_profit=Decimal("3300"), # reward = 300, R/R = 1.5
+        )
+        raw_data = _make_raw_data(
+            bid=Decimal("2999"), ask=Decimal("3001"),
+        )
+        result = validator.validate_signal(signal, raw_data)
+        assert any("R/R ratio" in issue for issue in result.issues)

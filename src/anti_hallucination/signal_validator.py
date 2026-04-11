@@ -175,7 +175,13 @@ class SignalValidator:
 
         # Every indicator value must be numeric, not a vague string
         vague_keywords = {"bullish", "bearish", "positive", "negative", "strong", "weak"}
+        # Metadata keys that are not verifiable indicators — skip them
+        # flip_age_* = computed bar distance, supertrend_dir_15m = no 15m df available
+        metadata_keys = {"entry_type", "atr_source", "flip_age_1h", "flip_age_15m",
+                         "supertrend_dir_15m"}
         for key, value in signal.indicators.items():
+            if key in metadata_keys:
+                continue
             if isinstance(value, str):
                 lower_val = value.lower().strip()
                 if lower_val in vague_keywords or not _is_numeric_string(lower_val):
@@ -193,8 +199,14 @@ class SignalValidator:
         """Compare signal-reported indicator values to raw-data-computed values."""
         issues: list[str] = []
         checks: dict[str, bool] = {}
+        # Metadata keys that are not verifiable indicators — skip them
+        # flip_age_* = computed bar distance, supertrend_dir_15m = no 15m df available
+        metadata_keys = {"entry_type", "atr_source", "flip_age_1h", "flip_age_15m",
+                         "supertrend_dir_15m"}
 
         for name, signal_val in signal_indicators.items():
+            if name in metadata_keys:
+                continue
             signal_dec = _safe_decimal(signal_val)
             if signal_dec is None:
                 # Non-numeric indicator — already flagged in specificity check
@@ -365,7 +377,8 @@ class SignalValidator:
             return issues
 
         rr_ratio = reward / risk
-        if rr_ratio < self._min_risk_reward:
+        # Use <= to accept R/R exactly equal to minimum (e.g. 2.0 >= 2.0)
+        if rr_ratio < self._min_risk_reward - Decimal("0.0001"):
             issues.append(
                 f"R/R ratio {rr_ratio:.2f} < minimum {self._min_risk_reward:.2f} "
                 f"(risk={risk}, reward={reward})"

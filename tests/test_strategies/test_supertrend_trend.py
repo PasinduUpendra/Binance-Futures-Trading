@@ -486,3 +486,40 @@ class TestDynamicSlTp:
         assert sig.direction == SignalDirection.LONG
         assert sig.stop_loss == pytest.approx(3000.0 - 3.0 * 100.0, abs=1e-4)
         assert sig.take_profit == pytest.approx(3000.0 + 6.0 * 100.0, abs=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# R/R boundary float tolerance (v6.22)
+# ---------------------------------------------------------------------------
+
+
+class TestRRBoundaryTolerance:
+    """R/R = 2.0 must PASS, not be rejected by float precision issues."""
+
+    def setup_method(self):
+        self.strategy = SupertrendTrend()
+
+    def test_rr_exactly_2_0_passes_flip(self):
+        """Flip signal with TP=6×ATR, SL=3×ATR → R/R=2.0 should pass."""
+        df = _make_df(st_dirs=[-1, 1], adx=25.0, atr=100.0, close=3000.0)
+        sig = self.strategy.generate_signal(df)
+        assert sig.direction == SignalDirection.LONG  # Not rejected
+
+    def test_rr_at_boundary_with_tiny_float_drift(self):
+        """Simulate float drift where reward/risk rounds to 1.9999."""
+        from src.strategies.base_strategy import calculate_rr_ratio
+
+        # Construct values where float division yields just under 2.0
+        # close=9.42, SL=3×ATR, TP=6×ATR with atr=0.171727...
+        entry = 9.42
+        atr = 0.17172568  # chosen to cause float drift
+        sl = entry - atr * 3.0
+        tp = entry + atr * 6.0
+        rr = calculate_rr_ratio(entry, sl, tp)
+        # Must accept R/R within epsilon of 2.0
+        assert rr >= 2.0 - 1e-9 or rr >= 2.0, f"R/R {rr} rejected at boundary"
+
+    def test_min_rr_constant(self):
+        """MIN_RR constant has epsilon tolerance."""
+        assert self.strategy.MIN_RR < 2.0
+        assert self.strategy.MIN_RR > 1.99

@@ -61,10 +61,10 @@ class AdaptiveStrategy:
     TrendFollower is kept as fallback for TRENDING when ADX < 18.
     """
 
-    # Lowered from 40→35→25. Each strategy has its own quality gates
-    # (2/3 confirmation for MR, volume/squeeze for BO). The confidence
-    # score measures "how extreme" the setup is, not "if" there's a setup.
-    MIN_CONFIDENCE: float = 25.0
+    # Raised from 25→45. At 25%, cascade signals (continuation/fast/aligned)
+    # produced 24.4% win rate on mainnet (Apr 2026 audit). Only 4H flip and
+    # strong continuation signals should pass.
+    MIN_CONFIDENCE: float = 45.0
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")

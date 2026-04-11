@@ -68,6 +68,8 @@ class SupertrendTrend(BaseStrategy):
     ADX_MIN: float = 18.0
     SL_ATR_MULT: float = 3.0
     TP_ATR_MULT: float = 6.0
+    # Minimum R/R with epsilon to avoid float boundary rejection (2.0 - 1e-9)
+    MIN_RR: float = 2.0 - 1e-9
 
     # Dynamic SL/TP by regime (Sprint 1.3)
     # All entries maintain minimum 2.0 R/R (Immutable Rule #9)
@@ -205,7 +207,7 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 2.0:
+        if rr < self.MIN_RR:
             return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum")
 
         # Confidence scoring
@@ -401,7 +403,7 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 2.0:
+        if rr < self.MIN_RR:
             return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum")
 
         # Confidence: lower base for continuation (30 vs 40), no flip bonus
@@ -600,7 +602,7 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive (fast)")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 2.0:
+        if rr < self.MIN_RR:
             return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum (fast)")
 
         # Confidence: lower ceiling (max 70) for fast entries
@@ -840,7 +842,7 @@ class SupertrendTrend(BaseStrategy):
             return self._no_signal("Computed SL or TP is non-positive (aligned)")
 
         rr = calculate_rr_ratio(close, stop_loss, take_profit)
-        if rr < 2.0:
+        if rr < self.MIN_RR:
             return self._no_signal(f"R/R {rr:.2f} below 2.0 minimum (aligned)")
 
         # Confidence (max 55 — lowest tier)

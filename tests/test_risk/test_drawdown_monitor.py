@@ -266,3 +266,38 @@ class TestDrawdownSequence:
         )
         assert s.current_drawdown_pct == expected_dd
         assert s.max_drawdown_pct == Decimal("0.2000")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# R-C2: Rolling equity drawdown halt
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestRollingDrawdownHalt:
+    """should_halt_rolling triggers at threshold and clears below."""
+
+    def test_halt_when_above_threshold(self, tmp_path):
+        mon = DrawdownMonitor(state_path=tmp_path / "dd.json", initial_balance=100)
+        mon.update(100)
+        mon.update(80)  # 20% drawdown
+        assert mon.should_halt_rolling(Decimal("0.15")) is True
+
+    def test_no_halt_when_below_threshold(self, tmp_path):
+        mon = DrawdownMonitor(state_path=tmp_path / "dd.json", initial_balance=100)
+        mon.update(100)
+        mon.update(90)  # 10% drawdown
+        assert mon.should_halt_rolling(Decimal("0.15")) is False
+
+    def test_halt_exactly_at_threshold(self, tmp_path):
+        mon = DrawdownMonitor(state_path=tmp_path / "dd.json", initial_balance=100)
+        mon.update(100)
+        mon.update(85)  # 15% drawdown exactly
+        assert mon.should_halt_rolling(Decimal("0.15")) is True
+
+    def test_halt_clears_after_new_peak(self, tmp_path):
+        mon = DrawdownMonitor(state_path=tmp_path / "dd.json", initial_balance=100)
+        mon.update(100)
+        mon.update(80)  # 20% dd → halt
+        assert mon.should_halt_rolling(Decimal("0.15")) is True
+        mon.update(110)  # new peak
+        assert mon.should_halt_rolling(Decimal("0.15")) is False

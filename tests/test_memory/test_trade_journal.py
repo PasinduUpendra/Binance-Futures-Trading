@@ -616,3 +616,121 @@ def test_update_trade_exit_win_rate(journal: TradeJournal) -> None:
         )
 
     assert journal.get_win_rate() == pytest.approx(0.75)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Audit fix regression tests
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestPnlPctFormula:
+    """F3: pnl_pct must be pnl / margin * 100, not pnl / entry_price * 100."""
+
+    def test_pnl_pct_uses_margin_not_entry_price(self, tmp_path: Path) -> None:
+        """A $5 PnL on $10 margin should be 50%, not 0.005%."""
+        journal = TradeJournal(db_path=tmp_path / "test.db")
+        journal.record_trade(
+            make_trade(
+                symbol="ETH/USDT:USDT",
+                entry_price=Decimal("2000"),
+                size=Decimal("0.05"),  # notional = 2000*0.05 = $100
+                leverage=10,           # margin = 100/10 = $10
+            )
+        )
+        journal.update_trade_exit(
+            symbol="ETH/USDT:USDT",
+            exit_price=Decimal("2100"),
+            pnl=Decimal("5"),         # $5 profit
+            pnl_pct=Decimal("50.0"),  # 5/10 * 100 = 50%
+        )
+        trades = journal.get_recent_trades(1)
+        assert len(trades) == 1
+        assert trades[0].pnl_pct == Decimal("50.0")
+
+
+class TestModeColumn:
+    """F5: mode column separates paper vs mainnet trades."""
+
+    def test_mode_column_populated(self, tmp_path: Path) -> None:
+        journal = TradeJournal(db_path=tmp_path / "test.db")
+        entry = TradeEntry(
+            symbol="BTC/USDT:USDT",
+            direction="long",
+            entry_price=Decimal("50000"),
+            size=Decimal("0.001"),
+            mode="mainnet",
+        )
+        journal.record_trade(entry)
+        trades = journal.get_recent_trades(1)
+        assert trades[0].mode == "mainnet"
+
+    def test_mode_column_migration(self, tmp_path: Path) -> None:
+        """Existing databases without mode column should get it via migration."""
+        import sqlite3
+        db_path = tmp_path / "legacy.db"
+        # Create legacy schema without mode column
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("""
+            CREATE TABLE trades (
+                trade_id TEXT PRIMARY KEY,
+                timestamp TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                entry_price TEXT NOT NULL,
+                exit_price TEXT,
+                size TEXT NOT NULL,
+                leverage INTEGER NOT NULL DEFAULT 1,
+                pnl TEXT, pnl_pct TEXT,
+                strategy TEXT DEFAULT '', regime TEXT DEFAULT '',
+                confidence TEXT DEFAULT '0',
+                stop_loss TEXT, take_profit TEXT,
+                duration REAL, fees TEXT DEFAULT '0',
+                slippage TEXT DEFAULT '0',
+                reasoning TEXT DEFAULT '', lessons TEXT DEFAULT ''
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+        # Opening TradeJournal should migrate
+        journal = TradeJournal(db_path=db_path)
+        # Should not raise
+        journal.record_trade(TradeEntry(
+            symbol="ETH/USDT:USDT",
+            direction="long",
+            entry_price=Decimal("2000"),
+            size=Decimal("0.1"),
+            mode="testnet",
+        ))
+        trades = journal.get_recent_trades(1)
+        assert trades[0].mode == "testnet"
+
+
+class TestSignalTagExitReason:
+    """R-B4: signal_tag and exit_reason columns for attribution."""
+
+    def test_signal_tag_persisted(self, tmp_path: Path) -> None:
+        journal = TradeJournal(db_path=tmp_path / "test.db")
+        entry = TradeEntry(
+            symbol="SOL/USDT:USDT",
+            direction="long",
+            entry_price=Decimal("150"),
+            size=Decimal("1"),
+            signal_tag="4h_flip",
+        )
+        journal.record_trade(entry)
+        trades = journal.get_recent_trades(1)
+        assert trades[0].signal_tag == "4h_flip"
+
+    def test_exit_reason_populated_on_update(self, tmp_path: Path) -> None:
+        journal = TradeJournal(db_path=tmp_path / "test.db")
+        journal.record_trade(make_trade(symbol="BTC/USDT:USDT"))
+        journal.update_trade_exit(
+            symbol="BTC/USDT:USDT",
+            exit_price=Decimal("21000"),
+            pnl=Decimal("100"),
+            pnl_pct=Decimal("5.0"),
+            reason="trailing_stop",
+        )
+        trades = journal.get_recent_trades(1)
+        assert trades[0].exit_reason == "trailing_stop"

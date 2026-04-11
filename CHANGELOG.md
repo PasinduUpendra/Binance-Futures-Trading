@@ -4,6 +4,107 @@ All notable changes to Claude Quant are documented here.
 
 ## [Unreleased]
 
+### 2026-04-11
+
+#### v6.22 — Signal Validation & R/R Boundary Fixes
+
+**Origin**: 5-hour live monitoring session (2026-04-10) detected 3 pre-existing issues across 10 clean cycles. All non-blocking (safety correctly rejected bad signals) but caused unnecessary WARNING noise and could reject valid signals at R/R=2.0 boundary. Startup SL/TP wipe bug also fixed during this session.
+
+##### Issue 1: Signal Validator Raw Data Mismatch (FIXED)
+
+Signal validator rejected ALL hourly-cycle signals because `raw_indicators` dict used wrong key names compared to `signal.indicators_used`. Root cause: column `supertrend_direction` in df didn't match signal's `supertrend_dir`; `close` was excluded; 1H indicators were never scanned.
+
+| Change | File | Line | Impact |
+|--------|------|------|--------|
+| Remove `close` from `excluded_cols` | `main.py` | ~988 | `close` value now available for cross-validation |
+| Add column→signal key aliases | `main.py` | ~997 | `supertrend_direction` → `supertrend_dir`, `supertrend_dir_4h` |
+| Add `prev_supertrend_dir` from penultimate row | `main.py` | ~1001 | Computed value now verifiable against raw data |
+| Scan `df_1h` columns for 1H indicators | `main.py` | ~1006 | `supertrend_dir_1h`, `rsi_1h`, `rsi_1h_min` available for continuation/fast/aligned signals |
+| Skip metadata keys in specificity check | `signal_validator.py` | ~178 | `entry_type`, `atr_source` no longer flagged as "vague/non-numeric" |
+| Skip metadata keys in value comparison | `signal_validator.py` | ~200 | Metadata keys not checked against raw data (they're not indicators) |
+
+##### Issue 2: R/R Float Boundary Rejection (FIXED)
+
+`if rr < 2.0` with float arithmetic could reject R/R = 1.9999 when TP = 2×SL exactly (e.g. SL=3×ATR, TP=6×ATR). Affected LINK/USDT:USDT and SUI/USDT:USDT during monitoring.
+
+| Change | File | Impact |
+|--------|------|--------|
+| Added `MIN_RR = 2.0 - 1e-9` class constant | `supertrend_trend.py` | Epsilon tolerance prevents float boundary rejection |
+| Changed `if rr < 2.0` to `if rr < self.MIN_RR` (4 sites: L208, L404, L603, L843) | `supertrend_trend.py` | All signal types (flip, continuation, fast, aligned) use epsilon |
+| Added Decimal epsilon in validator | `signal_validator.py` | `rr < min_rr - 0.0001` instead of strict `<` |
+
+##### Issue 3: AVAX Confidence Declining (NOT A BUG)
+
+AVAX confidence declining (53.1% → 46.4% → 39.8%) is normal market behavior: ADX is dropping toward the 18.0 threshold. These are aligned-trend signals (base=20, max=55) where confidence tracks ADX linearly. When ADX drops to ~18, confidence drops to ~30. Below 25% = no signal generated. This is the system working as designed.
+
+##### Startup SL/TP Wipe Bug (FIXED — during monitoring session)
+
+Critical safety bug: startup code at `main.py:307-321` cancelled ALL open orders on ALL pairs including SL/TP protecting active positions. After cancellation, reconciliation failed to re-place them (Binance -2021 "would immediately trigger"). Fixed by building `protected_symbols` set from `_detect_preexisting_positions()` and skipping cancel for protected pairs.
+
+##### Test Coverage
+
+| Tests Added | File | Coverage |
+|-------------|------|----------|
+| `test_rr_exactly_2_0_passes_flip` | `test_supertrend_trend.py` | R/R=2.0 flip signal accepted |
+| `test_rr_at_boundary_with_tiny_float_drift` | `test_supertrend_trend.py` | Float drift near 2.0 boundary |
+| `test_min_rr_constant` | `test_supertrend_trend.py` | Epsilon constant value |
+| `test_entry_type_skipped` | `test_signal_validator.py` | Metadata keys not flagged |
+| `test_metadata_keys_not_in_indicator_checks` | `test_signal_validator.py` | Metadata not in checks dict |
+| `test_rr_exactly_2_0_passes` (Decimal) | `test_signal_validator.py` | R/R=2.0 passes in validator |
+| `test_rr_just_below_2_0_fails` | `test_signal_validator.py` | R/R=1.5 still fails |
+
+**Tests**: 638 passed, 3 warnings (up from 631)
+
+### 2026-04-10
+
+#### v6.21 — Forensic Audit Completion (4 Material Gaps Fixed)
+
+**Origin**: External forensic audit (audit/synthetic-puzzling-cray.md) identified 4 material gaps in the v6.20 fixes: (1) F1/F2 audit gate hardcoded validator results, (2) F7 fee rate lacked live source, (3) R-A3 trailing stop was dead code, (4) R-A5 post-only entry was dead code. All four are now fully wired and integration-tested.
+
+##### F1/F2: Anti-Hallucination Validators Wired
+
+| Change | File | Impact |
+|--------|------|--------|
+| **PriceValidator.validate_price() called before audit** | `main.py:949` | Entry price cross-referenced against exchange ticker (24h range, 1% deviation, staleness). Result flows into audit `price_validated` field — no longer hardcoded True. |
+| **SignalValidator.validate_signal() called before audit** | `main.py:965-1009` | Signal indicators cross-validated against raw 4H dataframe values. R/R ratio verified. Result flows into audit `signal_validated` field. |
+| **Audit REJECT blocks execution** | `main.py:1064-1076` | Integration test proves: mocked REJECT → returns None, place_market_order never called. |
+| **vars() fallback for signal dict** | `main.py:1022` | Fixed `dict(SimpleNamespace)` crash — uses `vars()` for non-Pydantic signal objects. |
+
+##### F7: Live Commission Rate at Startup
+
+| Change | File | Impact |
+|--------|------|--------|
+| **fetch_commission_rate() added** | `market_data.py:317` | Calls `GET /fapi/v1/commissionRate` via ccxt `fapiPrivateGetCommissionRate`. Returns account-specific maker/taker rates. |
+| **_configure_fee_calculator() queries live rates** | `main.py:1385-1410` | At startup, queries Binance for real rates. Falls back to VIP-0 defaults (maker=0.0002, taker=0.0005) on error. No more silent drift if VIP tier changes. |
+| **Durable citation**: Verified 2026-04-10 via `fapiPrivateGetCommissionRate({'symbol': 'BTCUSDT'})`: taker=0.000500, maker=0.000200. Matches VIP-0 schedule. Previously verified 2026-03-13 (LEARNINGS.md LRN-20260313-002). |
+
+##### R-A3: Native Trailing Stop Wired
+
+| Change | File | Impact |
+|--------|------|--------|
+| **place_trailing_stop_market() called post-entry** | `main.py:1325-1360` | After SL+TP placement, places TRAILING_STOP_MARKET on Binance with callback_rate = 2.5×ATR/price×100 and activation_price = entry ± 2.0×ATR. Survives bot crashes (exchange-native). Non-blocking on failure. |
+| **Local Python trail retained as primary** | `main.py` | Local `_manage_trailing_stops()` remains the active trail (tighter parameters, more control). Native Binance trail is a safety net — catches crashes between 30-min cycles. |
+
+##### R-A5: Maker-First Entry with Taker Fallback
+
+| Change | File | Impact |
+|--------|------|--------|
+| **Post-only LIMIT at best bid/ask** | `main.py:1128-1172` | Before market order, tries GTX limit at best bid (buy) or ask (sell). Waits 5s for fill. Saves 0.03% per fill (0.02% maker vs 0.05% taker). |
+| **Fallback to market** | `main.py:1174-1178` | If post-only rejected or unfilled after 5s, cancels limit and places market order. Logged as filled_via="maker" or "market" in trade_details. |
+| **Orderbook variable scoped** | `main.py:1082` | `orderbook = None` initialized before try block — prevents UnboundLocalError in execute section when slippage check fails. |
+
+##### Tests: 630 passed (was 623)
+
+| Test | File | Covers |
+|------|------|--------|
+| `test_audit_reject_blocks_execution` | `test_orchestrator_fixes.py` | F1/F2: REJECT → None, market order never called |
+| `test_validators_called_and_results_flow_into_audit` | `test_orchestrator_fixes.py` | F1/F2: validators invoked, real results in audit kwargs |
+| `test_configure_fee_calculator_uses_live_rates` | `test_orchestrator_state.py` | F7: API rates override defaults |
+| `test_configure_fee_calculator_falls_back_on_api_error` | `test_orchestrator_state.py` | F7: graceful fallback on API error |
+| `test_native_trailing_stop_placed_on_new_position` | `test_orchestrator_fixes.py` | R-A3: trailing stop called with correct callback/activation |
+| `test_post_only_limit_fills_uses_maker` | `test_orchestrator_fixes.py` | R-A5: post-only fills → no market order |
+| `test_post_only_unfilled_falls_back_to_market` | `test_orchestrator_fixes.py` | R-A5: unfilled post-only → cancel → market |
+
 ### 2026-04-10
 
 #### v6.20 — Position Management Overhaul (Fix v6.19 Deadlock)
