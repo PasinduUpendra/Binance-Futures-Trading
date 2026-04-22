@@ -882,7 +882,8 @@ class OrderManager:
         -------
         OrderResult | None
         """
-        callback_rate = max(0.1, min(5.0, callback_rate))
+        # Binance requires callback_rate with at most 1 decimal place
+        callback_rate = round(max(0.1, min(5.0, callback_rate)), 1)
         extra_params: dict[str, Any] = {
             "callbackRate": callback_rate,
             "reduceOnly": True,

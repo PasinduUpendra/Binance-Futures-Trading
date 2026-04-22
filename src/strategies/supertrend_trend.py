@@ -379,10 +379,9 @@ class SupertrendTrend(BaseStrategy):
             else SignalDirection.SHORT
         )
 
-        # Entry / SL / TP — use 1H ATR for continuation entries (tighter
-        # stops matching the 1H entry timeframe).  4H ATR is 2.1-2.5x wider
-        # and creates swing-trade level risk for what is an intra-trend entry.
-        atr = self._safe_last(df_1h[self.COL_ATR])
+        # Entry / SL / TP — use 4H ATR (matches backtest; 1H ATR is 2-7x
+        # tighter and causes premature stop-outs from normal price noise)
+        atr = self._safe_last(df_4h[self.COL_ATR])
         close = float(df_1h["close"].dropna().iloc[-1])
 
         if np.isnan(atr):
@@ -445,7 +444,7 @@ class SupertrendTrend(BaseStrategy):
             "ema_21": round(ema21, 6) if not np.isnan(ema21) else None,
             "rsi": round(rsi, 2) if not np.isnan(rsi) else None,
             "atr": round(atr, 6),
-            "atr_source": "1h",
+            "atr_source": "4h",
             "close": round(close, 6),
             "entry_type": "continuation",
         }
@@ -512,7 +511,7 @@ class SupertrendTrend(BaseStrategy):
         15m Supertrend flip in the same direction. Lower confidence ceiling
         (70) than 1H continuation (80) and 4H flip (100).
 
-        Uses 15m ATR for SL/TP (tightest stops, matching the entry timeframe).
+        Uses 4H ATR for SL/TP (matching the risk timeframe, not the entry timeframe).
         """
         try:
             self._validate(df_4h)
@@ -580,12 +579,13 @@ class SupertrendTrend(BaseStrategy):
             else SignalDirection.SHORT
         )
 
-        # Entry / SL / TP — use 15m ATR (tightest stops for fast entries)
-        atr = self._safe_last(df_15m[self.COL_ATR])
+        # Entry / SL / TP — use 4H ATR (matches backtest; 15m ATR is 5-10x
+        # tighter and causes premature stop-outs from normal price noise)
+        atr = self._safe_last(df_4h[self.COL_ATR])
         close = float(df_15m["close"].dropna().iloc[-1])
 
         if np.isnan(atr):
-            return self._no_signal("15m ATR is NaN")
+            return self._no_signal("4H ATR is NaN for fast entry")
 
         sl_mult, tp_mult = self._get_sl_tp_mults(regime)
         sl_distance = atr * sl_mult
@@ -625,7 +625,7 @@ class SupertrendTrend(BaseStrategy):
             f"({flip_age} bar(s) ago). "
             f"ADX={adx:.1f}. "
             f"SL={stop_loss:.6f}, TP={take_profit:.6f}, R/R={rr:.2f}. "
-            f"ATR source: 15m. Confidence: {confidence:.0f}%."
+            f"ATR source: 4h. Confidence: {confidence:.0f}%."
         )
 
         indicators_snapshot = {
@@ -635,7 +635,7 @@ class SupertrendTrend(BaseStrategy):
             "flip_age_15m": flip_age,
             "adx": round(adx, 2),
             "atr": round(atr, 6),
-            "atr_source": "15m",
+            "atr_source": "4h",
             "close": round(close, 6),
             "entry_type": "fast_15m",
         }
@@ -718,7 +718,7 @@ class SupertrendTrend(BaseStrategy):
         - Volume near or above average
 
         Lower confidence ceiling (55) — this is a late momentum entry, not
-        a fresh flip or continuation.  Uses 1H ATR for SL/TP.
+        a fresh flip or continuation.  Uses 4H ATR for SL/TP.
         """
         try:
             self._validate(df_4h)
@@ -820,12 +820,13 @@ class SupertrendTrend(BaseStrategy):
             else SignalDirection.SHORT
         )
 
-        # Entry / SL / TP — use 1H ATR
-        atr = self._safe_last(df_1h[self.COL_ATR])
+        # Entry / SL / TP — use 4H ATR (matches backtest; 1H ATR is 2-7x
+        # tighter and causes premature stop-outs from normal price noise)
+        atr = self._safe_last(df_4h[self.COL_ATR])
         close = float(df_1h["close"].dropna().iloc[-1])
 
         if np.isnan(atr):
-            return self._no_signal("1H ATR is NaN for aligned entry")
+            return self._no_signal("4H ATR is NaN for aligned entry")
 
         sl_mult, tp_mult = self._get_sl_tp_mults(regime)
         sl_distance = atr * sl_mult
@@ -873,7 +874,7 @@ class SupertrendTrend(BaseStrategy):
             "rsi_1h": round(current_rsi, 2),
             "rsi_1h_min": round(float(recent_rsi.min()), 2),
             "atr": round(atr, 6),
-            "atr_source": "1h",
+            "atr_source": "4h",
             "close": round(close, 6),
             "entry_type": "aligned_trend",
         }

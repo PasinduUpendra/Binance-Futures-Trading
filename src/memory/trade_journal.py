@@ -543,9 +543,32 @@ class TradeJournal:
         )
         row = cursor.fetchone()
         if row is None:
+            # No matching open trade — create a standalone exit-only record
+            # so the exit data is preserved for P&L tracking.
             logger.warning(
                 "UPDATE_TRADE_EXIT: No open trade found for %s — "
-                "exit data will be lost", symbol,
+                "creating standalone exit record", symbol,
+            )
+            standalone = TradeEntry(
+                symbol=symbol,
+                direction="unknown",
+                entry_price=Decimal("0"),
+                exit_price=exit_price,
+                size=Decimal("0"),
+                pnl=pnl,
+                pnl_pct=pnl_pct,
+                duration=duration,
+                fees=fees,
+                exit_reason=reason,
+                mode=os.environ.get("BINANCE_TESTNET", "true").lower() == "true"
+                and "testnet" or "mainnet",
+            )
+            params = self._trade_to_params(standalone)
+            conn.execute(_INSERT_TRADE, params)
+            conn.commit()
+            logger.info(
+                "TRADE_EXIT_STANDALONE trade_id=%s symbol=%s pnl=%s reason=%s",
+                standalone.trade_id, symbol, pnl, reason,
             )
             return False
 

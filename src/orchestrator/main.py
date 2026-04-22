@@ -512,7 +512,9 @@ class Orchestrator:
                 pair_data_4h, result, balance
             )
         except Exception as e:
-            logger.error(f"Supertrend reversal exit check failed: {e}")
+            logger.error(
+                "Supertrend reversal exit check failed: %s", e, exc_info=True,
+            )
             errors.append(f"ST reversal: {e}")
 
         # ─── Step 2b: Trailing Stop Management ───
@@ -1560,19 +1562,26 @@ class Orchestrator:
                 # v6.20: Deduplicate — if SL is already at breakeven, skip
                 # redundant cancel+replace cycle. The monitoring session showed
                 # SUI reversal exit triggering 7 times with ~35 wasted API calls.
-                existing_orders = await self.order_manager.get_open_orders(
-                    pos.symbol, conditional_only=True,
-                )
                 sl_already_at_breakeven = False
-                for order in existing_orders:
-                    otype = order.order_type if hasattr(order, "order_type") else ""
-                    sprice = order.stop_price if hasattr(order, "stop_price") else None
-                    if otype.lower() in ("stop_market", "stop") and sprice is not None:
-                        sl_price = float(sprice)
-                        # Within 0.1% of entry = already at breakeven
-                        if abs(sl_price - entry_price) / entry_price < 0.001:
-                            sl_already_at_breakeven = True
-                            break
+                try:
+                    existing_orders = await self.order_manager.get_open_orders(
+                        pos.symbol, conditional_only=True,
+                    )
+                    for order in existing_orders:
+                        otype = getattr(order, "order_type", "") or ""
+                        sprice = getattr(order, "stop_price", None)
+                        if otype.lower() in ("stop_market", "stop") and sprice is not None:
+                            sl_price = float(sprice)
+                            # Within 0.1% of entry = already at breakeven
+                            if abs(sl_price - entry_price) / entry_price < 0.001:
+                                sl_already_at_breakeven = True
+                                break
+                except Exception as dedup_err:
+                    logger.warning(
+                        "ST reversal: deduplication check failed for %s: %s "
+                        "— proceeding with SL tightening",
+                        pos.symbol, dedup_err,
+                    )
 
                 if sl_already_at_breakeven:
                     logger.debug(
