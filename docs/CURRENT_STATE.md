@@ -226,3 +226,62 @@ Additional gates enforced in `is_trading_allowed`:
 ## 10. The One-Line Summary
 
 **Single-process Python bot, mainnet, 8 alt pairs, 30-min polling + 4H WS triggers, 1 primary strategy + 2 auxiliary routes, multi-level signal cascade, SQLite-only state, zero production monitoring, zero live attribution telemetry, docs lag code by 3–6 weeks.**
+
+---
+
+## 11. Phase 1C — Forensic Reporting Layer (added 2026-04-22)
+
+Purely additive instrumentation; no live execution path was modified.
+
+### New files
+
+| File | Purpose |
+|---|---|
+| [`src/reporting/forensic_queries.py`](../src/reporting/forensic_queries.py) | 12 canonical SQL query constants (`Q1`–`Q12`) + `ForensicQueries` class (read-only, never raises) |
+| [`src/reporting/attribution_report.py`](../src/reporting/attribution_report.py) | `AttributionReporter` — writes `docs/reports/YYYY-MM-DD-attribution.md` from live DB; 10 Markdown sections |
+| [`scripts/gen_attribution_report.py`](../scripts/gen_attribution_report.py) | CLI: `--date`, `--db`, `--stdout`, `--reports-dir` |
+
+### New SQL views in `database.py` (`_VIEWS_FORENSIC`)
+
+| View | Query |
+|---|---|
+| `v_cascade_expectancy` | Avg PnL / win rate / count by `cascade_level` |
+| `v_regime_expectancy` | Avg PnL / fees / funding by `regime_at_entry` |
+| `v_maker_taker_pnl` | Avg gross/net PnL by `maker_entry` |
+| `v_exit_reason_mix` | Count / avg PnL / win rate by `exit_reason_enum` |
+| `v_symbol_pnl` | Total PnL / fees / funding by `symbol` |
+| `v_confidence_bucket_wr` | Win rate / avg PnL by `confidence_bucket` |
+
+All views use `CREATE VIEW IF NOT EXISTS` and `CAST(pnl AS REAL)` — safe on existing production DB.
+
+### Watchdog drift cleanup
+
+Removed all 5 stale `0.628%` references from `.claude/agents/watchdog.md`. See [DRIFT_MAP.md §5](DRIFT_MAP.md) for details.
+
+### Tests added
+
+74 new tests in `tests/test_reporting/` — all passing, zero regressions in the full suite (802 passing).
+
+### How to use
+
+```bash
+# Generate today's attribution report
+.venv/bin/python scripts/gen_attribution_report.py
+
+# Preview without writing
+.venv/bin/python scripts/gen_attribution_report.py --stdout
+
+# Specific date
+.venv/bin/python scripts/gen_attribution_report.py --date 2026-04-22
+
+# Verify views exist
+sqlite3 user_data/claude_quant.db ".schema v_cascade_expectancy"
+```
+
+### Open items for Phase 2
+
+1. Wire `DecisionLogger` into every cycle step so `decision_log` table is actually populated
+2. Populate `fill_events` table from execution path on trade placement
+3. Populate `exit_reason_enum` on every position close (tp_hit / sl_hit / trail / time_exit / manual)
+4. Populate `funding_usd` from Binance 8h funding settlements
+5. Q5 (slippage) and Q10–Q11 (filter impact) will remain empty until items 1–4 are wired

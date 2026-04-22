@@ -280,6 +280,83 @@ FROM decision_log
 GROUP BY cycle_id, stage;
 """
 
+# ---------------------------------------------------------------------------
+# Phase 1C: Canonical forensic views (queries 2–12 from LIVE_FORENSICS_SPEC §4)
+# All views are CREATE VIEW IF NOT EXISTS so they are idempotent.
+# ---------------------------------------------------------------------------
+
+_VIEWS_FORENSIC = """
+CREATE VIEW IF NOT EXISTS v_cascade_expectancy AS
+SELECT
+    cascade_level,
+    COUNT(*)                                                                   AS n,
+    AVG(CAST(pnl AS REAL))                                                     AS avg_pnl,
+    SUM(CASE WHEN CAST(pnl AS REAL) > 0 THEN 1.0 ELSE 0 END) / COUNT(*)       AS win_rate,
+    SUM(CAST(pnl AS REAL))                                                     AS total_pnl
+FROM trades
+WHERE pnl IS NOT NULL AND cascade_level != ''
+GROUP BY cascade_level;
+
+CREATE VIEW IF NOT EXISTS v_regime_expectancy AS
+SELECT
+    regime_at_entry,
+    COUNT(*)                                                                   AS n,
+    AVG(CAST(pnl AS REAL))                                                     AS avg_pnl,
+    AVG(CAST(fees_usd AS REAL))                                                AS avg_fees,
+    AVG(CAST(funding_usd AS REAL))                                             AS avg_funding,
+    SUM(CAST(pnl AS REAL))                                                     AS total_pnl
+FROM trades
+WHERE pnl IS NOT NULL
+GROUP BY regime_at_entry;
+
+CREATE VIEW IF NOT EXISTS v_maker_taker_pnl AS
+SELECT
+    maker_entry,
+    COUNT(*)                                                                   AS n,
+    AVG(CAST(pnl AS REAL) - CAST(fees_usd AS REAL))                            AS avg_net_pnl,
+    AVG(CAST(fees_usd AS REAL))                                                AS avg_fees,
+    AVG(CAST(pnl AS REAL))                                                     AS avg_gross_pnl
+FROM trades
+WHERE pnl IS NOT NULL
+GROUP BY maker_entry;
+
+CREATE VIEW IF NOT EXISTS v_exit_reason_mix AS
+SELECT
+    exit_reason_enum,
+    COUNT(*)                                                                   AS n,
+    AVG(CAST(pnl AS REAL))                                                     AS avg_pnl,
+    SUM(CASE WHEN CAST(pnl AS REAL) > 0 THEN 1.0 ELSE 0 END) / COUNT(*)       AS win_rate,
+    SUM(CAST(pnl AS REAL))                                                     AS total_pnl
+FROM trades
+WHERE pnl IS NOT NULL
+GROUP BY exit_reason_enum;
+
+CREATE VIEW IF NOT EXISTS v_symbol_pnl AS
+SELECT
+    symbol,
+    COUNT(*)                                                                   AS n,
+    SUM(CAST(pnl AS REAL))                                                     AS total_pnl,
+    SUM(CAST(fees_usd AS REAL))                                                AS total_fees,
+    SUM(CAST(funding_usd AS REAL))                                             AS total_funding,
+    SUM(CAST(pnl AS REAL))
+        - SUM(CAST(fees_usd AS REAL))
+        + SUM(CAST(funding_usd AS REAL))                                       AS gross_edge_pnl
+FROM trades
+WHERE pnl IS NOT NULL
+GROUP BY symbol;
+
+CREATE VIEW IF NOT EXISTS v_confidence_bucket_wr AS
+SELECT
+    confidence_bucket,
+    COUNT(*)                                                                   AS n,
+    SUM(CASE WHEN CAST(pnl AS REAL) > 0 THEN 1.0 ELSE 0 END) / COUNT(*)       AS win_rate,
+    AVG(CAST(pnl AS REAL))                                                     AS avg_pnl,
+    SUM(CAST(pnl AS REAL))                                                     AS total_pnl
+FROM trades
+WHERE pnl IS NOT NULL
+GROUP BY confidence_bucket;
+"""
+
 _INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
@@ -353,6 +430,7 @@ class DatabaseManager:
             + _SCHEMA_FILL_EVENTS
             + _INDEXES
             + _VIEW_CYCLE_FUNNEL
+            + _VIEWS_FORENSIC
         )
         conn.commit()
         self._run_migrations(conn)

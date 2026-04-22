@@ -80,8 +80,8 @@ All 9 agent files were last written **2026-03-15** (`ls -la .claude/agents/`). S
 
 | File | Stale reference | Reality |
 |---|---|---|
-| `watchdog.md` L9, L97, L124, L145 | "0.628% validated ceiling" | Ceiling is unverified on current code; closest backtest (v6.16) is 2.68% |
-| `watchdog.md` L44 | `performance` CLI returns `target_gap` vs 0.628% | Tool was designed for a different strategy generation |
+| `watchdog.md` L9, L97, L124, L145 | "0.628% validated ceiling" | **RESOLVED 2026-04-22 (Phase 1C)** — All 5 stale `0.628%` references removed; replaced with direction to `docs/CURRENT_STATE.md`. |
+| `watchdog.md` L44 | `performance` CLI returns `target_gap` vs 0.628% | **RESOLVED 2026-04-22 (Phase 1C)** — Threshold replaced with "negative 3+ consecutive days" guard. |
 | `orchestrator.md`, `sentinel.md`, etc. | Describe the bot as a Claude-agent-conducted multi-agent system | Orchestrator is a direct Python class (`src/orchestrator/main.py::Orchestrator`); these agents are not driving any code path |
 | All 8 non-watchdog agent stubs | 1–3 KB, no concrete tool list | Skeletons; not operationally used |
 
