@@ -66,6 +66,21 @@ class TradeEntry(BaseModel):
         default="",
         description="Exit reason: e.g. 'sl_hit', 'tp_hit', 'trailing_stop', 'reversal', 'time_exit'",
     )
+    # Phase 1B: per-trade attribution fields
+    cascade_level: str = ""
+    confidence_bucket: str = ""
+    regime_at_entry: str = ""
+    atr_at_entry: str = "0"
+    entry_slippage_bps: float = 0.0
+    exit_slippage_bps: float = 0.0
+    maker_entry: int = 0
+    maker_exit: int = 0
+    fees_usd: str = "0"
+    funding_usd: str = "0"
+    hold_bars: int = 0
+    exit_reason_enum: str = ""
+    consensus_adj: float = 0.0
+    funding_adj: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +111,21 @@ CREATE TABLE IF NOT EXISTS trades (
     lessons TEXT DEFAULT '',
     mode TEXT DEFAULT '',
     signal_tag TEXT DEFAULT '',
-    exit_reason TEXT DEFAULT ''
+    exit_reason TEXT DEFAULT '',
+    cascade_level TEXT DEFAULT '',
+    confidence_bucket TEXT DEFAULT '',
+    regime_at_entry TEXT DEFAULT '',
+    atr_at_entry TEXT DEFAULT '0',
+    entry_slippage_bps REAL DEFAULT 0,
+    exit_slippage_bps REAL DEFAULT 0,
+    maker_entry INTEGER DEFAULT 0,
+    maker_exit INTEGER DEFAULT 0,
+    fees_usd TEXT DEFAULT '0',
+    funding_usd TEXT DEFAULT '0',
+    hold_bars INTEGER DEFAULT 0,
+    exit_reason_enum TEXT DEFAULT '',
+    consensus_adj REAL DEFAULT 0,
+    funding_adj REAL DEFAULT 0
 );
 """
 
@@ -112,12 +141,20 @@ INSERT OR REPLACE INTO trades (
     trade_id, timestamp, symbol, direction, entry_price, exit_price,
     size, leverage, pnl, pnl_pct, strategy, regime, confidence,
     stop_loss, take_profit, duration, fees, slippage, reasoning, lessons,
-    mode, signal_tag, exit_reason
+    mode, signal_tag, exit_reason,
+    cascade_level, confidence_bucket, regime_at_entry, atr_at_entry,
+    entry_slippage_bps, exit_slippage_bps, maker_entry, maker_exit,
+    fees_usd, funding_usd, hold_bars, exit_reason_enum,
+    consensus_adj, funding_adj
 ) VALUES (
     :trade_id, :timestamp, :symbol, :direction, :entry_price, :exit_price,
     :size, :leverage, :pnl, :pnl_pct, :strategy, :regime, :confidence,
     :stop_loss, :take_profit, :duration, :fees, :slippage, :reasoning, :lessons,
-    :mode, :signal_tag, :exit_reason
+    :mode, :signal_tag, :exit_reason,
+    :cascade_level, :confidence_bucket, :regime_at_entry, :atr_at_entry,
+    :entry_slippage_bps, :exit_slippage_bps, :maker_entry, :maker_exit,
+    :fees_usd, :funding_usd, :hold_bars, :exit_reason_enum,
+    :consensus_adj, :funding_adj
 );
 """
 
@@ -167,6 +204,21 @@ def _row_to_trade_entry(row: dict[str, Any]) -> TradeEntry:
         mode=row.get("mode", ""),
         signal_tag=row.get("signal_tag", ""),
         exit_reason=row.get("exit_reason", ""),
+        # Phase 1B attribution fields (default-safe for old rows)
+        cascade_level=row.get("cascade_level", "") or "",
+        confidence_bucket=row.get("confidence_bucket", "") or "",
+        regime_at_entry=row.get("regime_at_entry", "") or "",
+        atr_at_entry=row.get("atr_at_entry", "0") or "0",
+        entry_slippage_bps=float(row.get("entry_slippage_bps") or 0),
+        exit_slippage_bps=float(row.get("exit_slippage_bps") or 0),
+        maker_entry=int(row.get("maker_entry") or 0),
+        maker_exit=int(row.get("maker_exit") or 0),
+        fees_usd=row.get("fees_usd", "0") or "0",
+        funding_usd=row.get("funding_usd", "0") or "0",
+        hold_bars=int(row.get("hold_bars") or 0),
+        exit_reason_enum=row.get("exit_reason_enum", "") or "",
+        consensus_adj=float(row.get("consensus_adj") or 0),
+        funding_adj=float(row.get("funding_adj") or 0),
     )
 
 
@@ -216,16 +268,35 @@ class TradeJournal:
         """Create the database schema if it doesn't exist."""
         conn = self._get_conn()
         conn.executescript(_CREATE_TABLE + _CREATE_INDEXES)
-        # Migrate: add 'mode' column if missing (older databases)
+        # Migrate: add columns if missing (older databases)
         cursor = conn.execute("PRAGMA table_info(trades)")
         columns = {row[1] for row in cursor.fetchall()}
-        if "mode" not in columns:
-            conn.execute("ALTER TABLE trades ADD COLUMN mode TEXT DEFAULT ''")
-        if "signal_tag" not in columns:
-            conn.execute("ALTER TABLE trades ADD COLUMN signal_tag TEXT DEFAULT ''")
-        if "exit_reason" not in columns:
-            conn.execute("ALTER TABLE trades ADD COLUMN exit_reason TEXT DEFAULT ''")
-        conn.commit()
+        _COLUMN_DEFS = [
+            ("mode",               "TEXT DEFAULT ''"),
+            ("signal_tag",         "TEXT DEFAULT ''"),
+            ("exit_reason",        "TEXT DEFAULT ''"),
+            ("cascade_level",      "TEXT DEFAULT ''"),
+            ("confidence_bucket",  "TEXT DEFAULT ''"),
+            ("regime_at_entry",    "TEXT DEFAULT ''"),
+            ("atr_at_entry",       "TEXT DEFAULT '0'"),
+            ("entry_slippage_bps", "REAL DEFAULT 0"),
+            ("exit_slippage_bps",  "REAL DEFAULT 0"),
+            ("maker_entry",        "INTEGER DEFAULT 0"),
+            ("maker_exit",         "INTEGER DEFAULT 0"),
+            ("fees_usd",           "TEXT DEFAULT '0'"),
+            ("funding_usd",        "TEXT DEFAULT '0'"),
+            ("hold_bars",          "INTEGER DEFAULT 0"),
+            ("exit_reason_enum",   "TEXT DEFAULT ''"),
+            ("consensus_adj",      "REAL DEFAULT 0"),
+            ("funding_adj",        "REAL DEFAULT 0"),
+        ]
+        added: list[str] = []
+        for col_name, col_def in _COLUMN_DEFS:
+            if col_name not in columns:
+                conn.execute(f"ALTER TABLE trades ADD COLUMN {col_name} {col_def}")
+                added.append(col_name)
+        if added:
+            conn.commit()
 
     def _get_conn(self) -> sqlite3.Connection:
         """Get or create the SQLite connection."""
@@ -269,15 +340,35 @@ class TradeJournal:
             "mode": entry.mode,
             "signal_tag": entry.signal_tag,
             "exit_reason": entry.exit_reason,
+            "cascade_level": entry.cascade_level,
+            "confidence_bucket": entry.confidence_bucket,
+            "regime_at_entry": entry.regime_at_entry,
+            "atr_at_entry": entry.atr_at_entry,
+            "entry_slippage_bps": entry.entry_slippage_bps,
+            "exit_slippage_bps": entry.exit_slippage_bps,
+            "maker_entry": entry.maker_entry,
+            "maker_exit": entry.maker_exit,
+            "fees_usd": entry.fees_usd,
+            "funding_usd": entry.funding_usd,
+            "hold_bars": entry.hold_bars,
+            "exit_reason_enum": entry.exit_reason_enum,
+            "consensus_adj": entry.consensus_adj,
+            "funding_adj": entry.funding_adj,
         }
 
     # -- public API ----------------------------------------------------------
 
-    def record_trade_entry(self, data: dict[str, Any]) -> None:
+    def record_trade_entry(self, data: dict[str, Any]) -> str:
         """Record a trade from a raw dict (as produced by the orchestrator).
 
         Maps orchestrator keys (``pair``, ``direction``, …) to
         :class:`TradeEntry` fields and delegates to :meth:`record_trade`.
+
+        Returns
+        -------
+        str
+            The ``trade_id`` that was persisted.  Callers use this as a FK
+            when inserting ``fill_events`` rows.
         """
         # Auto-detect mode from env if not provided
         mode = data.get("mode", "")
@@ -297,8 +388,19 @@ class TradeJournal:
             confidence=Decimal(str(data.get("confidence", 0))),
             mode=mode,
             signal_tag=str(data.get("signal_tag", data.get("trigger", ""))),
+            # Phase 1B attribution fields
+            cascade_level=str(data.get("cascade_level", "")),
+            confidence_bucket=str(data.get("confidence_bucket", "")),
+            regime_at_entry=str(data.get("regime_at_entry", "")),
+            atr_at_entry=str(data.get("atr_at_entry", "0")),
+            entry_slippage_bps=float(data.get("entry_slippage_bps", 0.0)),
+            maker_entry=int(data.get("maker_entry", 0)),
+            fees_usd=str(data.get("fees_usd", "0")),
+            consensus_adj=float(data.get("consensus_adj", 0.0)),
+            funding_adj=float(data.get("funding_adj", 0.0)),
         )
         self.record_trade(entry)
+        return entry.trade_id
 
     def record_trade(self, entry: TradeEntry) -> None:
         """Record a trade to the journal.
@@ -513,7 +615,11 @@ class TradeJournal:
         duration: float | None = None,
         fees: Decimal = Decimal("0"),
         reason: str = "",
-    ) -> bool:
+        hold_bars: int | None = None,
+        exit_reason_enum: str = "",
+        exit_slippage_bps: float = 0.0,
+        maker_exit: int = 0,
+    ) -> str | None:
         """Update the most recent open trade for *symbol* with exit data.
 
         Finds the most recent trade for the symbol that has no ``exit_price``
@@ -537,11 +643,22 @@ class TradeJournal:
         reason : str
             Exit reason (e.g. ``trailing_stop``, ``time_exit``,
             ``sl_tp_fire``).
+        hold_bars : int | None
+            Number of 1H bars held.  Defaults to ``int(duration)`` if
+            *duration* is provided, else 0.
+        exit_reason_enum : str
+            Canonical exit reason enum value (e.g. 'trail', 'time_exit',
+            'reversal', 'sl_hit', 'tp_hit').
+        exit_slippage_bps : float
+            Exit slippage in basis points (signed; positive = overpaid).
+        maker_exit : int
+            1 if the exit fill was a maker fill, 0 if taker.
 
         Returns
         -------
-        bool
-            True if a matching trade was found and updated.
+        str | None
+            The ``trade_id`` of the updated row, or ``None`` if no matching
+            open trade was found (standalone record created instead).
         """
         conn = self._get_conn()
 
@@ -563,6 +680,7 @@ class TradeJournal:
                 "UPDATE_TRADE_EXIT: No open trade found for %s — "
                 "creating standalone exit record", symbol,
             )
+            _hold = hold_bars if hold_bars is not None else (int(duration) if duration else 0)
             standalone = TradeEntry(
                 symbol=symbol,
                 direction="unknown",
@@ -574,6 +692,10 @@ class TradeJournal:
                 duration=duration,
                 fees=fees,
                 exit_reason=reason,
+                hold_bars=_hold,
+                exit_reason_enum=exit_reason_enum,
+                exit_slippage_bps=exit_slippage_bps,
+                maker_exit=maker_exit,
                 mode=os.environ.get("BINANCE_TESTNET", "true").lower() == "true"
                 and "testnet" or "mainnet",
             )
@@ -585,20 +707,25 @@ class TradeJournal:
                 "TRADE_EXIT_STANDALONE trade_id=%s symbol=%s pnl=%s reason=%s",
                 standalone.trade_id, symbol, pnl, reason,
             )
-            return False
+            return None
 
         trade_id = row["trade_id"]
+        _hold_val = hold_bars if hold_bars is not None else (int(duration) if duration else 0)
 
         conn.execute(
             """
             UPDATE trades
-            SET exit_price = ?,
-                pnl = ?,
-                pnl_pct = ?,
-                duration = ?,
-                fees = ?,
-                lessons = ?,
-                exit_reason = ?
+            SET exit_price        = ?,
+                pnl               = ?,
+                pnl_pct           = ?,
+                duration          = ?,
+                fees              = ?,
+                lessons           = ?,
+                exit_reason       = ?,
+                hold_bars         = ?,
+                exit_reason_enum  = ?,
+                exit_slippage_bps = ?,
+                maker_exit        = ?
             WHERE trade_id = ?
             """,
             (
@@ -609,6 +736,10 @@ class TradeJournal:
                 str(fees),
                 reason,
                 reason,
+                _hold_val,
+                exit_reason_enum,
+                exit_slippage_bps,
+                maker_exit,
                 trade_id,
             ),
         )
@@ -625,4 +756,4 @@ class TradeJournal:
             "TRADE_EXIT_RECORDED trade_id=%s symbol=%s exit=%s pnl=%s reason=%s",
             trade_id, symbol, exit_price, pnl, reason,
         )
-        return True
+        return trade_id

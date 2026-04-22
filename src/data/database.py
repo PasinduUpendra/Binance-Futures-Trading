@@ -102,26 +102,59 @@ class StrategyMetricRow(BaseModel):
 
 _SCHEMA_TRADES = """
 CREATE TABLE IF NOT EXISTS trades (
-    trade_id       TEXT PRIMARY KEY,
-    timestamp      TEXT NOT NULL,
-    symbol         TEXT NOT NULL,
-    direction      TEXT NOT NULL,
-    entry_price    TEXT NOT NULL,
-    exit_price     TEXT,
-    size           TEXT NOT NULL,
-    leverage       INTEGER NOT NULL DEFAULT 1,
-    pnl            TEXT,
-    pnl_pct        TEXT,
-    strategy       TEXT DEFAULT '',
-    regime         TEXT DEFAULT '',
-    confidence     TEXT DEFAULT '0',
-    stop_loss      TEXT,
-    take_profit    TEXT,
-    duration       REAL,
-    fees           TEXT DEFAULT '0',
-    slippage       TEXT DEFAULT '0',
-    reasoning      TEXT DEFAULT '',
-    lessons        TEXT DEFAULT ''
+    trade_id            TEXT PRIMARY KEY,
+    timestamp           TEXT NOT NULL,
+    symbol              TEXT NOT NULL,
+    direction           TEXT NOT NULL,
+    entry_price         TEXT NOT NULL,
+    exit_price          TEXT,
+    size                TEXT NOT NULL,
+    leverage            INTEGER NOT NULL DEFAULT 1,
+    pnl                 TEXT,
+    pnl_pct             TEXT,
+    strategy            TEXT DEFAULT '',
+    regime              TEXT DEFAULT '',
+    confidence          TEXT DEFAULT '0',
+    stop_loss           TEXT,
+    take_profit         TEXT,
+    duration            REAL,
+    fees                TEXT DEFAULT '0',
+    slippage            TEXT DEFAULT '0',
+    reasoning           TEXT DEFAULT '',
+    lessons             TEXT DEFAULT '',
+    -- Phase 1B: per-trade attribution columns
+    cascade_level       TEXT DEFAULT '',
+    confidence_bucket   TEXT DEFAULT '',
+    regime_at_entry     TEXT DEFAULT '',
+    atr_at_entry        TEXT DEFAULT '0',
+    entry_slippage_bps  REAL DEFAULT 0,
+    exit_slippage_bps   REAL DEFAULT 0,
+    maker_entry         INTEGER DEFAULT 0,
+    maker_exit          INTEGER DEFAULT 0,
+    fees_usd            TEXT DEFAULT '0',
+    funding_usd         TEXT DEFAULT '0',
+    hold_bars           INTEGER DEFAULT 0,
+    exit_reason_enum    TEXT DEFAULT '',
+    consensus_adj       REAL DEFAULT 0,
+    funding_adj         REAL DEFAULT 0
+);
+"""
+
+_SCHEMA_FILL_EVENTS = """
+CREATE TABLE IF NOT EXISTS fill_events (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    trade_id          TEXT NOT NULL,
+    side_of_trade     TEXT NOT NULL,
+    timestamp_utc     TEXT NOT NULL,
+    order_type        TEXT NOT NULL,
+    requested_price   TEXT NOT NULL,
+    fill_price        TEXT NOT NULL,
+    filled_qty        TEXT NOT NULL,
+    is_maker          INTEGER NOT NULL,
+    fees_usd          TEXT NOT NULL,
+    client_order_id   TEXT,
+    exchange_order_id TEXT,
+    FOREIGN KEY (trade_id) REFERENCES trades(trade_id)
 );
 """
 
@@ -260,6 +293,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_trail_timestamp ON audit_trail(timestamp);
 CREATE INDEX IF NOT EXISTS idx_decision_log_cycle ON decision_log(cycle_id);
 CREATE INDEX IF NOT EXISTS idx_decision_log_symbol_stage ON decision_log(symbol, stage);
 CREATE INDEX IF NOT EXISTS idx_decision_log_timestamp ON decision_log(timestamp_utc);
+CREATE INDEX IF NOT EXISTS idx_fill_events_trade ON fill_events(trade_id);
 """
 
 
@@ -316,6 +350,7 @@ class DatabaseManager:
             + _SCHEMA_TRAILING_STOPS
             + _SCHEMA_AUDIT_TRAIL
             + _SCHEMA_DECISION_LOG
+            + _SCHEMA_FILL_EVENTS
             + _INDEXES
             + _VIEW_CYCLE_FUNNEL
         )
@@ -336,7 +371,50 @@ class DatabaseManager:
                 conn.commit()
                 logger.info("Migration: added tp_pending column to trailing_stops")
         except Exception as exc:
-            logger.warning("Migration check failed: %s", exc)
+            logger.warning("Migration check (trailing_stops) failed: %s", exc)
+
+        # Phase 1B: add 14 per-trade attribution columns to trades
+        _TRADES_1B_COLUMNS = [
+            ("cascade_level",      "TEXT DEFAULT ''"),
+            ("confidence_bucket",  "TEXT DEFAULT ''"),
+            ("regime_at_entry",    "TEXT DEFAULT ''"),
+            ("atr_at_entry",       "TEXT DEFAULT '0'"),
+            ("entry_slippage_bps", "REAL DEFAULT 0"),
+            ("exit_slippage_bps",  "REAL DEFAULT 0"),
+            ("maker_entry",        "INTEGER DEFAULT 0"),
+            ("maker_exit",         "INTEGER DEFAULT 0"),
+            ("fees_usd",           "TEXT DEFAULT '0'"),
+            ("funding_usd",        "TEXT DEFAULT '0'"),
+            ("hold_bars",          "INTEGER DEFAULT 0"),
+            ("exit_reason_enum",   "TEXT DEFAULT ''"),
+            ("consensus_adj",      "REAL DEFAULT 0"),
+            ("funding_adj",        "REAL DEFAULT 0"),
+        ]
+        try:
+            cursor = conn.execute("PRAGMA table_info(trades)")
+            existing_cols = {row["name"] for row in cursor.fetchall()}
+            added: list[str] = []
+            for col_name, col_def in _TRADES_1B_COLUMNS:
+                if col_name not in existing_cols:
+                    conn.execute(
+                        f"ALTER TABLE trades ADD COLUMN {col_name} {col_def}"
+                    )
+                    added.append(col_name)
+            if added:
+                conn.commit()
+                logger.info("Migration: added Phase 1B attribution columns to trades: %s", added)
+        except Exception as exc:
+            logger.warning("Migration check (trades Phase 1B) failed: %s", exc)
+
+        # Phase 1B: create fill_events table if not present
+        try:
+            conn.executescript(_SCHEMA_FILL_EVENTS)
+            conn.executescript(
+                "CREATE INDEX IF NOT EXISTS idx_fill_events_trade ON fill_events(trade_id);"
+            )
+            conn.commit()
+        except Exception as exc:
+            logger.warning("Migration check (fill_events) failed: %s", exc)
 
     def _get_conn(self) -> sqlite3.Connection:
         """Get or create the SQLite connection with WAL mode."""
@@ -638,6 +716,108 @@ class DatabaseManager:
         return [dict(r) for r in cursor.fetchall()]
 
 
+
+    # -----------------------------------------------------------------------
+    # Fill Events (Phase 1B)
+    # -----------------------------------------------------------------------
+
+    def insert_fill_event(
+        self,
+        trade_id: str,
+        side_of_trade: str,
+        timestamp_utc: str,
+        order_type: str,
+        requested_price: str,
+        fill_price: str,
+        filled_qty: str,
+        is_maker: int,
+        fees_usd: str,
+        client_order_id: str | None = None,
+        exchange_order_id: str | None = None,
+    ) -> int:
+        """Insert one fill_events row; returns the new row's id.
+
+        Parameters
+        ----------
+        trade_id : str
+            FK reference to trades.trade_id.
+        side_of_trade : str
+            'entry' or 'exit'.
+        timestamp_utc : str
+            ISO-8601 UTC timestamp.
+        order_type : str
+            'limit_gtx', 'market', 'stop_market', 'tp_market', or 'native_trail'.
+        requested_price : str
+            The signal/intended execution price as a decimal string.
+        fill_price : str
+            Actual fill price as a decimal string.
+        filled_qty : str
+            Filled quantity (base units) as a decimal string.
+        is_maker : int
+            1 if maker fill, 0 if taker.
+        fees_usd : str
+            Fees paid in USDT as a decimal string.
+        client_order_id : str | None
+            ccxt client order ID (cq_<uuid16> format).
+        exchange_order_id : str | None
+            Exchange-assigned order ID.
+        """
+        conn = self._get_conn()
+        cursor = conn.execute(
+            """
+            INSERT INTO fill_events (
+                trade_id, side_of_trade, timestamp_utc, order_type,
+                requested_price, fill_price, filled_qty, is_maker,
+                fees_usd, client_order_id, exchange_order_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                trade_id, side_of_trade, timestamp_utc, order_type,
+                requested_price, fill_price, filled_qty, is_maker,
+                fees_usd, client_order_id, exchange_order_id,
+            ),
+        )
+        conn.commit()
+        row_id: int = cursor.lastrowid  # type: ignore[assignment]
+        return row_id
+
+    def get_fill_events_for_trade(self, trade_id: str) -> list[dict[str, Any]]:
+        """Return all fill_events rows for *trade_id*, ordered by id ASC."""
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "SELECT * FROM fill_events WHERE trade_id = ? ORDER BY id ASC",
+            (trade_id,),
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+    def update_trade_attribution(self, trade_id: str, **kwargs: Any) -> bool:
+        """Update attribution columns on an existing trade row.
+
+        Only the keys present in *kwargs* are written.  Accepted keys:
+        ``exit_slippage_bps``, ``maker_exit``, ``hold_bars``,
+        ``exit_reason_enum``, ``fees_usd``, ``funding_usd``,
+        ``exit_slippage_bps``.
+
+        Returns True if at least one row was updated.
+        """
+        _ALLOWED = {
+            "cascade_level", "confidence_bucket", "regime_at_entry",
+            "atr_at_entry", "entry_slippage_bps", "exit_slippage_bps",
+            "maker_entry", "maker_exit", "fees_usd", "funding_usd",
+            "hold_bars", "exit_reason_enum", "consensus_adj", "funding_adj",
+        }
+        safe = {k: v for k, v in kwargs.items() if k in _ALLOWED}
+        if not safe:
+            return False
+        set_clause = ", ".join(f"{k} = ?" for k in safe)
+        values = list(safe.values()) + [trade_id]
+        conn = self._get_conn()
+        cursor = conn.execute(
+            f"UPDATE trades SET {set_clause} WHERE trade_id = ?",  # noqa: S608
+            values,
+        )
+        conn.commit()
+        return cursor.rowcount > 0
 
     def get_cycles_since(self, since: datetime) -> list[CycleHistoryRow]:
         """Get all cycles since a given timestamp."""

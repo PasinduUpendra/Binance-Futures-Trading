@@ -486,7 +486,7 @@ def test_update_trade_exit_basic(journal: TradeJournal) -> None:
         duration=24.5,
         reason="trailing_stop",
     )
-    assert result is True
+    assert result is not None
 
     # Verify fields updated
     trade_after = journal.get_all_trades()[0]
@@ -510,7 +510,7 @@ def test_update_trade_exit_no_match(journal: TradeJournal) -> None:
         pnl=Decimal("-1.0"),
         pnl_pct=Decimal("-0.5"),
     )
-    assert result is False
+    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -545,7 +545,7 @@ def test_update_trade_exit_targets_most_recent_open(journal: TradeJournal) -> No
         pnl_pct=Decimal("1.25"),
         reason="time_exit",
     )
-    assert result is True
+    assert result is not None
 
     trades = journal.get_all_trades()
     # Most recent (newer) should have exit data

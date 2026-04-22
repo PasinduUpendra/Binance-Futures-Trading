@@ -164,6 +164,38 @@ MIN_NOTIONAL: dict[str, float] = {
 }
 DEFAULT_MIN_NOTIONAL: float = 5.0
 
+
+# ---------------------------------------------------------------------------
+# Phase 1B helpers
+# ---------------------------------------------------------------------------
+
+
+def _compute_confidence_bucket(conf: float) -> str:
+    """Return a human-readable confidence bucket string for attribution."""
+    if conf >= 85:
+        return "85+"
+    if conf >= 70:
+        return "70-85"
+    if conf >= 55:
+        return "55-70"
+    return "45-55"
+
+
+def _exit_reason_to_enum(reason: str) -> str:
+    """Map a free-text exit reason to the canonical exit_reason_enum value."""
+    _MAP = {
+        "trailing_stop":         "trail",
+        "time_exit":             "time_exit",
+        "reversal_exit":         "reversal",
+        "wrong_side_force_close": "wrong_side_force",
+        "swap":                  "swap",
+        "manual":                "manual",
+        "sl_hit":                "sl_hit",
+        "tp_hit":                "tp_hit",
+    }
+    return _MAP.get(reason, reason)
+
+
 # Multi-timeframe: 4H for trend direction, 1H for entry timing.
 # Evidence: 4H+ shows 75-85% success rates in trending markets (Cointester study).
 # Daily trading is more robust to transaction costs than intraday (ScienceDirect).
@@ -760,6 +792,8 @@ class Orchestrator:
         # ─── Steps 4-7: Execute ALL signals (up to position limit) ───
         trades_placed = 0
         for sig, sig_pair in all_signals:
+            # Retrieve per-pair consensus adjustment (computed during signal collection)
+            _adj_for_pair = consensus_adj.get(sig_pair, 0.0)
             trade_result = await self._execute_signal(
                 signal=sig,
                 symbol=sig_pair,
@@ -768,6 +802,7 @@ class Orchestrator:
                 cb_state=cb_state,
                 trigger="hourly_cycle",
                 cycle_id=self._current_cycle_id,
+                consensus_adj=_adj_for_pair,
             )
             if trade_result is not None:
                 trades_placed += 1
@@ -806,6 +841,7 @@ class Orchestrator:
         cb_state: Any,
         trigger: str = "hourly_cycle",
         cycle_id: int = 0,
+        consensus_adj: float = 0.0,
     ) -> dict | None:
         """Risk-check, size, and execute a signal under the execution lock.
 
@@ -1602,6 +1638,35 @@ class Orchestrator:
                     or Decimal(str(signal.entry_price))
                 )
 
+                # ── Phase 1B: compute entry attribution fields ──
+                _direction_sign = 1 if signal.direction.value == "long" else -1
+                _entry_slippage_bps = (
+                    _direction_sign
+                    * (float(fill_price) - float(signal.entry_price))
+                    / float(signal.entry_price)
+                    * 10_000
+                    if float(signal.entry_price) > 0 else 0.0
+                )
+                _maker_entry = 1 if filled_via == "maker" else 0
+                _entry_fees_usd = str(getattr(order_result, "fee", None) or "0")
+                _cascade_level = str(getattr(signal, "cascade_level", "") or "")
+                _confidence_bucket = _compute_confidence_bucket(confidence)
+                _regime_at_entry = str(
+                    regime.regime.value
+                    if regime and hasattr(regime, "regime") and hasattr(regime.regime, "value")
+                    else getattr(signal, "regime", "")
+                )
+                _atr_at_entry_4h = (
+                    float(df_4h["atr"].dropna().iloc[-1])
+                    if "atr" in df_4h.columns and len(df_4h) > 0 else 0.0
+                )
+                _funding_adj_val = (
+                    float(fr_result.confidence_adjustment)
+                    if fr_result and hasattr(fr_result, "confidence_adjustment") else 0.0
+                )
+                # consensus_adj is passed in as a parameter from _run_cycle
+                _consensus_adj_val = consensus_adj
+
                 trade_details: dict[str, Any] = {
                     "pair": symbol,
                     "direction": signal.direction.value,
@@ -1616,14 +1681,20 @@ class Orchestrator:
                     "regime": (regime.regime if regime and hasattr(regime, "regime") else getattr(signal, "regime", "")),
                     "trigger": trigger,
                     "filled_via": filled_via,
+                    # Phase 1B attribution
+                    "cascade_level": _cascade_level,
+                    "confidence_bucket": _confidence_bucket,
+                    "regime_at_entry": _regime_at_entry,
+                    "atr_at_entry": str(_atr_at_entry_4h),
+                    "entry_slippage_bps": _entry_slippage_bps,
+                    "maker_entry": _maker_entry,
+                    "fees_usd": _entry_fees_usd,
+                    "consensus_adj": _consensus_adj_val,
+                    "funding_adj": _funding_adj_val,
                 }
 
                 # Trailing stop state
-                atr_4h = (
-                    float(df_4h["atr"].dropna().iloc[-1])
-                    if "atr" in df_4h.columns
-                    else 0.0
-                )
+                atr_4h = _atr_at_entry_4h
                 self._trailing_stops[symbol] = TrailingStopState(
                     symbol=symbol,
                     direction=signal.direction.value,
@@ -1679,21 +1750,70 @@ class Orchestrator:
                             trigger, trailing_err,
                         )
 
-                logger.info(
-                    f"[{trigger}] TRADE PLACED: {symbol} {signal.direction.value} "
-                    f"@ {fill_price} x{leverage} (ATR={atr_4h:.6f})"
+                # ── Phase 1B decision_logger: order placement stages ──
+                # post_only_attempt
+                self.decision_logger.log(
+                    cycle_id, symbol, "post_only_attempt",
+                    "pass" if filled_via == "maker" else "reject",
+                    reason=None if filled_via == "maker" else "unfilled_or_unavailable",
+                    numeric_context={"filled_via": filled_via},
                 )
-                await self.alert_system.send_alert(
-                    f"Trade: {symbol} {signal.direction.value} "
-                    f"@ {fill_price} x{leverage} SL={signal.stop_loss}",
-                    level="info",
+                # market_fallback
+                if filled_via == "market":
+                    self.decision_logger.log(
+                        cycle_id, symbol, "market_fallback", "pass",
+                        numeric_context={"fill_price": float(fill_price)},
+                    )
+                # sl_place
+                self.decision_logger.log(
+                    cycle_id, symbol, "sl_place",
+                    "pass" if sl_result is not None else "error",
+                    reason=None if sl_result is not None else "sl_returned_none",
+                    numeric_context={"stop_price": float(signal.stop_loss)},
                 )
-
+                # tp_place
+                self.decision_logger.log(
+                    cycle_id, symbol, "tp_place",
+                    "pass" if tp_result is not None else "error",
+                    reason=None if tp_result is not None else "tp_returned_none",
+                    numeric_context={"take_profit": float(signal.take_profit)},
+                )
                 # Memory
+                trade_id_recorded: str | None = None
                 try:
-                    self.trade_journal.record_trade_entry(trade_details)
+                    trade_id_recorded = self.trade_journal.record_trade_entry(trade_details)
+                    # Phase 1B: log position_open_recorded stage
+                    self.decision_logger.log(
+                        cycle_id, symbol, "position_open_recorded", "pass",
+                        numeric_context={"trade_id": trade_id_recorded},
+                    )
                 except Exception as e:
                     logger.warning(f"[{trigger}] Memory recording failed: {e}")
+                    self.decision_logger.log(
+                        cycle_id, symbol, "position_open_recorded", "error",
+                        reason=str(e)[:200],
+                    )
+
+                # Phase 1B: insert fill_events for entry leg
+                if trade_id_recorded:
+                    try:
+                        self.db.insert_fill_event(
+                            trade_id=trade_id_recorded,
+                            side_of_trade="entry",
+                            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                            order_type="limit_gtx" if filled_via == "maker" else "market",
+                            requested_price=str(signal.entry_price),
+                            fill_price=str(fill_price),
+                            filled_qty=str(order_result.filled),
+                            is_maker=_maker_entry,
+                            fees_usd=_entry_fees_usd,
+                            client_order_id=getattr(order_result, "client_order_id", None),
+                            exchange_order_id=getattr(order_result, "order_id", None),
+                        )
+                    except Exception as fe_err:
+                        logger.warning(
+                            "[%s] fill_events entry insert failed: %s", trigger, fe_err
+                        )
 
                 self._daily_trade_count += 1
 
@@ -1753,6 +1873,10 @@ class Orchestrator:
         duration_hours: float | None = None,
         size: float | None = None,
         leverage: int | None = None,
+        hold_bars: int | None = None,
+        exit_order_id: str | None = None,
+        exit_client_order_id: str | None = None,
+        exit_filled_qty: float | None = None,
     ) -> None:
         """Record trade exit in journal so win/loss tracking works.
 
@@ -1778,14 +1902,44 @@ class Orchestrator:
                 pnl_pct = (pnl / notional * 100) if notional else 0.0
             else:
                 pnl_pct = 0.0
-            self.trade_journal.update_trade_exit(
+
+            _hold = hold_bars if hold_bars is not None else (
+                int(duration_hours) if duration_hours is not None else 0
+            )
+            _exit_reason_enum = _exit_reason_to_enum(reason)
+
+            trade_id_updated = self.trade_journal.update_trade_exit(
                 symbol=symbol,
                 exit_price=Decimal(str(exit_price)),
                 pnl=Decimal(str(pnl)),
                 pnl_pct=Decimal(str(round(pnl_pct, 4))),
                 duration=duration_hours,
                 reason=reason,
+                hold_bars=_hold,
+                exit_reason_enum=_exit_reason_enum,
+                exit_slippage_bps=0.0,   # market exits: slippage not computed
+                maker_exit=0,            # all exit closes are taker (market orders)
             )
+
+            # Phase 1B: insert fill_events for exit leg
+            if trade_id_updated:
+                try:
+                    self.db.insert_fill_event(
+                        trade_id=trade_id_updated,
+                        side_of_trade="exit",
+                        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                        order_type="market",
+                        requested_price=str(exit_price),
+                        fill_price=str(exit_price),
+                        filled_qty=str(exit_filled_qty) if exit_filled_qty else "0",
+                        is_maker=0,
+                        fees_usd="0",
+                        client_order_id=exit_client_order_id,
+                        exchange_order_id=exit_order_id,
+                    )
+                except Exception as fe_err:
+                    logger.warning("fill_events exit insert failed for %s: %s", symbol, fe_err)
+
         except Exception as e:
             logger.warning(
                 "Failed to record trade exit for %s: %s", symbol, e
@@ -2307,6 +2461,8 @@ class Orchestrator:
                         reason="trailing_stop",
                         size=float(pos.size),
                         leverage=pos.leverage,
+                        hold_bars=int((datetime.now(tz=timezone.utc) - pos.timestamp).total_seconds() / 3600),
+                        exit_filled_qty=float(pos.size),
                     )
 
                 except Exception as e:
@@ -2382,6 +2538,8 @@ class Orchestrator:
                     duration_hours=bars_held,
                     size=float(pos.size),
                     leverage=pos.leverage,
+                    hold_bars=int(bars_held),
+                    exit_filled_qty=float(pos.size),
                 )
 
             except Exception as e:
