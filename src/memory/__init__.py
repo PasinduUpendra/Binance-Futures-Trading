@@ -6,6 +6,7 @@ and a unified memory client with MCP protocol support.
 """
 
 from src.memory.bias_detector import BiasDetector, BiasInstance, BiasReport
+from src.memory.decision_logger import DecisionLogger
 from src.memory.performance_tracker import (
     DailyPnL,
     PerformanceTracker,
@@ -26,6 +27,7 @@ __all__ = [
     "BiasInstance",
     "BiasReport",
     "DailyPnL",
+    "DecisionLogger",
     "MemoryQuery",
     "PerformanceTracker",
     "StrategyPerformance",

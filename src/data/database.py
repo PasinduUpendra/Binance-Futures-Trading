@@ -217,6 +217,36 @@ CREATE TABLE IF NOT EXISTS audit_trail (
 );
 """
 
+_SCHEMA_DECISION_LOG = """
+CREATE TABLE IF NOT EXISTS decision_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id          INTEGER NOT NULL,
+    timestamp_utc     TEXT NOT NULL,
+    symbol            TEXT NOT NULL,
+    stage             TEXT NOT NULL,
+    outcome           TEXT NOT NULL,
+    reason            TEXT,
+    numeric_context   TEXT,
+    cascade_level     TEXT,
+    confidence        REAL,
+    regime            TEXT,
+    FOREIGN KEY (cycle_id) REFERENCES cycle_history(id)
+);
+"""
+
+_VIEW_CYCLE_FUNNEL = """
+CREATE VIEW IF NOT EXISTS cycle_funnel AS
+SELECT
+    cycle_id,
+    stage,
+    COUNT(*)                                        AS attempts,
+    SUM(CASE WHEN outcome='pass'   THEN 1 ELSE 0 END) AS passes,
+    SUM(CASE WHEN outcome='reject' THEN 1 ELSE 0 END) AS rejects,
+    SUM(CASE WHEN outcome='error'  THEN 1 ELSE 0 END) AS errors
+FROM decision_log
+GROUP BY cycle_id, stage;
+"""
+
 _INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
@@ -227,6 +257,9 @@ CREATE INDEX IF NOT EXISTS idx_cycle_history_timestamp ON cycle_history(timestam
 CREATE INDEX IF NOT EXISTS idx_cycle_history_cycle ON cycle_history(cycle_number);
 CREATE INDEX IF NOT EXISTS idx_audit_trail_trade_id ON audit_trail(trade_id);
 CREATE INDEX IF NOT EXISTS idx_audit_trail_timestamp ON audit_trail(timestamp);
+CREATE INDEX IF NOT EXISTS idx_decision_log_cycle ON decision_log(cycle_id);
+CREATE INDEX IF NOT EXISTS idx_decision_log_symbol_stage ON decision_log(symbol, stage);
+CREATE INDEX IF NOT EXISTS idx_decision_log_timestamp ON decision_log(timestamp_utc);
 """
 
 
@@ -272,7 +305,7 @@ class DatabaseManager:
             logger.warning("Mirror enqueue failed for %s: %s", table, exc)
 
     def _initialize(self) -> None:
-        """Create all tables and indexes."""
+        """Create all tables, indexes, and views."""
         conn = self._get_conn()
         conn.executescript(
             _SCHEMA_TRADES
@@ -282,7 +315,9 @@ class DatabaseManager:
             + _SCHEMA_STRATEGY_METRICS
             + _SCHEMA_TRAILING_STOPS
             + _SCHEMA_AUDIT_TRAIL
+            + _SCHEMA_DECISION_LOG
             + _INDEXES
+            + _VIEW_CYCLE_FUNNEL
         )
         conn.commit()
         self._run_migrations(conn)
@@ -462,6 +497,147 @@ class DatabaseManager:
             "SELECT * FROM cycle_history ORDER BY id DESC LIMIT ?", (n,)
         )
         return [self._row_to_cycle(dict(r)) for r in cursor.fetchall()]
+
+    def begin_cycle(self, cycle_number: int, timestamp: datetime) -> int:
+        """Insert a minimal cycle_history placeholder at cycle START.
+
+        Returns the new row's ``id`` (cycle_id) so decision_log rows can
+        reference it via FK before the cycle completes.  The row is updated
+        with final data by ``finish_cycle``.
+        """
+        conn = self._get_conn()
+        cursor = conn.execute(
+            """
+            INSERT INTO cycle_history (
+                cycle_number, timestamp, circuit_breaker_level,
+                balance, positions_closed, errors, duration_seconds
+            ) VALUES (?, ?, 'PENDING', '0', '[]', '[]', 0.0)
+            """,
+            (cycle_number, timestamp.isoformat()),
+        )
+        conn.commit()
+        cycle_id: int = cursor.lastrowid  # type: ignore[assignment]
+        return cycle_id
+
+    def finish_cycle(self, cycle_id: int, cycle: "CycleHistoryRow") -> None:
+        """Update the placeholder row created by ``begin_cycle`` with final data."""
+        conn = self._get_conn()
+        conn.execute(
+            """
+            UPDATE cycle_history SET
+                circuit_breaker_level = ?,
+                balance               = ?,
+                regime                = ?,
+                signal_generated      = ?,
+                trade_placed          = ?,
+                trade_details         = ?,
+                positions_closed      = ?,
+                errors                = ?,
+                duration_seconds      = ?
+            WHERE id = ?
+            """,
+            (
+                cycle.circuit_breaker_level,
+                str(cycle.balance),
+                cycle.regime,
+                int(cycle.signal_generated),
+                int(cycle.trade_placed),
+                cycle.trade_details,
+                cycle.positions_closed,
+                cycle.errors,
+                cycle.duration_seconds,
+                cycle_id,
+            ),
+        )
+        conn.commit()
+        self._mirror_enqueue("cycle_history", {
+            "id": cycle_id,
+            "cycle_number": cycle.cycle_number,
+            "timestamp": cycle.timestamp.isoformat(),
+            "circuit_breaker_level": cycle.circuit_breaker_level,
+            "balance": str(cycle.balance),
+            "regime": cycle.regime,
+            "signal_generated": bool(cycle.signal_generated),
+            "trade_placed": bool(cycle.trade_placed),
+            "trade_details": cycle.trade_details,
+            "positions_closed": cycle.positions_closed,
+            "errors": cycle.errors,
+            "duration_seconds": cycle.duration_seconds,
+        })
+
+    # -----------------------------------------------------------------------
+    # Decision Log
+    # -----------------------------------------------------------------------
+
+    def insert_decision_log(
+        self,
+        cycle_id: int,
+        timestamp_utc: str,
+        symbol: str,
+        stage: str,
+        outcome: str,
+        reason: str | None = None,
+        numeric_context: str | dict | None = None,
+        cascade_level: str | None = None,
+        confidence: float | None = None,
+        regime: str | None = None,
+    ) -> None:
+        """Insert one decision_log row.
+
+        ``numeric_context`` may be a pre-serialised JSON string or a raw
+        dict (which will be serialised here with ``default=str``).
+        Callers should prefer ``DecisionLogger.log()`` over calling this
+        directly.
+        """
+        if isinstance(numeric_context, dict):
+            numeric_context = json.dumps(numeric_context, default=str)
+        conn = self._get_conn()
+        conn.execute(
+            """
+            INSERT INTO decision_log (
+                cycle_id, timestamp_utc, symbol, stage, outcome,
+                reason, numeric_context, cascade_level, confidence, regime
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                cycle_id, timestamp_utc, symbol, stage, outcome,
+                reason, numeric_context, cascade_level, confidence, regime,
+            ),
+        )
+        conn.commit()
+
+    def get_decision_logs(
+        self,
+        cycle_id: int | None = None,
+        symbol: str | None = None,
+        stage: str | None = None,
+        limit: int = 500,
+    ) -> list[dict[str, Any]]:
+        """Retrieve decision_log rows, optionally filtered.
+
+        Returns a list of plain dicts (one per row) ordered by id ASC.
+        """
+        conn = self._get_conn()
+        clauses: list[str] = []
+        params: list[Any] = []
+        if cycle_id is not None:
+            clauses.append("cycle_id = ?")
+            params.append(cycle_id)
+        if symbol is not None:
+            clauses.append("symbol = ?")
+            params.append(symbol)
+        if stage is not None:
+            clauses.append("stage = ?")
+            params.append(stage)
+        where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        params.append(limit)
+        cursor = conn.execute(
+            f"SELECT * FROM decision_log {where} ORDER BY id ASC LIMIT ?",  # noqa: S608
+            params,
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+
 
     def get_cycles_since(self, since: datetime) -> list[CycleHistoryRow]:
         """Get all cycles since a given timestamp."""

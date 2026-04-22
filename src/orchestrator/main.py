@@ -59,6 +59,7 @@ from src.execution.slippage_estimator import SlippageEstimator
 from src.memory.trade_journal import TradeJournal
 from src.memory.performance_tracker import PerformanceTracker
 from src.memory.bias_detector import BiasDetector
+from src.memory.decision_logger import DecisionLogger
 from src.anti_hallucination.price_validator import PriceValidator
 from src.anti_hallucination.signal_validator import SignalValidator
 from src.anti_hallucination.decision_auditor import DecisionAuditor
@@ -206,6 +207,10 @@ class Orchestrator:
         # are in the opposite direction. Force-close after threshold.
         self._wrong_side_cycle_count: dict[str, int] = {}
 
+        # Phase-1A: cycle_id of the in-progress cycle (set by begin_cycle at
+        # start of _run_cycle, consumed by DecisionLogger and _execute_signal).
+        self._current_cycle_id: int = 0
+
         # Initialize all components
         self.market_data = MarketDataClient()
         self.indicator_engine = IndicatorEngine()
@@ -224,6 +229,7 @@ class Orchestrator:
         # Canonical DB FIRST — TradeJournal + DecisionAuditor now write into
         # the same file so ``trades`` / ``audit_trail`` are no longer split.
         self.db = DatabaseManager()
+        self.decision_logger = DecisionLogger(self.db)
         self.trade_journal = TradeJournal(db_path=self.db.db_path)
         self.performance_tracker = PerformanceTracker(journal=self.trade_journal)
         self.bias_detector = BiasDetector()
@@ -423,6 +429,17 @@ class Orchestrator:
 
         logger.info(f"=== Cycle {self.state.cycle_count} starting ===")
 
+        # Insert a placeholder cycle row NOW so decision_log rows have a valid
+        # FK target.  _save_cycle_state will UPDATE this row with final data.
+        try:
+            self._current_cycle_id = self.db.begin_cycle(
+                cycle_number=self.state.cycle_count,
+                timestamp=cycle_start,
+            )
+        except Exception as _begin_exc:
+            logger.warning("begin_cycle failed: %s — decision_log disabled this cycle", _begin_exc)
+            self._current_cycle_id = 0
+
         # ─── Step 1: Sentinel Check (Circuit Breaker) ───
         try:
             balance = await self.market_data.get_margin_balance()
@@ -481,6 +498,11 @@ class Orchestrator:
             try:
                 raw_4h = await self.market_data.fetch_ohlcv(pair, TIMEFRAME_DIRECTION, limit=200)
                 if not raw_4h or len(raw_4h) < 100:
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "data_fetch_4h", "reject",
+                        reason="insufficient_rows",
+                        numeric_context={"rows": len(raw_4h) if raw_4h else 0},
+                    )
                     continue
                 df_4h = pd.DataFrame(raw_4h)
                 # Drop last row: Binance returns the in-progress candle which
@@ -489,18 +511,41 @@ class Orchestrator:
                 validation = self.data_validator.validate_ohlcv(df_4h)
                 if not validation.passed:
                     logger.warning(f"4H data validation failed for {pair}: {validation.reasons}")
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "data_fetch_4h", "reject",
+                        reason="validation_failed",
+                        numeric_context={"reasons": validation.reasons},
+                    )
                     continue
                 pair_data_4h[pair] = self.indicator_engine.calculate_all(df_4h)
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "data_fetch_4h", "pass",
+                    numeric_context={"rows": len(df_4h)},
+                )
 
                 raw_1h = await self.market_data.fetch_ohlcv(pair, TIMEFRAME_ENTRY, limit=200)
                 if not raw_1h or len(raw_1h) < 100:
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "data_fetch_1h", "reject",
+                        reason="insufficient_rows",
+                        numeric_context={"rows": len(raw_1h) if raw_1h else 0},
+                    )
                     continue
                 df_1h = pd.DataFrame(raw_1h)
                 validation_1h = self.data_validator.validate_ohlcv(df_1h)
                 if not validation_1h.passed:
                     logger.warning(f"1H data validation failed for {pair}: {validation_1h.reasons}")
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "data_fetch_1h", "reject",
+                        reason="validation_failed",
+                        numeric_context={"reasons": validation_1h.reasons},
+                    )
                     continue
                 pair_data_1h[pair] = self.indicator_engine.calculate_all(df_1h)
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "data_fetch_1h", "pass",
+                    numeric_context={"rows": len(df_1h)},
+                )
 
                 # 15m data for fast-entry continuation signals
                 raw_15m = await self.market_data.fetch_ohlcv(pair, TIMEFRAME_FAST, limit=200)
@@ -509,10 +554,29 @@ class Orchestrator:
                     validation_15m = self.data_validator.validate_ohlcv(df_15m)
                     if validation_15m.passed:
                         pair_data_15m[pair] = self.indicator_engine.calculate_all(df_15m)
+                        self.decision_logger.log(
+                            self._current_cycle_id, pair, "data_fetch_15m", "pass",
+                            numeric_context={"rows": len(df_15m)},
+                        )
+                    else:
+                        self.decision_logger.log(
+                            self._current_cycle_id, pair, "data_fetch_15m", "reject",
+                            reason="validation_failed",
+                        )
+                else:
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "data_fetch_15m", "skip",
+                        reason="insufficient_rows",
+                        numeric_context={"rows": len(raw_15m) if raw_15m else 0},
+                    )
 
             except Exception as e:
                 logger.error(f"Data fetch failed for {pair}: {e}")
                 errors.append(f"Data {pair}: {e}")
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "data_fetch_4h", "error",
+                    reason=str(e)[:200],
+                )
 
         # ─── Step 1c: Position Reconciliation & Orphan Order Cleanup ───
         try:
@@ -589,14 +653,65 @@ class Orchestrator:
                 df_1h = pair_data_1h[pair]
                 df_15m = pair_data_15m.get(pair)
 
+                # ── Regime detect (logged always, even if signal is None) ──
+                try:
+                    _regime_pre = self.regime_detector.detect(df_4h)
+                    _regime_str = _regime_pre.regime.value
+                    _adx_pre = float(df_4h["adx"].iloc[-1]) if "adx" in df_4h.columns and len(df_4h) > 0 else None
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "regime_detect", "pass",
+                        regime=_regime_str,
+                        numeric_context={"adx": _adx_pre, "regime": _regime_str},
+                    )
+                except Exception as _re:
+                    _regime_str = "unknown"
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "regime_detect", "error",
+                        reason=str(_re)[:200],
+                    )
+
                 # Multi-timeframe: 4H regime → strategy selection → appropriate data
                 signal = self.adaptive_strategy.get_signal_multi_tf(df_4h, df_1h, df_15m)
 
                 if signal is None:
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "signal_generate", "reject",
+                        reason="no_signal",
+                        regime=_regime_str,
+                    )
                     continue
+
+                # signal_generate — pass
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "signal_generate", "pass",
+                    cascade_level=getattr(signal, "cascade_level", None),
+                    confidence=signal.confidence,
+                    regime=_regime_str,
+                    numeric_context={
+                        "confidence": signal.confidence,
+                        "direction": signal.direction.value,
+                        "cascade_level": getattr(signal, "cascade_level", None),
+                    },
+                )
+
+                # confidence_gate — always pass here (gate is inside adaptive_strategy)
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "confidence_gate", "pass",
+                    confidence=signal.confidence,
+                    regime=_regime_str,
+                    numeric_context={"confidence": signal.confidence, "min_confidence": 45.0},
+                )
 
                 # Skip same-direction signals for already-positioned pairs
                 if existing_side and signal.direction.value == existing_side:
+                    self.decision_logger.log(
+                        self._current_cycle_id, pair, "position_overlap_skip", "skip",
+                        reason="same_direction_held",
+                        numeric_context={
+                            "existing_side": existing_side,
+                            "signal_direction": signal.direction.value,
+                        },
+                    )
                     continue
 
                 # Apply cross-asset consensus adjustment
@@ -608,11 +723,16 @@ class Orchestrator:
                         "%s: consensus adjustment %.1f → confidence %.1f%%",
                         pair, adj, adjusted_conf,
                     )
+                self.decision_logger.log(
+                    self._current_cycle_id, pair, "cross_asset_consensus_adjust", "pass",
+                    confidence=signal.confidence,
+                    regime=_regime_str,
+                    numeric_context={"adjustment": adj, "final_confidence": signal.confidence},
+                )
 
-                # Detect regime for logging
-                regime = self.regime_detector.detect(df_4h)
-                result.regime = regime.regime.value
-                logger.info(f"{pair}: Regime={regime.regime.value} (4H)")
+                # Detect regime for result logging (re-uses the value from above)
+                result.regime = _regime_str
+                logger.info(f"{pair}: Regime={_regime_str} (4H)")
 
                 # Collect ALL valid signals (not just best)
                 all_signals.append((signal, pair))
@@ -647,6 +767,7 @@ class Orchestrator:
                 df_1h=pair_data_1h[sig_pair],
                 cb_state=cb_state,
                 trigger="hourly_cycle",
+                cycle_id=self._current_cycle_id,
             )
             if trade_result is not None:
                 trades_placed += 1
@@ -684,6 +805,7 @@ class Orchestrator:
         df_1h: pd.DataFrame,
         cb_state: Any,
         trigger: str = "hourly_cycle",
+        cycle_id: int = 0,
     ) -> dict | None:
         """Risk-check, size, and execute a signal under the execution lock.
 
@@ -827,7 +949,24 @@ class Orchestrator:
                     logger.warning(
                         f"[{trigger}] Funding rate filter rejected: {fr_result.reason}"
                     )
+                    self.decision_logger.log(
+                        cycle_id, symbol, "funding_filter", "reject",
+                        reason=fr_result.reason,
+                        numeric_context={
+                            "funding_rate": float(funding_rate),
+                            "direction": signal.direction.value,
+                            "threshold": 0.0005,
+                        },
+                    )
                     return None
+                self.decision_logger.log(
+                    cycle_id, symbol, "funding_filter", "pass",
+                    numeric_context={
+                        "funding_rate": float(funding_rate),
+                        "direction": signal.direction.value,
+                        "confidence_adjustment": fr_result.confidence_adjustment,
+                    },
+                )
                 if fr_result.confidence_adjustment != 0:
                     logger.info(
                         f"[{trigger}] Funding rate adjustment: "
@@ -836,6 +975,10 @@ class Orchestrator:
             except Exception as e:
                 # Non-blocking: if funding rate fetch fails, proceed without filter
                 logger.debug(f"[{trigger}] Funding rate fetch skipped: {e}")
+                self.decision_logger.log(
+                    cycle_id, symbol, "funding_filter", "skip",
+                    reason=f"fetch_failed: {str(e)[:100]}",
+                )
                 fr_result = None
 
             # ── Leverage ──
@@ -847,12 +990,29 @@ class Orchestrator:
             leverage = leverage_result.leverage
             if leverage == 0:
                 logger.info(f"[{trigger}] Leverage 0: {leverage_result.reason}")
+                self.decision_logger.log(
+                    cycle_id, symbol, "leverage_determine", "reject",
+                    reason=leverage_result.reason,
+                    confidence=signal.confidence,
+                    regime=str(signal.regime) if signal.regime else None,
+                    numeric_context={"leverage": 0, "reason": leverage_result.reason},
+                )
                 return None
+            self.decision_logger.log(
+                cycle_id, symbol, "leverage_determine", "pass",
+                confidence=signal.confidence,
+                regime=str(signal.regime) if signal.regime else None,
+                numeric_context={
+                    "leverage": leverage,
+                    "cb_level": cb_state.level.value,
+                },
+            )
 
             # GARCH volatility adjustment
             vol_state = self.volatility_model.forecast(df_1h)
             if vol_state is None:
                 vol_state = self.volatility_model.forecast_simple(df_1h)
+            leverage_before_vol = leverage
             leverage = VolatilityModel.adjust_leverage(
                 requested_leverage=leverage,
                 vol_state=vol_state,
@@ -864,6 +1024,15 @@ class Orchestrator:
                     f"leverage_scale={vol_state.leverage_scale}, "
                     f"final_leverage={leverage}x"
                 )
+            self.decision_logger.log(
+                cycle_id, symbol, "volatility_adjust", "pass",
+                numeric_context={
+                    "leverage_before": leverage_before_vol,
+                    "leverage_after": leverage,
+                    "vol_ratio": float(vol_state.vol_ratio) if vol_state else None,
+                    "leverage_scale": float(vol_state.leverage_scale) if vol_state else None,
+                },
+            )
 
             # ── Confidence-based position sizing (v6 backtest) ──
             # Base tier from confidence, then optionally capped by Kelly
@@ -920,10 +1089,25 @@ class Orchestrator:
             if margin < Decimal("5"):
                 if balance < Decimal("5"):
                     logger.info(f"[{trigger}] Balance ${balance} below $5 minimum")
+                    self.decision_logger.log(
+                        cycle_id, symbol, "sizing", "reject",
+                        reason="balance_below_5",
+                        numeric_context={"balance": float(balance)},
+                    )
                     return None
                 margin = Decimal("5")
 
             notional = margin * Decimal(str(leverage))
+            self.decision_logger.log(
+                cycle_id, symbol, "sizing", "pass",
+                confidence=signal.confidence,
+                numeric_context={
+                    "margin_usd": float(margin),
+                    "notional_usd": float(notional),
+                    "position_pct": float(position_pct),
+                    "leverage": leverage,
+                },
+            )
 
             # Minimum notional per pair
             pair_min_notional = MIN_NOTIONAL.get(symbol, DEFAULT_MIN_NOTIONAL)
@@ -932,7 +1116,22 @@ class Orchestrator:
                     f"[{trigger}] Notional ${notional:.2f} below minimum "
                     f"${pair_min_notional} for {symbol}"
                 )
+                self.decision_logger.log(
+                    cycle_id, symbol, "min_notional", "reject",
+                    reason="below_pair_minimum",
+                    numeric_context={
+                        "notional": float(notional),
+                        "min_notional": pair_min_notional,
+                    },
+                )
                 return None
+            self.decision_logger.log(
+                cycle_id, symbol, "min_notional", "pass",
+                numeric_context={
+                    "notional": float(notional),
+                    "min_notional": pair_min_notional,
+                },
+            )
 
             logger.info(
                 f"[{trigger}] Sized: ${margin} ({float(position_pct)*100:.0f}% of "
@@ -960,7 +1159,28 @@ class Orchestrator:
                     f"[{trigger}] Liquidation buffer "
                     f"{float(liq_buffer.buffer_pct)*100:.1f}% < 5%"
                 )
+                self.decision_logger.log(
+                    cycle_id, symbol, "liquidation_buffer", "reject",
+                    reason="buffer_below_5pct",
+                    numeric_context={
+                        "entry": signal.entry_price,
+                        "leverage": leverage,
+                        "direction": signal.direction.value,
+                        "buffer_pct": float(liq_buffer.buffer_pct),
+                        "is_safe": False,
+                    },
+                )
                 return None
+            self.decision_logger.log(
+                cycle_id, symbol, "liquidation_buffer", "pass",
+                numeric_context={
+                    "entry": signal.entry_price,
+                    "leverage": leverage,
+                    "direction": signal.direction.value,
+                    "buffer_pct": float(liq_buffer.buffer_pct),
+                    "is_safe": True,
+                },
+            )
 
             # ── Regime detection (used by audit + trade_details) ──
             try:
@@ -984,10 +1204,20 @@ class Orchestrator:
                         "[%s] Price validation FAILED for %s: %s",
                         trigger, symbol, "; ".join(price_result.issues),
                     )
+                self.decision_logger.log(
+                    cycle_id, symbol, "price_validate",
+                    "pass" if price_validated else "reject",
+                    reason="; ".join(price_result.issues) if not price_validated else None,
+                    numeric_context={"valid": price_validated},
+                )
             except Exception as pv_err:
                 logger.warning(
                     "[%s] Price validation error (treating as failed): %s",
                     trigger, pv_err,
+                )
+                self.decision_logger.log(
+                    cycle_id, symbol, "price_validate", "error",
+                    reason=str(pv_err)[:200],
                 )
 
             # ── Signal validation (Anti-hallucination Layer 3) ──
@@ -1086,10 +1316,20 @@ class Orchestrator:
                         "[%s] Signal validation FAILED for %s: %s",
                         trigger, symbol, "; ".join(signal_validation.issues),
                     )
+                self.decision_logger.log(
+                    cycle_id, symbol, "signal_validate",
+                    "pass" if signal_validated else "reject",
+                    reason="; ".join(signal_validation.issues) if not signal_validated else None,
+                    numeric_context={"valid": signal_validated},
+                )
             except Exception as sv_err:
                 logger.warning(
                     "[%s] Signal validation error (treating as failed): %s",
                     trigger, sv_err,
+                )
+                self.decision_logger.log(
+                    cycle_id, symbol, "signal_validate", "error",
+                    reason=str(sv_err)[:200],
                 )
 
             # ── Audit (BLOCKING — Immutable Rule #7) ──
@@ -1139,13 +1379,27 @@ class Orchestrator:
                         "[%s] Audit REJECTED %s: %s",
                         trigger, symbol, audit_report.decision_reasoning,
                     )
+                    self.decision_logger.log(
+                        cycle_id, symbol, "decision_audit", "reject",
+                        reason=(audit_report.decision_reasoning or "")[:200],
+                        numeric_context={"decision": "REJECT"},
+                    )
                     return None
                 if audit_report.decision == "SKIP":
                     logger.info(
                         "[%s] Audit SKIPPED %s: %s",
                         trigger, symbol, audit_report.decision_reasoning,
                     )
+                    self.decision_logger.log(
+                        cycle_id, symbol, "decision_audit", "skip",
+                        reason=(audit_report.decision_reasoning or "")[:200],
+                        numeric_context={"decision": "SKIP"},
+                    )
                     return None
+                self.decision_logger.log(
+                    cycle_id, symbol, "decision_audit", "pass",
+                    numeric_context={"decision": audit_report.decision},
+                )
             except Exception as e:
                 logger.warning(f"[{trigger}] Audit failed (non-blocking): {e}")
 
@@ -2860,6 +3114,7 @@ class Orchestrator:
                 df_1h=df_1h,
                 cb_state=cb_state,
                 trigger="4h_candle_close",
+                cycle_id=self._current_cycle_id,
             )
 
         except Exception as e:
@@ -2999,21 +3254,29 @@ class Orchestrator:
 
     def _save_cycle_state(self, result: CycleResult) -> None:
         """Save cycle result to consolidated DB and JSON (backward compat)."""
+        cycle_row = CycleHistoryRow(
+            cycle_number=result.cycle_number,
+            timestamp=result.timestamp,
+            circuit_breaker_level=result.circuit_breaker_level,
+            balance=self.state.current_balance,
+            regime=result.regime,
+            signal_generated=result.signal_generated,
+            trade_placed=result.trade_placed,
+            trade_details=json.dumps(result.trade_details) if result.trade_details else None,
+            positions_closed=json.dumps(result.positions_closed),
+            errors=json.dumps(result.errors),
+            duration_seconds=result.duration_seconds,
+        )
         # Store in consolidated database
         try:
-            self.db.store_cycle(CycleHistoryRow(
-                cycle_number=result.cycle_number,
-                timestamp=result.timestamp,
-                circuit_breaker_level=result.circuit_breaker_level,
-                balance=self.state.current_balance,
-                regime=result.regime,
-                signal_generated=result.signal_generated,
-                trade_placed=result.trade_placed,
-                trade_details=json.dumps(result.trade_details) if result.trade_details else None,
-                positions_closed=json.dumps(result.positions_closed),
-                errors=json.dumps(result.errors),
-                duration_seconds=result.duration_seconds,
-            ))
+            if self._current_cycle_id > 0:
+                self.db.finish_cycle(
+                    cycle_id=self._current_cycle_id,
+                    cycle=cycle_row,
+                )
+            else:
+                # Fallback: begin_cycle failed this cycle, insert fresh row
+                self.db.store_cycle(cycle_row)
         except Exception as e:
             logger.warning(f"Failed to save cycle to DB: {e}")
 
