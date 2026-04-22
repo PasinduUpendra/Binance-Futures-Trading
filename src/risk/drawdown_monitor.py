@@ -1,7 +1,12 @@
 """
 Drawdown Monitor — tracks peak balance, current drawdown, and maximum
-historical drawdown.  State is persisted to disk as JSON so that
-restarts do not lose the high-water mark.
+historical drawdown.
+
+Sprint 1: primary persistence is now the ``system_state`` table inside
+``user_data/claude_quant.db``. The legacy JSON file is read ONCE at
+startup (to migrate state forward) and is no longer written to by this
+module — eliminating the dual-write risk called out in
+``docs/DRIFT_MAP.md §9``.
 """
 
 from __future__ import annotations
@@ -11,12 +16,14 @@ import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger("claude_quant.risk.drawdown_monitor")
 
 _DEFAULT_STATE_PATH = Path("user_data/agent_state/drawdown_state.json")
+_STATE_PREFIX = "drawdown."
 
 
 class DrawdownState(BaseModel):
@@ -52,8 +59,10 @@ class DrawdownMonitor:
         self,
         state_path: Path | str = _DEFAULT_STATE_PATH,
         initial_balance: Decimal | float | str | None = None,
+        db: Any | None = None,
     ) -> None:
         self._state_path = Path(state_path)
+        self._db = db  # DatabaseManager; primary persistence if attached
         self._peak_balance: Decimal = Decimal("0")
         self._max_drawdown_pct: Decimal = Decimal("0")
         self._max_drawdown_balance: Decimal = Decimal("0")
@@ -65,6 +74,21 @@ class DrawdownMonitor:
             self._peak_balance = bal
             self._current_balance = bal
             self._persist_state()
+
+    def attach_db(self, db: Any) -> None:
+        """Attach a ``DatabaseManager`` as the primary persistence target.
+
+        Once attached, ``_persist_state`` writes to the ``system_state``
+        table (keys prefixed ``drawdown.``) and stops writing the legacy
+        JSON file. The JSON file remains on disk as a read-only artifact
+        for older tooling (``watchdog_tools.py`` still reads it).
+
+        Persistence is lazy — state is written on the next ``update()`` or
+        ``reset()`` call, not on attach. This keeps tests that construct
+        ``Orchestrator()`` side-effect-free when they later override
+        in-memory state.
+        """
+        self._db = db
 
     # ------------------------------------------------------------------
     # Public API
@@ -146,7 +170,7 @@ class DrawdownMonitor:
     # Persistence
     # ------------------------------------------------------------------
     def _persist_state(self) -> None:
-        """Write current tracking data to disk atomically."""
+        """Write current tracking data — DB-first, JSON-fallback."""
         data = {
             "peak_balance": str(self._peak_balance),
             "current_balance": str(self._current_balance),
@@ -154,6 +178,19 @@ class DrawdownMonitor:
             "max_drawdown_balance": str(self._max_drawdown_balance),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
+
+        if self._db is not None:
+            # Primary: system_state table inside the canonical DB.
+            try:
+                for k, v in data.items():
+                    self._db.set_state(f"{_STATE_PREFIX}{k}", v)
+                return
+            except Exception as exc:  # noqa: BLE001
+                logger.error(
+                    "DB persist failed — falling back to JSON: %s", exc,
+                )
+
+        # Fallback: atomic JSON write (legacy, pre-Sprint-1 behaviour).
         try:
             self._state_path.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = self._state_path.with_suffix(".tmp")
@@ -165,7 +202,33 @@ class DrawdownMonitor:
             logger.error("Failed to persist drawdown state: %s", exc)
 
     def _load_state(self) -> bool:
-        """Attempt to restore state from disk. Returns True on success."""
+        """Attempt to restore state. Tries DB first, then legacy JSON."""
+        if self._db is not None:
+            try:
+                peak = self._db.get_state(f"{_STATE_PREFIX}peak_balance")
+                if peak is not None:
+                    self._peak_balance = Decimal(peak)
+                    self._current_balance = Decimal(
+                        self._db.get_state(f"{_STATE_PREFIX}current_balance", "0")
+                    )
+                    self._max_drawdown_pct = Decimal(
+                        self._db.get_state(f"{_STATE_PREFIX}max_drawdown_pct", "0")
+                    )
+                    self._max_drawdown_balance = Decimal(
+                        self._db.get_state(
+                            f"{_STATE_PREFIX}max_drawdown_balance", "0",
+                        )
+                    )
+                    logger.info(
+                        "Drawdown state restored from DB. "
+                        "Peak=$%.2f, MaxDD=%.2f%%",
+                        self._peak_balance,
+                        self._max_drawdown_pct * 100,
+                    )
+                    return True
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("DB load failed — trying JSON: %s", exc)
+
         if not self._state_path.exists():
             return False
         try:
@@ -175,7 +238,8 @@ class DrawdownMonitor:
             self._max_drawdown_pct = Decimal(raw["max_drawdown_pct"])
             self._max_drawdown_balance = Decimal(raw["max_drawdown_balance"])
             logger.info(
-                "Drawdown state restored. Peak=$%.2f, MaxDD=%.2f%%",
+                "Drawdown state restored from legacy JSON. "
+                "Peak=$%.2f, MaxDD=%.2f%%",
                 self._peak_balance,
                 self._max_drawdown_pct * 100,
             )

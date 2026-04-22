@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Claude Quant orchestrator — macOS launchd configuration.
+
+    This plist is installed into ~/Library/LaunchAgents and loaded via
+    `launchctl bootstrap gui/$UID <plist>`. See docs/SPRINT1_IMPLEMENTATION.md
+    §launchd for the exact commands.
+
+    Key choices:
+    - RunAtLoad=true         : start immediately after `launchctl bootstrap`.
+    - KeepAlive.SuccessfulExit=false : restart ONLY on non-zero exit /
+      signal. A clean `await orchestrator.stop()` exits 0, so manual
+      shutdowns are respected.
+    - ThrottleInterval=30    : if the bot crashes in a loop, back off
+      30 seconds between restarts (prevents rate-limit thrash).
+    - StandardOutPath / StandardErrorPath : dual files inside the repo's
+      log dir so `tail -f` Just Works and forensic tooling sees them.
+    - EnvironmentVariables   : intentionally NOT set here. Secrets live
+      in .env (chmod 600) and are sourced by run_bot.sh so launchctl-list
+      dumps do not expose API keys.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.claudequant.bot</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/pasinduupendra/Documents/Development/Claude Quant/scripts/launchd/run_bot.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/launchd.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/launchd.stderr.log</string>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>4096</integer>
+    </dict>
+</dict>
+</plist>

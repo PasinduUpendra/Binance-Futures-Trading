@@ -202,6 +202,21 @@ CREATE TABLE IF NOT EXISTS trailing_stops (
 );
 """
 
+_SCHEMA_AUDIT_TRAIL = """
+CREATE TABLE IF NOT EXISTS audit_trail (
+    audit_id       TEXT PRIMARY KEY,
+    trade_id       TEXT,
+    timestamp      TEXT NOT NULL,
+    symbol         TEXT,
+    direction      TEXT,
+    strategy_name  TEXT,
+    regime         TEXT,
+    decision       TEXT,
+    report_json    TEXT NOT NULL,
+    created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+"""
+
 _INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
@@ -210,6 +225,8 @@ CREATE INDEX IF NOT EXISTS idx_trades_regime ON trades(regime);
 CREATE INDEX IF NOT EXISTS idx_daily_reports_date ON daily_reports(report_date);
 CREATE INDEX IF NOT EXISTS idx_cycle_history_timestamp ON cycle_history(timestamp);
 CREATE INDEX IF NOT EXISTS idx_cycle_history_cycle ON cycle_history(cycle_number);
+CREATE INDEX IF NOT EXISTS idx_audit_trail_trade_id ON audit_trail(trade_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trail_timestamp ON audit_trail(timestamp);
 """
 
 
@@ -234,7 +251,25 @@ class DatabaseManager:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
+        self._mirror: Any | None = None  # SupabaseMirror, set via attach_mirror()
         self._initialize()
+
+    def attach_mirror(self, mirror: Any) -> None:
+        """Attach a SupabaseMirror (or any object exposing ``enqueue(table, row)``).
+
+        The mirror is best-effort: every successful local write also enqueues
+        an upsert to Supabase. Local writes NEVER block on the mirror and
+        never raise if the mirror is down.
+        """
+        self._mirror = mirror
+
+    def _mirror_enqueue(self, table: str, row: dict[str, Any]) -> None:
+        if self._mirror is None:
+            return
+        try:
+            self._mirror.enqueue(table, row)
+        except Exception as exc:  # noqa: BLE001 — never block local writes
+            logger.warning("Mirror enqueue failed for %s: %s", table, exc)
 
     def _initialize(self) -> None:
         """Create all tables and indexes."""
@@ -246,6 +281,7 @@ class DatabaseManager:
             + _SCHEMA_SYSTEM_STATE
             + _SCHEMA_STRATEGY_METRICS
             + _SCHEMA_TRAILING_STOPS
+            + _SCHEMA_AUDIT_TRAIL
             + _INDEXES
         )
         conn.commit()
@@ -320,6 +356,21 @@ class DatabaseManager:
             ),
         )
         conn.commit()
+        self._mirror_enqueue("daily_reports", {
+            "report_date": report.report_date.isoformat(),
+            "start_balance": str(report.start_balance),
+            "end_balance": str(report.end_balance),
+            "realized_pnl": str(report.realized_pnl),
+            "unrealized_pnl": str(report.unrealized_pnl),
+            "fees": str(report.fees),
+            "net_pnl": str(report.net_pnl),
+            "pnl_pct": str(report.pnl_pct),
+            "trades_count": report.trades_count,
+            "wins": report.wins,
+            "losses": report.losses,
+            "strategies_used": report.strategies_used,
+            "created_at": report.created_at.isoformat(),
+        })
         logger.info("Daily report stored for %s", report.report_date)
 
     def get_daily_report(self, report_date: date) -> DailyReportRow | None:
@@ -390,6 +441,19 @@ class DatabaseManager:
             ),
         )
         conn.commit()
+        self._mirror_enqueue("cycle_history", {
+            "cycle_number": cycle.cycle_number,
+            "timestamp": cycle.timestamp.isoformat(),
+            "circuit_breaker_level": cycle.circuit_breaker_level,
+            "balance": str(cycle.balance),
+            "regime": cycle.regime,
+            "signal_generated": bool(cycle.signal_generated),
+            "trade_placed": bool(cycle.trade_placed),
+            "trade_details": cycle.trade_details,
+            "positions_closed": cycle.positions_closed,
+            "errors": cycle.errors,
+            "duration_seconds": cycle.duration_seconds,
+        })
 
     def get_recent_cycles(self, n: int = 20) -> list[CycleHistoryRow]:
         """Get the most recent N cycles."""
@@ -464,6 +528,19 @@ class DatabaseManager:
             ),
         )
         conn.commit()
+        self._mirror_enqueue("trailing_stops", {
+            "symbol": symbol,
+            "direction": direction,
+            "entry_price": entry_price,
+            "best_price": best_price,
+            "atr_4h": atr_4h,
+            "activated": bool(activated),
+            "strategy_name": strategy_name,
+            "take_profit": take_profit,
+            "tp_pending": bool(tp_pending),
+            "updated_at": now,
+            "deleted": False,
+        })
 
     def get_all_trailing_stops(self) -> dict[str, dict]:
         """Return all trailing stop rows as ``{symbol: {field: value, ...}}``."""
@@ -482,6 +559,11 @@ class DatabaseManager:
         conn = self._get_conn()
         conn.execute("DELETE FROM trailing_stops WHERE symbol = ?", (symbol,))
         conn.commit()
+        self._mirror_enqueue("trailing_stops", {
+            "symbol": symbol,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "deleted": True,
+        })
 
     def delete_all_trailing_stops(self) -> None:
         """Remove all trailing stop records."""
@@ -692,3 +774,158 @@ class DatabaseManager:
         except (json.JSONDecodeError, KeyError) as exc:
             logger.error("Failed to migrate drawdown state: %s", exc)
             return False
+
+    def migrate_daily_state(self, json_path: Path | str) -> bool:
+        """Import daily state from a JSON file into system_state table."""
+        path = Path(json_path)
+        if not path.exists():
+            return False
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.set_state("daily.raw", json.dumps(data))
+            for key in ("date", "start_of_day_balance", "last_daily_report",
+                        "updated_at"):
+                if key in data:
+                    self.set_state(f"daily.{key}", str(data[key]))
+            logger.info("Migrated daily state from %s", path)
+            return True
+        except (json.JSONDecodeError, KeyError) as exc:
+            logger.error("Failed to migrate daily state: %s", exc)
+            return False
+
+    def migrate_trailing_stops_json(self, json_path: Path | str) -> int:
+        """Import trailing-stop state from legacy JSON into the trailing_stops
+        table. Returns the number of rows upserted."""
+        path = Path(json_path)
+        if not path.exists():
+            return 0
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.error("Failed to read trailing stops JSON: %s", exc)
+            return 0
+        count = 0
+        for symbol, state in raw.items():
+            try:
+                self.upsert_trailing_stop(
+                    symbol=symbol,
+                    direction=str(state.get("direction", "")),
+                    entry_price=float(state.get("entry_price", 0.0)),
+                    best_price=float(state.get("best_price", 0.0)),
+                    atr_4h=float(state.get("atr_4h", 0.0)),
+                    activated=bool(state.get("activated", False)),
+                    strategy_name=str(state.get("strategy_name", "")),
+                    take_profit=float(state.get("take_profit", 0.0)),
+                    tp_pending=bool(state.get("tp_pending", False)),
+                )
+                count += 1
+            except (ValueError, TypeError) as exc:
+                logger.warning("Skip trailing stop %s: %s", symbol, exc)
+        logger.info("Migrated %d trailing stops from %s", count, path)
+        return count
+
+    def migrate_from_audit_trail(self, old_db_path: Path | str) -> int:
+        """Import rows from a standalone audit_trail.db into this DB.
+
+        Returns the number of rows imported. Idempotent via INSERT OR IGNORE.
+        """
+        old_path = Path(old_db_path)
+        if not old_path.exists():
+            return 0
+        old_conn = sqlite3.connect(str(old_path))
+        old_conn.row_factory = sqlite3.Row
+        try:
+            cursor = old_conn.execute("SELECT * FROM audit_trail")
+            rows = cursor.fetchall()
+        except sqlite3.OperationalError:
+            old_conn.close()
+            return 0
+        conn = self._get_conn()
+        count = 0
+        for row in rows:
+            d = dict(row)
+            try:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO audit_trail (
+                        audit_id, trade_id, timestamp, symbol, direction,
+                        strategy_name, regime, decision, report_json, created_at
+                    ) VALUES (
+                        :audit_id, :trade_id, :timestamp, :symbol, :direction,
+                        :strategy_name, :regime, :decision, :report_json, :created_at
+                    )
+                    """,
+                    d,
+                )
+                count += 1
+            except (sqlite3.IntegrityError, KeyError) as exc:
+                logger.warning("Skip audit %s: %s", d.get("audit_id"), exc)
+        conn.commit()
+        old_conn.close()
+        logger.info("Migrated %d audit rows from %s", count, old_path)
+        return count
+
+    # -----------------------------------------------------------------------
+    # Audit trail (merged from standalone audit_trail.db)
+    # -----------------------------------------------------------------------
+
+    def insert_audit(
+        self,
+        audit_id: str,
+        trade_id: str | None,
+        timestamp: str,
+        symbol: str | None,
+        direction: str | None,
+        strategy_name: str | None,
+        regime: str | None,
+        decision: str | None,
+        report_json: str,
+    ) -> None:
+        """Insert (or replace) an audit trail row."""
+        conn = self._get_conn()
+        created_at = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO audit_trail (
+                audit_id, trade_id, timestamp, symbol, direction,
+                strategy_name, regime, decision, report_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                audit_id, trade_id, timestamp, symbol, direction,
+                strategy_name, regime, decision, report_json,
+                created_at,
+            ),
+        )
+        conn.commit()
+        self._mirror_enqueue("audit_trail", {
+            "audit_id": audit_id,
+            "trade_id": trade_id,
+            "timestamp": timestamp,
+            "symbol": symbol,
+            "direction": direction,
+            "strategy_name": strategy_name,
+            "regime": regime,
+            "decision": decision,
+            "report_json": report_json,
+            "created_at": created_at,
+        })
+
+    def get_audit_by_trade(self, trade_id: str) -> str | None:
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "SELECT report_json FROM audit_trail WHERE trade_id = ? "
+            "ORDER BY timestamp DESC LIMIT 1",
+            (trade_id,),
+        )
+        row = cursor.fetchone()
+        return row["report_json"] if row else None
+
+    def get_recent_audits(self, limit: int = 10) -> list[str]:
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "SELECT report_json FROM audit_trail "
+            "ORDER BY timestamp DESC LIMIT ?",
+            (limit,),
+        )
+        return [row["report_json"] for row in cursor.fetchall()]

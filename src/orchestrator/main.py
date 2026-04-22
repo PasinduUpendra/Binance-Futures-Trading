@@ -69,6 +69,7 @@ from src.risk.funding_rate_filter import FundingRateFilter
 from src.strategies.cross_asset_consensus import CrossAssetConsensus
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.alert_system import AlertSystem
+from src.data.supabase_mirror import SupabaseMirror
 
 logger = logging.getLogger("claude_quant.orchestrator")
 
@@ -220,12 +221,15 @@ class Orchestrator:
         self.position_tracker = PositionTracker()
         self.fee_calculator = FeeCalculator(use_bnb_discount=False)
         self.slippage_estimator = SlippageEstimator()
-        self.trade_journal = TradeJournal()
+        # Canonical DB FIRST — TradeJournal + DecisionAuditor now write into
+        # the same file so ``trades`` / ``audit_trail`` are no longer split.
+        self.db = DatabaseManager()
+        self.trade_journal = TradeJournal(db_path=self.db.db_path)
         self.performance_tracker = PerformanceTracker(journal=self.trade_journal)
         self.bias_detector = BiasDetector()
         self.price_validator = PriceValidator(market_data_client=self.market_data)
         self.signal_validator = SignalValidator()
-        self.decision_auditor = DecisionAuditor()
+        self.decision_auditor = DecisionAuditor(db_path=str(self.db.db_path))
         self.sanity_checker = SanityChecker()
         self.pnl_calculator = DailyPnLCalculator(
             initial_capital=Decimal(os.getenv("INITIAL_CAPITAL", "68.33"))
@@ -235,7 +239,17 @@ class Orchestrator:
         self.alert_system = AlertSystem()
         self.alert_system.log_channel_status()
         self.cross_asset_consensus = CrossAssetConsensus()
-        self.db = DatabaseManager()  # consolidated DB at user_data/claude_quant.db
+
+        # Supabase mirror (non-blocking) — no-op if env vars are unset.
+        # Attach to every persistence component AFTER construction.
+        self.mirror = SupabaseMirror()
+        self.db.attach_mirror(self.mirror)
+        self.trade_journal.attach_mirror(self.mirror)
+        self.decision_auditor.attach_mirror(self.mirror)
+
+        # Route DrawdownMonitor state into the canonical DB
+        # (system_state table). Stops dual-write of drawdown_state.json.
+        self.drawdown_monitor.attach_db(self.db)
 
         AGENT_STATE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -392,6 +406,7 @@ class Orchestrator:
             await self.position_tracker.close()
             await self.order_manager.close()
             self.db.close()
+            self.mirror.close()
         except Exception as e:
             logger.warning(f"Error closing connections: {e}")
 
@@ -3016,13 +3031,34 @@ class Orchestrator:
     _TRAILING_STATE_FILE = AGENT_STATE_DIR / "trailing_stops.json"
 
     def _load_daily_state(self, current_balance: Decimal) -> None:
-        """Restore daily_start_balance and last_daily_report from disk.
+        """Restore daily_start_balance and last_daily_report.
 
-        If the persisted date matches today, use the persisted
-        start-of-day balance.  Otherwise fall back to current_balance
-        (new day or first-ever run).
+        DB-first (``system_state`` table), legacy JSON fallback for the
+        one-time migration of pre-Sprint-1 state.
         """
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+        # DB first (primary since Sprint 1)
+        try:
+            persisted_date = self.db.get_state("daily.date", "")
+            if persisted_date == today:
+                self.state.daily_start_balance = Decimal(
+                    self.db.get_state("daily.start_of_day_balance", "0")
+                )
+                last_rep = self.db.get_state("daily.last_daily_report", "")
+                self.state.last_daily_report = last_rep or None
+                logger.info(
+                    "Restored daily state (DB) for %s: "
+                    "start_balance=$%.2f, last_report=%s",
+                    today,
+                    self.state.daily_start_balance,
+                    self.state.last_daily_report,
+                )
+                return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("DB daily-state load failed: %s", exc)
+
+        # Legacy JSON fallback (pre-Sprint-1)
         try:
             if self._DAILY_STATE_FILE.exists():
                 raw = json.loads(
@@ -3037,17 +3073,16 @@ class Orchestrator:
                         "last_daily_report"
                     )
                     logger.info(
-                        "Restored daily state for %s: "
-                        "start_balance=$%.2f, last_report=%s",
+                        "Restored daily state (legacy JSON) for %s",
                         today,
-                        self.state.daily_start_balance,
-                        self.state.last_daily_report,
                     )
+                    # Promote to DB
+                    self._persist_daily_state()
                     return
         except (json.JSONDecodeError, KeyError, Exception) as exc:
-            logger.warning("Could not load daily state: %s", exc)
+            logger.warning("Could not load daily state (JSON): %s", exc)
 
-        # Fallback: new day or missing/corrupt file
+        # Fallback: new day or missing/corrupt state
         self.state.daily_start_balance = current_balance
         logger.info(
             "No persisted daily state for %s — using current balance $%.2f",
@@ -3055,19 +3090,31 @@ class Orchestrator:
         )
 
     def _persist_daily_state(self) -> None:
-        """Atomically write daily_start_balance and last_daily_report."""
-        data = {
-            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-            "start_of_day_balance": str(self.state.daily_start_balance),
-            "last_daily_report": self.state.last_daily_report,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        """Persist daily_start_balance and last_daily_report to the DB.
+
+        Sprint 1: stopped writing to ``daily_state.json`` — the canonical
+        store is now the ``system_state`` table. The legacy file remains
+        for historical inspection only.
+        """
         try:
-            tmp = self._DAILY_STATE_FILE.with_suffix(".tmp")
-            tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
-            tmp.rename(self._DAILY_STATE_FILE)  # atomic on POSIX
-        except OSError as exc:
-            logger.error("Failed to persist daily state: %s", exc)
+            self.db.set_state(
+                "daily.date",
+                datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            )
+            self.db.set_state(
+                "daily.start_of_day_balance",
+                str(self.state.daily_start_balance),
+            )
+            self.db.set_state(
+                "daily.last_daily_report",
+                self.state.last_daily_report or "",
+            )
+            self.db.set_state(
+                "daily.updated_at",
+                datetime.now(timezone.utc).isoformat(),
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to persist daily state to DB: %s", exc)
 
     def _load_trailing_stop_state(self) -> None:
         """Restore trailing stop state from database so restarts keep progress.
@@ -3134,16 +3181,16 @@ class Orchestrator:
             logger.warning("Could not load trailing stop state from JSON: %s", exc)
 
     def _persist_trailing_stop_state(self) -> None:
-        """Persist trailing stop state to database (ACID-safe).
+        """Persist trailing stop state to the canonical DB (ACID-safe).
 
-        Also writes the legacy JSON file for backward compatibility.
+        Sprint 1: stopped writing to ``trailing_stops.json`` — ``trailing_stops``
+        table is the sole source of truth. Legacy JSON remains read-only
+        for historical inspection.
         """
         try:
-            # Write each state to the database
             current_symbols = set(self._trailing_stops.keys())
             db_symbols = set(self.db.get_all_trailing_stops().keys())
 
-            # Upsert current states
             for symbol, state in self._trailing_stops.items():
                 self.db.upsert_trailing_stop(
                     symbol=symbol,
@@ -3157,24 +3204,11 @@ class Orchestrator:
                     tp_pending=state.tp_pending,
                 )
 
-            # Delete stale entries (positions closed since last persist)
             for symbol in db_symbols - current_symbols:
                 self.db.delete_trailing_stop(symbol)
 
         except Exception as exc:
             logger.error("Failed to persist trailing stops to DB: %s", exc)
-
-        # Legacy JSON for backward compatibility
-        try:
-            serialized = {
-                symbol: state.model_dump()
-                for symbol, state in self._trailing_stops.items()
-            }
-            tmp = self._TRAILING_STATE_FILE.with_suffix(".tmp")
-            tmp.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
-            tmp.rename(self._TRAILING_STATE_FILE)
-        except OSError as exc:
-            logger.warning("Failed to persist trailing stop JSON (non-critical): %s", exc)
 
 
 async def main() -> None:

@@ -195,9 +195,22 @@ class TradeJournal:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
+        self._mirror: Any | None = None  # SupabaseMirror; attach via attach_mirror()
         self._initialize_db()
 
         logger.info("TradeJournal initialized at %s", self._db_path)
+
+    def attach_mirror(self, mirror: Any) -> None:
+        """Attach a non-blocking Supabase mirror. Failures never raise."""
+        self._mirror = mirror
+
+    def _mirror_enqueue(self, payload: dict[str, Any]) -> None:
+        if self._mirror is None:
+            return
+        try:
+            self._mirror.enqueue("trades", payload)
+        except Exception as exc:  # noqa: BLE001 — never block local write
+            logger.warning("Trade mirror enqueue failed: %s", exc)
 
     def _initialize_db(self) -> None:
         """Create the database schema if it doesn't exist."""
@@ -299,6 +312,7 @@ class TradeJournal:
         params = self._trade_to_params(entry)
         conn.execute(_INSERT_TRADE, params)
         conn.commit()
+        self._mirror_enqueue(params)
 
         logger.info(
             "TRADE_RECORDED trade_id=%s symbol=%s direction=%s "
@@ -566,6 +580,7 @@ class TradeJournal:
             params = self._trade_to_params(standalone)
             conn.execute(_INSERT_TRADE, params)
             conn.commit()
+            self._mirror_enqueue(params)
             logger.info(
                 "TRADE_EXIT_STANDALONE trade_id=%s symbol=%s pnl=%s reason=%s",
                 standalone.trade_id, symbol, pnl, reason,
@@ -598,6 +613,13 @@ class TradeJournal:
             ),
         )
         conn.commit()
+        # Read the full updated row to mirror the complete record upstream.
+        updated_cursor = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ?", (trade_id,),
+        )
+        updated_row = updated_cursor.fetchone()
+        if updated_row is not None:
+            self._mirror_enqueue(dict(updated_row))
 
         logger.info(
             "TRADE_EXIT_RECORDED trade_id=%s symbol=%s exit=%s pnl=%s reason=%s",

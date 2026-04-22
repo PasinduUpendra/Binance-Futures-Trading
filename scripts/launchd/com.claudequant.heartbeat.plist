@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Claude Quant heartbeat monitor — runs every 5 minutes and alerts if
+    the orchestrator has not written a cycle_history row in the last
+    90 minutes (3× the 30-minute CYCLE_INTERVAL_SECONDS).
+
+    Exit codes:
+      0 — fresh, no alert
+      2 — stale, alert written to user_data/logs/heartbeat.log
+      3 — DB missing
+
+    launchd treats non-zero as a failure but we DO NOT want it to restart
+    the heartbeat on failure (the heartbeat exiting 2 is the alert). So
+    KeepAlive is unset; StartInterval just fires every 300s.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.claudequant.heartbeat</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>/Users/pasinduupendra/Documents/Development/Claude Quant/scripts/heartbeat_monitor.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant</string>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/heartbeat.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/pasinduupendra/Documents/Development/Claude Quant/user_data/logs/heartbeat.stderr.log</string>
+</dict>
+</plist>

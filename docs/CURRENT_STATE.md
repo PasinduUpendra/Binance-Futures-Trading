@@ -134,28 +134,31 @@ SL/TP multipliers by regime ([supertrend_trend.py:79-84](../src/strategies/super
 
 ---
 
-## 5. Active Persistence Model
+## 5. Active Persistence Model (post Sprint 1, 2026-04-22)
 
-**Primary database** (WAL mode, synchronous=FULL): `user_data/claude_quant.db` — [database.py](../src/data/database.py)
+**Canonical database** (WAL mode, synchronous=FULL): `user_data/claude_quant.db` — [database.py](../src/data/database.py). Every live execution path writes here now; the former split-brain is eliminated.
 
-| Table | Purpose | Row cardinality |
+| Table | Purpose | Writer |
 |---|---|---|
-| `trades` | Trade journal (entries + exits) | 1 per trade_id |
-| `daily_reports` | Daily P&L snapshots | 1 per UTC date |
-| `cycle_history` | Every orchestrator cycle | 1 per cycle (blob: `trade_details`, `positions_closed`, `errors`) |
-| `system_state` | Key-value (drawdown peak, etc.) | ~10 |
-| `strategy_metrics` | Cached perf per (strategy, regime) | small |
-| `trailing_stops` | Live TS state (ACID persistence) | 1 per open position |
+| `trades` | Trade journal (entries + exits) | `TradeJournal` — now points at the canonical DB via `Orchestrator.__init__` passing `db_path=self.db.db_path` |
+| `daily_reports` | Daily P&L snapshots | `main.py:2896` `self.db.store_daily_report()` |
+| `cycle_history` | Every orchestrator cycle | `main.py:2989` `self.db.store_cycle()` |
+| `system_state` | Key-value (drawdown + daily state) | `DrawdownMonitor._persist_state` and `_persist_daily_state` — JSON writers removed Sprint 1 |
+| `strategy_metrics` | Cached perf per (strategy, regime) | unchanged (unused by live orchestrator) |
+| `trailing_stops` | Live TS state (ACID persistence) | `main.py:3148` `self.db.upsert_trailing_stop()` — JSON side-write removed Sprint 1 |
+| `audit_trail` | Decision-auditor reports | `DecisionAuditor._persist` — now writes to canonical DB (was standalone `audit_trail.db`) |
 
-**Candle cache**: separate `candle_store.py`, table-per-(symbol, timeframe) pattern. Different DB file.
+**Candle cache**: separate `candle_store.py`, table-per-(symbol, timeframe) pattern, unchanged.
 
-**Legacy JSON state files still on disk** in `user_data/agent_state/`:
-- `trailing_stops.json` (legacy fallback — SQLite is primary since v6.10)
-- `daily_state.json` (legacy fallback)
-- `drawdown_state.json` (legacy atomic write)
-- `last_cycle.json` (agent state snapshot)
-- `watchdog_state.json`
-- `trade_journal.db`, `.db-shm`, `.db-wal` (legacy, still in git status)
+**Remote mirror**: [src/data/supabase_mirror.py](../src/data/supabase_mirror.py) — non-blocking, best-effort upsert to Supabase via PostgREST. **Disabled unless `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` are in the env.** Local SQLite remains authoritative; mirror failures never block a live write. See [SPRINT1_IMPLEMENTATION.md §E](SPRINT1_IMPLEMENTATION.md).
+
+**Legacy artifacts in `user_data/agent_state/`** (read-only, archived by `scripts/migrate_to_canonical_db.py`):
+- `archive/trade_journal.db.*` — merged into canonical `trades`
+- `archive/audit_trail.db.*` — merged into canonical `audit_trail`
+- `archive/daily_state.json.*` — migrated to `system_state` keys `daily.*`
+- `archive/drawdown_state.json.*` — migrated to `system_state` keys `drawdown.*`
+- `archive/trailing_stops.json.*` — migrated into `trailing_stops`
+- `last_cycle.json`, `watchdog_state.json` — retained (read by `watchdog_tools.py`; orchestrator no longer maintains them as state of truth)
 
 **Separate TradeMemory DB**: `TRADEMEMORY_DB_PATH=./user_data/tradememory.db` — MCP client ([.env:30](../.env#L30)). Not integrated into the orchestrator decision loop.
 
@@ -198,9 +201,10 @@ Additional gates enforced in `is_trading_allowed`:
 - **Runtime**: single-process async Python 3.11+, APScheduler not driving the main loop — asyncio `while not shutdown_event` polling pattern
 - **Exchange client**: `ccxt_async.binanceusdm` with `enable_demo_trading(True)` switch controlled by `BINANCE_TESTNET` env var
 - **WS**: `subscribe_kline_close` for 4H candles → `_on_4h_close` handler that can also trigger `_execute_signal` (shares `_execution_lock` with cycle)
-- **Persistence**: local SQLite only
-- **Secrets**: plaintext `.env` on disk with both production AND testnet keys side by side
-- **Process supervision**: none built-in. `scripts/stop_bot.sh`/`start_bot.sh` exist; systemd/launchd not configured
+- **Persistence**: local SQLite canonical (`user_data/claude_quant.db`) + optional non-blocking Supabase mirror (Sprint 1)
+- **Secrets**: plaintext `.env` on disk — recommended path is `chmod 600` + macOS Keychain, see [SPRINT1_IMPLEMENTATION.md §H](SPRINT1_IMPLEMENTATION.md)
+- **Process supervision**: launchd plist `scripts/launchd/com.claudequant.bot.plist` (auto-restart on crash, 30 s throttle); install docs in SPRINT1
+- **Heartbeat**: launchd plist `scripts/launchd/com.claudequant.heartbeat.plist` runs `scripts/heartbeat_monitor.py` every 5 min; alerts to `user_data/logs/heartbeat.log` if `cycle_history` is > 90 min stale
 - **Monitoring**: `scripts/watchdog_tools.py` CLI + `.claude/agents/watchdog.md` (Claude agent invoked by humans via `@watchdog`)
 - **Alerts**: `alert_system.py` with Telegram + Discord; both use placeholder tokens in `.env` — effectively disabled
 

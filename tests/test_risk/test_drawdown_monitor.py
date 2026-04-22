@@ -301,3 +301,38 @@ class TestRollingDrawdownHalt:
         assert mon.should_halt_rolling(Decimal("0.15")) is True
         mon.update(110)  # new peak
         assert mon.should_halt_rolling(Decimal("0.15")) is False
+
+
+class TestDbBackedPersistence:
+    """Sprint 1: drawdown state persists to DatabaseManager.system_state."""
+
+    def test_attach_db_routes_subsequent_writes_to_db(self, tmp_path):
+        from src.data.database import DatabaseManager
+        db = DatabaseManager(db_path=tmp_path / "canon.db")
+        json_path = tmp_path / "dd.json"
+        mon = DrawdownMonitor(state_path=json_path, initial_balance=100)
+        mon.attach_db(db)
+        mon.update(100)
+        mon.update(80)
+        assert db.get_state("drawdown.peak_balance") == "100"
+        assert db.get_state("drawdown.current_balance") == "80"
+        assert db.get_state("drawdown.max_drawdown_pct") is not None
+        db.close()
+
+    def test_load_prefers_db_over_json(self, tmp_path):
+        from src.data.database import DatabaseManager
+        db_path = tmp_path / "canon.db"
+        json_path = tmp_path / "dd.json"
+        json_path.write_text(
+            '{"peak_balance":"50","current_balance":"40",'
+            '"max_drawdown_pct":"0.2","max_drawdown_balance":"40",'
+            '"updated_at":"2026-04-22T00:00:00+00:00"}'
+        )
+        db = DatabaseManager(db_path=db_path)
+        db.set_state("drawdown.peak_balance", "200")
+        db.set_state("drawdown.current_balance", "180")
+        db.set_state("drawdown.max_drawdown_pct", "0.1")
+        db.set_state("drawdown.max_drawdown_balance", "180")
+        mon = DrawdownMonitor(state_path=json_path, db=db)
+        assert mon.peak_balance == Decimal("200")
+        db.close()

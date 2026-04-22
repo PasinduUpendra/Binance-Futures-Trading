@@ -23,9 +23,11 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger("claude_quant.anti_hallucination.decision_auditor")
 
-# Default database path — inside user_data so it persists across restarts.
+# Default database path — canonical consolidated DB (Sprint 1: migrated
+# out of the standalone ``audit_trail.db``). The legacy file remains on
+# disk as a read-only historical artifact.
 _DEFAULT_DB_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "user_data", "audit_trail.db"
+    os.path.dirname(__file__), "..", "..", "user_data", "claude_quant.db"
 )
 
 
@@ -99,7 +101,12 @@ class DecisionAuditor:
 
     def __init__(self, db_path: str | None = None) -> None:
         self._db_path = db_path or _DEFAULT_DB_PATH
+        self._mirror: Any | None = None
         self._ensure_db()
+
+    def attach_mirror(self, mirror: Any) -> None:
+        """Attach a non-blocking Supabase mirror."""
+        self._mirror = mirror
 
     # -- database setup ------------------------------------------------------
 
@@ -371,6 +378,7 @@ class DecisionAuditor:
     def _persist(self, report: AuditReport) -> None:
         """Write the audit report to SQLite."""
         report_json = report.model_dump_json()
+        created_at = datetime.now(timezone.utc).isoformat()
         try:
             with self._connect() as conn:
                 conn.execute(
@@ -395,3 +403,23 @@ class DecisionAuditor:
             logger.debug("Persisted audit %s to %s", report.audit_id[:8], self._db_path)
         except sqlite3.Error as exc:
             logger.error("Failed to persist audit %s: %s", report.audit_id[:8], exc)
+            return
+
+        if self._mirror is not None:
+            try:
+                self._mirror.enqueue("audit_trail", {
+                    "audit_id": report.audit_id,
+                    "trade_id": report.trade_id,
+                    "timestamp": report.timestamp.isoformat(),
+                    "symbol": report.symbol,
+                    "direction": report.direction,
+                    "strategy_name": report.strategy_name,
+                    "regime": report.regime,
+                    "decision": report.decision,
+                    "report_json": report_json,
+                    "created_at": created_at,
+                })
+            except Exception as exc:  # noqa: BLE001 — never block local
+                logger.warning(
+                    "Audit mirror enqueue failed: %s", exc,
+                )

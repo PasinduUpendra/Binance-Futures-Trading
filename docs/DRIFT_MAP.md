@@ -122,13 +122,17 @@ All 9 agent files were last written **2026-03-15** (`ls -la .claude/agents/`). S
 
 ---
 
-## 9. Persistence Drift
+## 9. Persistence Drift — RESOLVED 2026-04-22 (Sprint 1)
 
-| Item | Docs say | Code says |
+| Item | Before Sprint 1 | After Sprint 1 |
 |---|---|---|
-| Single consolidated DB | CLAUDE.md §11 / SSOT §6 — yes | ✅ Mostly yes (`user_data/claude_quant.db`) BUT legacy JSON state files in `user_data/agent_state/` are still written-to by some paths (trailing_stops.json, daily_state.json, drawdown_state.json) as fallback. Dual-write risk. |
-| Old `trade_journal.db` migrated | SSOT says YES | Git status shows `user_data/agent_state/trade_journal.db-shm`, `.db-wal` still tracked. Old file apparently still exists on disk. Migration is idempotent but the old file was never deleted. |
-| `tradememory.db` | Not mentioned in orchestrator docs | Referenced in .env; MCP client code exists ([src/memory/trade_memory_client.py](../src/memory/trade_memory_client.py)); not invoked in main cycle |
+| Single consolidated DB | `claude_quant.db` existed but `trades` table was empty — live writes went to `trade_journal.db` | ✅ TradeJournal now writes to `claude_quant.db` (orchestrator passes `db_path=self.db.db_path`) — see [SPRINT1_IMPLEMENTATION.md §B](SPRINT1_IMPLEMENTATION.md) |
+| Legacy `trade_journal.db` | 17 live trades in the legacy file | ✅ Merged into canonical via `scripts/migrate_to_canonical_db.py` (INSERT OR IGNORE, idempotent); legacy file archived to `user_data/agent_state/archive/` |
+| Legacy `audit_trail.db` | 95 rows in a standalone file | ✅ `DecisionAuditor` default path now points at canonical DB; migration helper copies existing rows; legacy file archived |
+| `daily_state.json` | Dual-write (file + DB absent) | ✅ Primary persistence is `system_state.daily.*`; file no longer written; legacy file archived |
+| `drawdown_state.json` | Only JSON (not in DB at all) | ✅ Primary persistence is `system_state.drawdown.*`; `DrawdownMonitor.attach_db` routes all writes to DB; legacy file archived |
+| `trailing_stops.json` | Dual-write (DB + JSON) | ✅ JSON side-write removed from `_persist_trailing_stop_state`; DB is sole source of truth |
+| `tradememory.db` | Not mentioned in orchestrator docs | Referenced in .env; MCP client code exists ([src/memory/trade_memory_client.py](../src/memory/trade_memory_client.py)); not invoked in main cycle — **still untouched** |
 
 ---
 
