@@ -1,0 +1,53 @@
+{
+  "ADA/USDT:USDT": {
+    "symbol": "ADA/USDT:USDT",
+    "direction": "short",
+    "entry_price": 0.2503,
+    "best_price": 0.24702595,
+    "atr_4h": 0.02,
+    "activated": true,
+    "strategy_name": "SupertrendTrend",
+    "take_profit": 0.61,
+    "tp_pending": false,
+    "partial_tp_taken": false,
+    "stop_loss": 0.0,
+    "size": 0.0,
+    "leverage": 1,
+    "ACTIVATE_ATR_MULT": 2.0,
+    "TRAIL_ATR_MULT": 2.5
+  },
+  "XRP/USDT:USDT": {
+    "symbol": "XRP/USDT:USDT",
+    "direction": "short",
+    "entry_price": 1.3469,
+    "best_price": 1.3411,
+    "atr_4h": 0.01710463705404752,
+    "activated": false,
+    "strategy_name": "pre_existing",
+    "take_profit": 0.0,
+    "tp_pending": false,
+    "partial_tp_taken": false,
+    "stop_loss": 0.0,
+    "size": 0.0,
+    "leverage": 1,
+    "ACTIVATE_ATR_MULT": 2.0,
+    "TRAIL_ATR_MULT": 2.5
+  },
+  "SOL/USDT:USDT": {
+    "symbol": "SOL/USDT:USDT",
+    "direction": "long",
+    "entry_price": 83.94,
+    "best_price": 84.63017131,
+    "atr_4h": 1.3979783251858873,
+    "activated": false,
+    "strategy_name": "SupertrendTrend",
+    "take_profit": 85.28320958,
+    "tp_pending": false,
+    "partial_tp_taken": true,
+    "stop_loss": 83.37339521,
+    "size": 0.23,
+    "leverage": 4,
+    "ACTIVATE_ATR_MULT": 2.0,
+    "TRAIL_ATR_MULT": 2.5
+  }
+}

@@ -1576,3 +1576,90 @@ async def test_post_only_unfilled_falls_back_to_market(
     orch.order_manager.place_limit_order.assert_awaited_once()
     orch.order_manager.cancel_order.assert_awaited_once()
     orch.order_manager.place_market_order.assert_awaited_once()
+
+
+# ════════════════════════════════════════════════════════════════════════
+# P0 KILL-3: _record_trade_exit must never raise on None inputs
+# ════════════════════════════════════════════════════════════════════════
+
+
+def test_record_trade_exit_guards_none_values(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """P0 KILL-3 regression: _record_trade_exit must swallow None args
+    (Decimal(str(None)) raised ConversionSyntax and the whole row was lost).
+
+    Live forensic (PHASE2A §KILL-5) tied 4 missing mainnet exits to this
+    exact crash path.  The guard must log a warning and return without
+    touching the journal.
+    """
+    orch = isolated_orchestrator
+
+    # Baseline: journal empty
+    assert orch.trade_journal.get_trade_count() == 0
+
+    # Must not raise — each invocation has one None parameter
+    orch._record_trade_exit(
+        symbol="SOL/USDT:USDT",
+        exit_price=None,                   # type: ignore[arg-type]
+        pnl=-0.13,
+        entry_price=84.59,
+        reason="sl_hit",
+    )
+    orch._record_trade_exit(
+        symbol="SOL/USDT:USDT",
+        exit_price=84.20,
+        pnl=None,                          # type: ignore[arg-type]
+        entry_price=84.59,
+        reason="sl_hit",
+    )
+    orch._record_trade_exit(
+        symbol="SOL/USDT:USDT",
+        exit_price=84.20,
+        pnl=-0.13,
+        entry_price=None,                  # type: ignore[arg-type]
+        reason="sl_hit",
+    )
+
+    # Defensive: no partial/ghost writes should have reached the DB
+    assert orch.trade_journal.get_trade_count() == 0
+
+
+def test_record_trade_exit_happy_path_writes_row(
+    isolated_orchestrator: Orchestrator,
+) -> None:
+    """Sanity: with a matching open trade, _record_trade_exit records pnl,
+    pnl_pct, duration, and exit_reason correctly."""
+    from src.memory.trade_journal import TradeEntry
+
+    orch = isolated_orchestrator
+    # Seed an open trade (no exit_price/pnl) for the symbol
+    entry = TradeEntry(
+        symbol="XRP/USDT:USDT",
+        direction="short",
+        entry_price=Decimal("1.3469"),
+        size=Decimal("10"),
+    )
+    orch.trade_journal.record_trade(entry)
+
+    orch._record_trade_exit(
+        symbol="XRP/USDT:USDT",
+        exit_price=1.3610,
+        pnl=-0.141,
+        entry_price=1.3469,
+        reason="sl_hit",
+        duration_hours=3.2,
+        size=10.0,
+        leverage=5,
+    )
+
+    trades = orch.trade_journal.get_all_trades()
+    assert len(trades) == 1
+    closed = trades[0]
+    assert closed.exit_price == Decimal("1.361")
+    assert closed.pnl == Decimal("-0.141")
+    # pnl_pct should be pnl / margin × 100 where margin = entry × size / leverage
+    # margin = 1.3469 × 10 / 5 = 2.6938; pnl_pct = -0.141 / 2.6938 × 100 ≈ -5.23%
+    assert closed.pnl_pct is not None
+    assert Decimal("-6.0") <= closed.pnl_pct <= Decimal("-4.5")
+    assert closed.exit_reason_enum == "sl_hit"

@@ -514,6 +514,53 @@ def test_update_trade_exit_no_match(journal: TradeJournal) -> None:
 
 
 # ---------------------------------------------------------------------------
+# P0 KILL-3: standalone exit record when no matching open trade
+# ---------------------------------------------------------------------------
+
+
+def test_update_trade_exit_no_match_creates_standalone_record(
+    journal: TradeJournal,
+) -> None:
+    """P0 KILL-3 regression: exits with no matching open row must be
+    preserved as a standalone record, not silently dropped.
+
+    Live forensic (PHASE2A §KILL-5) showed 4 mainnet exits never recorded
+    because the journal returned None and discarded the row.
+    """
+    assert journal.get_trade_count() == 0
+
+    result = journal.update_trade_exit(
+        symbol="XRP/USDT:USDT",
+        exit_price=Decimal("1.3200"),
+        pnl=Decimal("-0.144"),
+        pnl_pct=Decimal("-2.15"),
+        duration=3.2,
+        reason="sl_hit",
+        hold_bars=3,
+        exit_reason_enum="sl_hit",
+    )
+
+    # No matching open trade existed → update path returns None,
+    # but a standalone row must now exist.
+    assert result is None
+    assert journal.get_trade_count() == 1
+
+    rows = journal.get_all_trades()
+    stand = rows[0]
+    assert stand.symbol == "XRP/USDT:USDT"
+    assert stand.exit_price == Decimal("1.3200")
+    assert stand.pnl == Decimal("-0.144")
+    assert stand.pnl_pct == Decimal("-2.15")
+    assert stand.exit_reason == "sl_hit"
+    assert stand.exit_reason_enum == "sl_hit"
+    # Standalone records carry zero entry/size sentinels so downstream
+    # aggregations can still treat them as realized exits
+    assert stand.direction == "unknown"
+    assert stand.entry_price == Decimal("0")
+    assert stand.size == Decimal("0")
+
+
+# ---------------------------------------------------------------------------
 # 23. update_trade_exit — targets the most recent open trade
 # ---------------------------------------------------------------------------
 

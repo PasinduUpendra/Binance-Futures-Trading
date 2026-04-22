@@ -934,6 +934,49 @@ class TestTrailingStopMarket:
         assert "activationPrice" not in params
         assert params["callbackRate"] == 1.5
 
+    # -- P0 hotfix: -2007 "Invalid callBack rate" regression -----------------
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            (2.567, 2.6),   # >1 decimal → rounded
+            (0.123, 0.1),   # sub-min + extra decimals → clamped and rounded
+            (4.999, 5.0),   # just under max, extra decimals → rounded to max
+            (0.05, 0.1),    # below min → clamped up
+            (8.0, 5.0),     # above max → clamped down
+            (-1.0, 0.1),    # negative → clamped to min
+        ],
+    )
+    async def test_trailing_stop_rounds_callback_rate_to_one_decimal(
+        self, raw, expected,
+    ):
+        """P0 KILL-1 regression: Binance rejects callbackRate with >1 decimal
+        with error -2007. Clamp to [0.1, 5.0] AND round to 1 decimal."""
+        mock_ex = MagicMock()
+        mock_ex.create_order = AsyncMock(return_value=_raw_order_response(
+            id="ts_rd", type="trailing_stop_market", status="open", filled=0.0,
+        ))
+        om = _make_connected_om(mock_ex)
+
+        await om.place_trailing_stop_market(
+            symbol="SOL/USDT:USDT",
+            side="sell",
+            amount=Decimal("10"),
+            callback_rate=raw,
+        )
+
+        call_kwargs = mock_ex.create_order.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
+        sent = params["callbackRate"]
+
+        # Must be in Binance's accepted range
+        assert 0.1 <= sent <= 5.0
+        # Must match the expected clamp+round output
+        assert sent == pytest.approx(expected, abs=1e-9)
+        # Must have at most 1 decimal place
+        assert abs(round(sent * 10) - sent * 10) < 1e-9
+
 
 # =========================================================================
 # R-A5 — GTX (post-only) limit orders

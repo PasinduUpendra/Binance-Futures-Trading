@@ -262,6 +262,10 @@ Removed all 5 stale `0.628%` references from `.claude/agents/watchdog.md`. See [
 
 74 new tests in `tests/test_reporting/` — all passing, zero regressions in the full suite (802 passing).
 
+### P0 hotfix pack (2026-04-22, later same day)
+
+Regression tests for the four P0 bugs verified by [PHASE2A_LIVE_FORENSICS.md](reports/PHASE2A_LIVE_FORENSICS.md) (KILL-1 trailing-stop -2007, KILL-2 1H-ATR, KILL-4 ST reversal AttributeError, KILL-5 trade-exits-not-recorded) — code fixes were already in commit `55b4d62`. 11 new tests added; suite now at **813 passing**. See [P0_HOTFIX_PACK.md](P0_HOTFIX_PACK.md) for files, root causes, and rollback.
+
 ### How to use
 
 ```bash

@@ -523,3 +523,117 @@ class TestRRBoundaryTolerance:
         """MIN_RR constant has epsilon tolerance."""
         assert self.strategy.MIN_RR < 2.0
         assert self.strategy.MIN_RR > 1.99
+
+
+# =====================================================================
+# P0 KILL-2 — multi-timeframe ATR regression
+# =====================================================================
+#
+# Live forensic (docs/reports/PHASE2A_LIVE_FORENSICS.md §Section 3 KILL-2):
+# generate_aligned_signal / generate_continuation_signal / generate_fast_signal
+# used 1H or 15m ATR for SL/TP, making stops ~5-7× tighter than the 4H
+# backtest spec.  Regression: all three paths must use 4H ATR so SL distance
+# equals 3.0 × ATR(4H) for trending regime.
+
+def _make_1h_aligned_df(
+    direction: int,
+    rsi_series: list[float],
+    atr: float,
+    close: float,
+    volume: float = 200.0,
+    volume_sma: float = 100.0,
+) -> pd.DataFrame:
+    """1H frame with RSI pullback recovery baked in.
+
+    *direction*: +1 aligned LONG, -1 aligned SHORT.  *rsi_series* must have
+    len == SupertrendTrend.RSI_LOOKBACK_BARS.
+    """
+    n = len(rsi_series)
+    return pd.DataFrame({
+        "supertrend_direction": [direction] * n,
+        "adx": [25.0] * n,
+        "atr": [atr] * n,
+        "close": [close] * n,
+        "ema_9": [close + 10.0 * direction] * n,
+        "ema_21": [close - 10.0 * direction] * n,
+        "rsi": rsi_series,
+        "volume": [volume] * n,
+        "volume_sma": [volume_sma] * n,
+    })
+
+
+def _make_4h_established_df(
+    direction: int,
+    atr: float,
+    close: float,
+    adx: float = 25.0,
+) -> pd.DataFrame:
+    """4H frame with an established trend (≥ MIN_ESTABLISHED_BARS same-dir)."""
+    n = SupertrendTrend.MIN_ESTABLISHED_BARS + 2
+    return pd.DataFrame({
+        "supertrend_direction": [direction] * n,
+        "adx": [adx] * n,
+        "atr": [atr] * n,
+        "close": [close] * n,
+        "ema_9": [close + 10.0 * direction] * n,
+        "ema_21": [close - 10.0 * direction] * n,
+        "rsi": [55.0] * n,
+    })
+
+
+def test_aligned_signal_uses_4h_atr_for_sl_tp(strategy: SupertrendTrend) -> None:
+    """P0 KILL-2: SL distance must be computed from 4H ATR, not 1H ATR.
+
+    Build 4H ATR=1.0 and 1H ATR=0.1.  If the strategy regressed to 1H ATR,
+    SL distance would be ~0.3; with the fix it must be ~3.0.
+    """
+    atr_4h = 1.0
+    atr_1h = 0.1   # 10× tighter than 4H — if used, SL would be 10× too tight
+    close = 100.0
+
+    df_4h = _make_4h_established_df(direction=1, atr=atr_4h, close=close)
+    # RSI pullback-recovery pattern: min < 55 recently, current >= 55
+    df_1h = _make_1h_aligned_df(
+        direction=1,
+        rsi_series=[52.0, 53.0, 50.0, 54.0, 56.0],
+        atr=atr_1h,
+        close=close,
+    )
+
+    sig = strategy.generate_aligned_signal(df_4h, df_1h, regime="trending")
+
+    assert sig.direction == SignalDirection.LONG
+    # Expected SL distance = 3.0 × 4H ATR = 3.0, NOT 3.0 × 1H ATR = 0.3
+    expected_sl_distance = 3.0 * atr_4h
+    actual_sl_distance = close - sig.stop_loss
+    assert actual_sl_distance == pytest.approx(expected_sl_distance, abs=1e-6), (
+        f"aligned SL distance {actual_sl_distance} must equal 3.0*atr_4h "
+        f"({expected_sl_distance}), not 3.0*atr_1h ({3.0 * atr_1h})"
+    )
+    # Metadata contract: the signal must tag the ATR source it used.
+    atr_source = sig.indicators_used.get("atr_source") if sig.indicators_used else None
+    assert atr_source == "4h"
+
+
+def test_aligned_signal_short_uses_4h_atr(strategy: SupertrendTrend) -> None:
+    """SHORT variant: SL must still be 4H-ATR-based."""
+    atr_4h = 2.0
+    atr_1h = 0.2
+    close = 50.0
+
+    df_4h = _make_4h_established_df(direction=-1, atr=atr_4h, close=close)
+    df_1h = _make_1h_aligned_df(
+        direction=-1,
+        rsi_series=[48.0, 47.0, 50.0, 46.0, 44.0],
+        atr=atr_1h,
+        close=close,
+    )
+
+    sig = strategy.generate_aligned_signal(df_4h, df_1h, regime="trending")
+
+    assert sig.direction == SignalDirection.SHORT
+    expected_sl_distance = 3.0 * atr_4h
+    actual_sl_distance = sig.stop_loss - close
+    assert actual_sl_distance == pytest.approx(expected_sl_distance, abs=1e-6)
+    atr_source = sig.indicators_used.get("atr_source") if sig.indicators_used else None
+    assert atr_source == "4h"
