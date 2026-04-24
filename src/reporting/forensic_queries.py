@@ -22,6 +22,8 @@ Usage
 from __future__ import annotations
 
 import logging
+import re
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -262,68 +264,181 @@ class ForensicQueries:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _run(self, sql: str) -> list[dict[str, Any]]:
-        """Execute *sql* and return rows as plain dicts."""
+    @staticmethod
+    def _to_iso(since: datetime | None) -> str | None:
+        """Normalise a ``since`` datetime to ISO-8601 UTC string."""
+        if since is None:
+            return None
+        if since.tzinfo is None:
+            raise ValueError("ForensicQueries: 'since' must be timezone-aware")
+        return since.astimezone(timezone.utc).isoformat()
+
+    # Mapping: first table seen in FROM clause → timestamp column name.
+    # Queries that do not reference any of these tables receive no predicate.
+    _TABLE_TS_COL = {
+        "trades":         "timestamp",
+        "decision_log":   "timestamp_utc",
+        "cycle_history":  "timestamp",
+    }
+
+    @classmethod
+    def _apply_since(
+        cls, sql: str, since_iso: str | None
+    ) -> tuple[str, tuple[Any, ...]]:
+        """Inject a ``<ts_col> >= ?`` predicate into *sql*.
+
+        The predicate is added at the front of any existing ``WHERE`` clause
+        so precedence is preserved (``WHERE ts >= ? AND <rest>``).  If the
+        query has no ``WHERE`` clause, one is inserted before ``GROUP BY``.
+        Returns the rewritten SQL and parameter tuple.  If *since_iso* is
+        None, returns the original SQL and an empty tuple — this is the
+        default path preserving Phase 1C backward compatibility.
+        """
+        if since_iso is None:
+            return sql, ()
+        # Pick timestamp column based on first matching table reference.
+        col: str | None = None
+        for table, ts_col in cls._TABLE_TS_COL.items():
+            if re.search(rf"\bFROM\s+{table}\b", sql, re.IGNORECASE):
+                col = ts_col
+                break
+        if col is None:
+            return sql, ()
+        if re.search(r"\bWHERE\b", sql, re.IGNORECASE):
+            new_sql = re.sub(
+                r"\bWHERE\b",
+                f"WHERE {col} >= ? AND",
+                sql,
+                count=1,
+                flags=re.IGNORECASE,
+            )
+        elif re.search(r"\bGROUP\s+BY\b", sql, re.IGNORECASE):
+            new_sql = re.sub(
+                r"\bGROUP\s+BY\b",
+                f"WHERE {col} >= ? GROUP BY",
+                sql,
+                count=1,
+                flags=re.IGNORECASE,
+            )
+        elif re.search(r"\bORDER\s+BY\b", sql, re.IGNORECASE):
+            new_sql = re.sub(
+                r"\bORDER\s+BY\b",
+                f"WHERE {col} >= ? ORDER BY",
+                sql,
+                count=1,
+                flags=re.IGNORECASE,
+            )
+        else:
+            # Fallback: append WHERE before terminating semicolon, if any.
+            stripped = sql.rstrip().rstrip(";")
+            new_sql = f"{stripped} WHERE {col} >= ?;"
+        return new_sql, (since_iso,)
+
+    def _run(
+        self, sql: str, params: tuple[Any, ...] = ()
+    ) -> list[dict[str, Any]]:
+        """Execute *sql* with optional *params* and return rows as plain dicts."""
         try:
             conn = self._db._get_conn()  # noqa: SLF001 — intentional private access
-            cursor = conn.execute(sql)
+            cursor = conn.execute(sql, params)
             return [dict(r) for r in cursor.fetchall()]
         except Exception as exc:  # noqa: BLE001
             logger.warning("ForensicQueries._run failed: %s | sql=%.120s", exc, sql.strip())
             return []
 
+    def _run_since(
+        self, sql: str, since: datetime | None
+    ) -> list[dict[str, Any]]:
+        """Apply an optional ``since`` predicate, then run."""
+        since_iso = self._to_iso(since)
+        rewritten, params = self._apply_since(sql, since_iso)
+        return self._run(rewritten, params)
+
     # ------------------------------------------------------------------
     # Named accessors (one per canonical query)
+    #
+    # Each accessor accepts an optional ``since`` datetime.  When provided,
+    # the query is filtered to rows with ``<ts_col> >= since``.  The default
+    # (None) preserves the Phase 1C "all history" behaviour.
     # ------------------------------------------------------------------
 
-    def cascade_conversion_funnel(self) -> list[dict[str, Any]]:
+    def cascade_conversion_funnel(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q1 — stage × cascade_level × outcome counts from decision_log."""
-        return self._run(Q1_CASCADE_CONVERSION_FUNNEL)
+        return self._run_since(Q1_CASCADE_CONVERSION_FUNNEL, since)
 
-    def per_cascade_expectancy(self) -> list[dict[str, Any]]:
+    def per_cascade_expectancy(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q2 — n, avg_pnl, win_rate, total_pnl grouped by cascade_level."""
-        return self._run(Q2_PER_CASCADE_EXPECTANCY)
+        return self._run_since(Q2_PER_CASCADE_EXPECTANCY, since)
 
-    def per_regime_expectancy(self) -> list[dict[str, Any]]:
+    def per_regime_expectancy(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q3 — avg_pnl, avg_fees, avg_funding grouped by regime_at_entry."""
-        return self._run(Q3_PER_REGIME_EXPECTANCY)
+        return self._run_since(Q3_PER_REGIME_EXPECTANCY, since)
 
-    def maker_taker_pnl(self) -> list[dict[str, Any]]:
+    def maker_taker_pnl(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q4 — net P&L comparison: maker_entry=1 vs maker_entry=0."""
-        return self._run(Q4_MAKER_TAKER_PNL)
+        return self._run_since(Q4_MAKER_TAKER_PNL, since)
 
-    def slippage_cost(self) -> list[dict[str, Any]]:
+    def slippage_cost(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q5 — avg entry, exit, round-trip slippage in basis points."""
-        return self._run(Q5_SLIPPAGE_COST)
+        return self._run_since(Q5_SLIPPAGE_COST, since)
 
-    def rejection_distribution(self) -> list[dict[str, Any]]:
+    def rejection_distribution(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q6 — top 20 stage × reason combos for outcome='reject'."""
-        return self._run(Q6_REJECTION_DISTRIBUTION)
+        return self._run_since(Q6_REJECTION_DISTRIBUTION, since)
 
-    def exit_reason_mix(self) -> list[dict[str, Any]]:
+    def exit_reason_mix(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q7 — exit_reason_enum counts, avg_pnl, win_rate."""
-        return self._run(Q7_EXIT_REASON_MIX)
+        return self._run_since(Q7_EXIT_REASON_MIX, since)
 
-    def symbol_pnl_with_drag(self) -> list[dict[str, Any]]:
+    def symbol_pnl_with_drag(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q8 — per-symbol total_pnl, total_fees, total_funding, gross_edge_pnl."""
-        return self._run(Q8_SYMBOL_PNL_WITH_DRAG)
+        return self._run_since(Q8_SYMBOL_PNL_WITH_DRAG, since)
 
-    def confidence_bucket_win_rate(self) -> list[dict[str, Any]]:
+    def confidence_bucket_win_rate(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q9 — win_rate and avg_pnl per confidence_bucket."""
-        return self._run(Q9_CONFIDENCE_BUCKET_WIN_RATE)
+        return self._run_since(Q9_CONFIDENCE_BUCKET_WIN_RATE, since)
 
-    def funding_filter_impact(self) -> list[dict[str, Any]]:
+    def funding_filter_impact(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q10 — pass/reject/skip counts for the funding_filter stage."""
-        return self._run(Q10_FUNDING_FILTER_IMPACT)
+        return self._run_since(Q10_FUNDING_FILTER_IMPACT, since)
 
-    def consensus_adj_impact(self) -> list[dict[str, Any]]:
+    def consensus_adj_impact(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q11 — boosted / penalised / neutral bucket expectancy."""
-        return self._run(Q11_CONSENSUS_ADJ_IMPACT)
+        return self._run_since(Q11_CONSENSUS_ADJ_IMPACT, since)
 
-    def cycle_latency(self) -> list[dict[str, Any]]:
+    def cycle_latency(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Q12 — daily avg/max cycle duration and count, last 14 days."""
-        return self._run(Q12_CYCLE_LATENCY)
+        return self._run_since(Q12_CYCLE_LATENCY, since)
 
-    def run_all(self) -> dict[str, list[dict[str, Any]]]:
-        """Run all 12 queries and return a dict keyed by query name."""
-        return {name: self._run(sql) for name, sql in ALL_QUERIES}
+    def run_all(
+        self, since: datetime | None = None
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Run all 12 queries and return a dict keyed by query name.
+
+        Passes the optional ``since`` filter through to each query.
+        """
+        return {name: self._run_since(sql, since) for name, sql in ALL_QUERIES}

@@ -1065,9 +1065,16 @@ async def test_swap_same_direction_needs_delta_15(
 
 def test_dynamic_pos_limit_green_high_confidence(
     isolated_orchestrator: Orchestrator,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """GREEN + high confidence + sufficient balance → +1 position."""
+    """GREEN + high confidence + sufficient balance → +1 position.
+
+    Phase 2B: reduced-live mode disables the +1 override. This test
+    validates the full-mode semantics by toggling the flag on.
+    """
     from src.risk.circuit_breaker import CircuitBreakerConstraints, CircuitBreakerLevel
+    from src.orchestrator import reduced_live_mode as rlm
+    monkeypatch.setattr(rlm, "ALLOW_DYNAMIC_POS_OVERRIDE", True)
 
     constraints = CircuitBreakerConstraints(
         level=CircuitBreakerLevel.GREEN,

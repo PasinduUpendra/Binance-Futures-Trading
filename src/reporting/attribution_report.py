@@ -119,6 +119,11 @@ class AttributionReporter:
         self._db = db
         self._fq = ForensicQueries(db)
         self._reports_dir = reports_dir or _DEFAULT_REPORTS_DIR
+        # Per-render context (set at the start of _build_report; read by
+        # section helpers).  Must be reset on every call to build_content /
+        # generate to avoid cross-call leakage.
+        self._since: datetime | None = None
+        self._baseline_meta: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -128,6 +133,8 @@ class AttributionReporter:
         self,
         report_date: date | None = None,
         write: bool = True,
+        since: datetime | None = None,
+        baseline_meta: dict[str, Any] | None = None,
     ) -> Path:
         """Generate the attribution report for *report_date*.
 
@@ -137,6 +144,14 @@ class AttributionReporter:
             Date for the report.  Defaults to today (UTC).
         write : bool
             If True (default), write the file to *reports_dir*.
+        since : datetime | None
+            When set, every forensic query is filtered to rows at or after
+            this UTC timestamp.  The report header gains a "since baseline"
+            line and the filename gets a ``-since-baseline`` suffix.
+        baseline_meta : dict[str, Any] | None
+            Optional baseline metadata (current_mode, start_balance_usdt,
+            notes) surfaced in the header.  Only rendered when *since* is
+            also provided.
 
         Returns
         -------
@@ -146,8 +161,11 @@ class AttributionReporter:
         if report_date is None:
             report_date = datetime.now(timezone.utc).date()
 
-        content = self._build_report(report_date)
-        filename = f"{report_date.isoformat()}-attribution.md"
+        content = self._build_report(
+            report_date, since=since, baseline_meta=baseline_meta
+        )
+        suffix = "-since-baseline" if since is not None else ""
+        filename = f"{report_date.isoformat()}-attribution{suffix}.md"
         output_path = Path(self._reports_dir) / filename
 
         if write:
@@ -157,24 +175,69 @@ class AttributionReporter:
 
         return output_path
 
-    def build_content(self, report_date: date | None = None) -> str:
+    def build_content(
+        self,
+        report_date: date | None = None,
+        since: datetime | None = None,
+        baseline_meta: dict[str, Any] | None = None,
+    ) -> str:
         """Return the report markdown as a string without writing to disk."""
         if report_date is None:
             report_date = datetime.now(timezone.utc).date()
-        return self._build_report(report_date)
+        return self._build_report(
+            report_date, since=since, baseline_meta=baseline_meta
+        )
 
     # ------------------------------------------------------------------
     # Internal build methods
     # ------------------------------------------------------------------
 
-    def _build_report(self, report_date: date) -> str:
+    def _build_report(
+        self,
+        report_date: date,
+        since: datetime | None = None,
+        baseline_meta: dict[str, Any] | None = None,
+    ) -> str:
+        # Set per-render context for section helpers.  Reset at end.
+        self._since = since
+        self._baseline_meta = baseline_meta
+
+        try:
+            return self._build_report_inner(report_date)
+        finally:
+            self._since = None
+            self._baseline_meta = None
+
+    def _build_report_inner(self, report_date: date) -> str:
         generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         lines: list[str] = []
 
-        lines.append(f"# Claude Quant Attribution Report — {report_date}")
+        title_suffix = " (SINCE BASELINE)" if self._since is not None else ""
+        lines.append(
+            f"# Claude Quant Attribution Report — {report_date}{title_suffix}"
+        )
         lines.append("")
         lines.append(f"*Generated: {generated_at}*")
         lines.append("")
+
+        if self._since is not None:
+            lines.append(
+                f"> **Baseline filter active.** This report counts only rows at or after "
+                f"`{self._since.isoformat()}`. Historical data prior to that timestamp "
+                f"remains in the database and is **not** shown here. Run without "
+                f"`--since-baseline` for the all-history view."
+            )
+            if self._baseline_meta:
+                mode = self._baseline_meta.get("current_mode", "")
+                start_balance = self._baseline_meta.get("start_balance_usdt", "")
+                notes = self._baseline_meta.get("notes", "")
+                lines.append("")
+                lines.append(f"- **Baseline mode:** `{mode}`")
+                lines.append(f"- **Start balance:** `{start_balance}` USDT")
+                if notes:
+                    lines.append(f"- **Notes:** {notes}")
+            lines.append("")
+
         lines.append(
             "> **Note:** Performance figures in this report reflect observed live trades "
             "in the database only. No backtested figures are cited here. "
@@ -234,7 +297,7 @@ class AttributionReporter:
         return "\n".join(lines) + "\n"
 
     def _funnel_section(self) -> str:
-        rows = self._fq.cascade_conversion_funnel()
+        rows = self._fq.cascade_conversion_funnel(since=self._since)
         if not rows:
             return "*(no data yet — requires instrumented live trades)*\n\n"
         table_rows = [
@@ -244,7 +307,7 @@ class AttributionReporter:
         return _md_table(["Stage", "Cascade Level", "Outcome", "Count"], table_rows) + "\n"
 
     def _cascade_expectancy_section(self) -> str:
-        rows = self._fq.per_cascade_expectancy()
+        rows = self._fq.per_cascade_expectancy(since=self._since)
         if not rows:
             return "*(no data yet — cascade_level column requires Phase 1B instrumented trades)*\n\n"
         table_rows = [
@@ -260,7 +323,7 @@ class AttributionReporter:
         return _md_table(["Cascade Level", "N", "Avg PnL (USDT)", "Win Rate", "Total PnL (USDT)"], table_rows) + "\n"
 
     def _regime_expectancy_section(self) -> str:
-        rows = self._fq.per_regime_expectancy()
+        rows = self._fq.per_regime_expectancy(since=self._since)
         if not rows:
             return "*(no data yet — regime_at_entry column requires Phase 1B instrumented trades)*\n\n"
         table_rows = [
@@ -281,7 +344,7 @@ class AttributionReporter:
 
     def _fee_funding_section(self) -> str:
         """Combines symbol-level fee/funding drag from Q8."""
-        rows = self._fq.symbol_pnl_with_drag()
+        rows = self._fq.symbol_pnl_with_drag(since=self._since)
         if not rows:
             return "*(no data yet — requires closed trades with fees_usd / funding_usd populated)*\n\n"
         lines: list[str] = []
@@ -312,7 +375,7 @@ class AttributionReporter:
         return "\n".join(lines) + "\n"
 
     def _rejection_section(self) -> str:
-        rows = self._fq.rejection_distribution()
+        rows = self._fq.rejection_distribution(since=self._since)
         if not rows:
             return "*(no data yet — requires decision_log rows with outcome='reject')*\n\n"
         table_rows = [
@@ -322,11 +385,11 @@ class AttributionReporter:
         return _md_table(["Stage", "Reason", "Count"], table_rows) + "\n"
 
     def _maker_taker_section(self) -> str:
-        rows = self._fq.maker_taker_pnl()
+        rows = self._fq.maker_taker_pnl(since=self._since)
         if not rows:
             return "*(no data yet — requires maker_entry column populated)*\n\n"
         # Also include slippage
-        slippage_rows = self._fq.slippage_cost()
+        slippage_rows = self._fq.slippage_cost(since=self._since)
         slip_line = ""
         if slippage_rows:
             s = slippage_rows[0]
@@ -353,7 +416,7 @@ class AttributionReporter:
         return table + slip_line + "\n"
 
     def _exit_reason_section(self) -> str:
-        rows = self._fq.exit_reason_mix()
+        rows = self._fq.exit_reason_mix(since=self._since)
         if not rows:
             return "*(no data yet — requires exit_reason_enum populated on closed trades)*\n\n"
         table_rows = [
@@ -372,7 +435,7 @@ class AttributionReporter:
         ) + "\n"
 
     def _confidence_bucket_section(self) -> str:
-        rows = self._fq.confidence_bucket_win_rate()
+        rows = self._fq.confidence_bucket_win_rate(since=self._since)
         if not rows:
             return "*(no data yet — requires confidence_bucket populated)*\n\n"
         table_rows = [
@@ -391,11 +454,11 @@ class AttributionReporter:
         ) + "\n"
 
     def _consensus_adj_section(self) -> str:
-        rows = self._fq.consensus_adj_impact()
+        rows = self._fq.consensus_adj_impact(since=self._since)
         if not rows:
             return "*(no data yet — requires consensus_adj populated)*\n\n"
         # Also funding filter
-        ff_rows = self._fq.funding_filter_impact()
+        ff_rows = self._fq.funding_filter_impact(since=self._since)
         ff_line = ""
         if ff_rows:
             ff_dict = {r.get("outcome", "unknown"): r.get("n", 0) for r in ff_rows}
@@ -413,7 +476,7 @@ class AttributionReporter:
         return table + ff_line + "\n"
 
     def _cycle_latency_section(self) -> str:
-        rows = self._fq.cycle_latency()
+        rows = self._fq.cycle_latency(since=self._since)
         if not rows:
             return "*(no data yet — requires cycle_history rows)*\n\n"
         table_rows = [

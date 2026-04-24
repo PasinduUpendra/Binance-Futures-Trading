@@ -159,3 +159,31 @@ When updating this bot, always follow:
 3. **Delete any now-false claim** from CLAUDE.md, SSOT, CHANGELOG, agents/*. Never leave contradictions "for context". Contradictions poison future sessions.
 
 If you cannot complete all 3 steps, do NOT ship the code change.
+
+---
+
+## 12. Phase 2B Reduced-Live Mode — PARTIAL RESOLUTION (2026-04-22)
+
+Phase 2B ([PHASE2B_REDUCED_LIVE_MODE.md](PHASE2B_REDUCED_LIVE_MODE.md)) narrows the **live surface** without changing any threshold or strategy file. It resolves drift items above **only while `REDUCED_LIVE_MODE=True`**. Set that flag to `False` and the drift returns — so these are configuration-level resolutions, not doc-level truths.
+
+| Drift item | Status under Phase 2B | Gated by |
+|---|---|---|
+| §2 "Trading pairs: 8 live" | ✅ Reduced to 2 (SOL, SUI) for signal generation; full 8 still reconciled | `ACTIVE_TRADING_PAIRS = filter_trading_pairs(TRADING_PAIRS)` in [main.py](../src/orchestrator/main.py) |
+| §2 "Max concurrent 4 effective" | ✅ Reverts to CB base (3 at GREEN) | `ALLOW_DYNAMIC_POS_OVERRIDE = False` |
+| §3 "RANGING<18 → AdaptiveTrend" | ✅ No trade | `ALLOW_ADAPTIVE_TREND_ROUTE = False` |
+| §3 "VOLATILE≥15 → BreakoutTrader" | ✅ No trade | `ALLOW_BREAKOUT_TRADER_ROUTE = False` |
+| §3 "CrossAssetConsensus ±10 pt adjustment" | ✅ Neutralized (skipped entirely) | `ALLOW_CONSENSUS_ADJUST = False` |
+| §3 "4-level cascade (flip/1h/15m/aligned)" | ✅ Reduced to 2 levels (4H flip + 1H continuation) | `ALLOW_15M_FAST = False`, `ALLOW_ALIGNED_TREND = False` |
+
+**Items NOT resolved by Phase 2B** (still drift; future work):
+
+- §1 (validated daily return narrative)
+- §2 (cycle interval 30 min vs 1 h in CLAUDE.md; wrong-side 8 vs 2 cycles; MIN_CONFIDENCE 45 vs 25; position sizing 25/16.7/11.7 vs 15/10/7; RSI pullback 55/45 vs 45/55; MAX_HOLD_BARS 100)
+- §4 (SSOT self-contradictions)
+- §5 (.claude/agents/*.md staleness)
+- §7 (test-count drift — now 833 passing after Phase 2B, still unclaimed in CLAUDE.md)
+- §8 (stale "Last Updated" dates)
+- §10 (files to deprecate/delete)
+
+Phase 2B is a **safety narrowing**, not a doc reconciliation. The other items remain open.
+

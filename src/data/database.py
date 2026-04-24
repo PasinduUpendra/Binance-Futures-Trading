@@ -76,6 +76,55 @@ class CycleHistoryRow(BaseModel):
     duration_seconds: float = 0.0
 
 
+class BaselineRow(BaseModel):
+    """A canonical baseline epoch marker for reporting.
+
+    Stored in ``system_state`` under the ``baseline.*`` key namespace.
+    Used by Phase 2C reporting to filter cumulative views to the current
+    reduced-live era without deleting historical data.
+
+    All fields are required at set time.  ``started_at_utc`` MUST be
+    timezone-aware (UTC).  Naive datetimes are rejected.
+    """
+
+    model_config = {"frozen": True}
+
+    current_mode: str = Field(
+        ..., min_length=1,
+        description="Free-form label for the reporting era (e.g. 'mainnet_reduced_live_v1').",
+    )
+    started_at_utc: datetime = Field(
+        ...,
+        description="UTC timestamp from which the baseline counts (inclusive).",
+    )
+    start_balance_usdt: Decimal = Field(
+        ...,
+        description="Balance in USDT at the moment the baseline was set.",
+    )
+    notes: str = Field(default="", description="Free-form audit note.")
+    set_at_utc: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the baseline row itself was written to the DB.",
+    )
+
+    @classmethod
+    def _validate_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("datetime must be timezone-aware (UTC)")
+        return value.astimezone(timezone.utc)
+
+    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
+        # frozen=True — we must use object.__setattr__ to normalise to UTC
+        started = self.started_at_utc
+        if started.tzinfo is None:
+            raise ValueError("started_at_utc must be timezone-aware (UTC)")
+        set_at = self.set_at_utc
+        if set_at.tzinfo is None:
+            raise ValueError("set_at_utc must be timezone-aware (UTC)")
+        object.__setattr__(self, "started_at_utc", started.astimezone(timezone.utc))
+        object.__setattr__(self, "set_at_utc", set_at.astimezone(timezone.utc))
+
+
 class StrategyMetricRow(BaseModel):
     """Cached strategy performance metrics."""
 
@@ -1038,6 +1087,150 @@ class DatabaseManager:
         conn = self._get_conn()
         cursor = conn.execute("SELECT key, value FROM system_state")
         return {row["key"]: row["value"] for row in cursor.fetchall()}
+
+    # -----------------------------------------------------------------------
+    # Baseline epoch (Phase 2C)
+    # -----------------------------------------------------------------------
+    #
+    # The "baseline" marks the start of a reporting era.  Historical data is
+    # never deleted or mutated.  Reporting code may pass the baseline start
+    # timestamp as a ``since=`` filter to any forensic query to get a
+    # "since-baseline" view while leaving the all-history view unchanged.
+    #
+    # Storage: key-value rows in ``system_state`` under the ``baseline.*``
+    # namespace.  No new schema or migration.
+
+    _BASELINE_KEYS = (
+        "baseline.current_mode",
+        "baseline.started_at_utc",
+        "baseline.start_balance_usdt",
+        "baseline.notes",
+        "baseline.set_at_utc",
+    )
+    _BASELINE_PREVIOUS_KEY = "baseline.previous_json"
+
+    def set_baseline(self, baseline: "BaselineRow") -> None:
+        """Persist a new baseline.
+
+        Any existing baseline is archived to ``baseline.previous_json``
+        (overwriting only the previous archive slot — one level of undo).
+        This method is idempotent w.r.t. the current baseline: calling it
+        twice with the same row simply re-archives.
+
+        Does NOT delete, mutate, or otherwise touch any ``trades``,
+        ``cycle_history``, or ``decision_log`` row.
+        """
+        existing = self.get_baseline()
+        if existing is not None:
+            archive_payload = {
+                "current_mode": existing.current_mode,
+                "started_at_utc": existing.started_at_utc.isoformat(),
+                "start_balance_usdt": str(existing.start_balance_usdt),
+                "notes": existing.notes,
+                "set_at_utc": existing.set_at_utc.isoformat(),
+                "archived_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+            self.set_state(self._BASELINE_PREVIOUS_KEY, json.dumps(archive_payload))
+
+        self.set_state("baseline.current_mode", baseline.current_mode)
+        self.set_state("baseline.started_at_utc", baseline.started_at_utc.isoformat())
+        self.set_state("baseline.start_balance_usdt", str(baseline.start_balance_usdt))
+        self.set_state("baseline.notes", baseline.notes)
+        self.set_state("baseline.set_at_utc", baseline.set_at_utc.isoformat())
+        logger.info(
+            "Baseline set: mode=%s started_at=%s start_balance=%s",
+            baseline.current_mode,
+            baseline.started_at_utc.isoformat(),
+            baseline.start_balance_usdt,
+        )
+
+    def get_baseline(self) -> "BaselineRow | None":
+        """Return the current baseline, or ``None`` if none has been set."""
+        mode = self.get_state("baseline.current_mode")
+        started = self.get_state("baseline.started_at_utc")
+        start_balance = self.get_state("baseline.start_balance_usdt")
+        if mode is None or started is None or start_balance is None:
+            return None
+        set_at = self.get_state("baseline.set_at_utc")
+        notes = self.get_state("baseline.notes") or ""
+        try:
+            started_dt = datetime.fromisoformat(started)
+            set_at_dt = (
+                datetime.fromisoformat(set_at)
+                if set_at is not None
+                else datetime.now(timezone.utc)
+            )
+            return BaselineRow(
+                current_mode=mode,
+                started_at_utc=started_dt,
+                start_balance_usdt=Decimal(start_balance),
+                notes=notes,
+                set_at_utc=set_at_dt,
+            )
+        except (ValueError, TypeError) as exc:
+            logger.warning("Corrupt baseline row in system_state: %s", exc)
+            return None
+
+    def clear_baseline(self) -> bool:
+        """Remove the current baseline keys.
+
+        Archives the cleared row into ``baseline.previous_json`` first so
+        it can be restored via ``restore_previous_baseline``.
+        Returns True if a baseline was cleared, False if none was set.
+        The ``baseline.previous_json`` archive slot is preserved by clear.
+        """
+        existing = self.get_baseline()
+        if existing is None:
+            return False
+        archive_payload = {
+            "current_mode": existing.current_mode,
+            "started_at_utc": existing.started_at_utc.isoformat(),
+            "start_balance_usdt": str(existing.start_balance_usdt),
+            "notes": existing.notes,
+            "set_at_utc": existing.set_at_utc.isoformat(),
+            "archived_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        self.set_state(self._BASELINE_PREVIOUS_KEY, json.dumps(archive_payload))
+        conn = self._get_conn()
+        for key in self._BASELINE_KEYS:
+            conn.execute("DELETE FROM system_state WHERE key = ?", (key,))
+        conn.commit()
+        logger.info("Baseline cleared (archived to %s)", self._BASELINE_PREVIOUS_KEY)
+        return True
+
+    def get_previous_baseline(self) -> dict[str, Any] | None:
+        """Return the previously-archived baseline payload, if any."""
+        raw = self.get_state(self._BASELINE_PREVIOUS_KEY)
+        if raw is None:
+            return None
+        try:
+            data: dict[str, Any] = json.loads(raw)
+            return data
+        except json.JSONDecodeError:
+            logger.warning("Corrupt baseline.previous_json")
+            return None
+
+    def restore_previous_baseline(self) -> bool:
+        """Restore the archived baseline as the current one.
+
+        Returns True on success, False if no archive exists.
+        """
+        prev = self.get_previous_baseline()
+        if prev is None:
+            return False
+        try:
+            row = BaselineRow(
+                current_mode=prev["current_mode"],
+                started_at_utc=datetime.fromisoformat(prev["started_at_utc"]),
+                start_balance_usdt=Decimal(prev["start_balance_usdt"]),
+                notes=prev.get("notes", ""),
+                set_at_utc=datetime.fromisoformat(prev["set_at_utc"]),
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            logger.warning("Cannot restore previous baseline: %s", exc)
+            return False
+        self.set_baseline(row)
+        return True
 
     # -----------------------------------------------------------------------
     # Strategy Metrics

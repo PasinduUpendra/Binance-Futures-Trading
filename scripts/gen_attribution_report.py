@@ -52,11 +52,28 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Override output directory for the report file",
     )
+    p.add_argument(
+        "--since-baseline",
+        action="store_true",
+        help="Filter the report to rows at or after the current baseline "
+             "(see scripts/set_mainnet_baseline.py). Adds a -since-baseline "
+             "suffix to the output filename.",
+    )
+    p.add_argument(
+        "--since",
+        default=None,
+        help="Filter to rows at or after this UTC ISO-8601 timestamp. "
+             "Mutually exclusive with --since-baseline.",
+    )
     return p.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+
+    if args.since_baseline and args.since:
+        print("Error: --since-baseline and --since are mutually exclusive.", file=sys.stderr)
+        sys.exit(1)
 
     # Parse date
     if args.date:
@@ -78,11 +95,41 @@ def main() -> None:
     reports_dir = Path(args.reports_dir) if args.reports_dir else None
     reporter = AttributionReporter(db, reports_dir=reports_dir)
 
+    since = None
+    baseline_meta: dict | None = None
+    if args.since_baseline:
+        baseline = db.get_baseline()
+        if baseline is None:
+            print(
+                "Error: --since-baseline requested but no baseline is set. "
+                "Run scripts/set_mainnet_baseline.py --set first.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        since = baseline.started_at_utc
+        baseline_meta = {
+            "current_mode": baseline.current_mode,
+            "start_balance_usdt": str(baseline.start_balance_usdt),
+            "notes": baseline.notes,
+        }
+    elif args.since:
+        try:
+            parsed = datetime.fromisoformat(args.since)
+        except ValueError:
+            print(f"Error: --since must be ISO-8601, got {args.since!r}", file=sys.stderr)
+            sys.exit(1)
+        if parsed.tzinfo is None:
+            print("Error: --since must be timezone-aware (include +00:00).", file=sys.stderr)
+            sys.exit(1)
+        since = parsed.astimezone(timezone.utc)
+
     if args.stdout:
-        content = reporter.build_content(report_date)
+        content = reporter.build_content(report_date, since=since, baseline_meta=baseline_meta)
         print(content)
     else:
-        output_path = reporter.generate(report_date)
+        output_path = reporter.generate(
+            report_date, since=since, baseline_meta=baseline_meta
+        )
         print(f"Report written to: {output_path}")
 
 

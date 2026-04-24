@@ -71,6 +71,12 @@ from src.strategies.cross_asset_consensus import CrossAssetConsensus
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.alert_system import AlertSystem
 from src.data.supabase_mirror import SupabaseMirror
+from src.orchestrator.reduced_live_mode import (
+    filter_trading_pairs,
+    is_consensus_adjust_allowed,
+    is_dynamic_pos_override_allowed,
+    is_reduced_mode,
+)
 
 logger = logging.getLogger("claude_quant.orchestrator")
 
@@ -155,6 +161,15 @@ TRADING_PAIRS = [
     "SUI/USDT:USDT",   # $5 min notional
     "ADA/USDT:USDT",   # $5 min notional
 ]
+
+# Phase 2B reduced live mode: narrow the SIGNAL universe to a SOL+SUI subset.
+# The FULL universe (``TRADING_PAIRS``) is still swept by startup cleanup,
+# orphan-order cleanup, and reconciliation so lingering orders on disabled
+# pairs keep getting cancelled. Only signal generation / data fetch /
+# WS subscription loops iterate ``ACTIVE_TRADING_PAIRS``.
+# Rollback: flip ``REDUCED_LIVE_MODE`` in ``src/orchestrator/reduced_live_mode.py``
+# back to ``False``. See ``docs/PHASE2B_REDUCED_LIVE_MODE.md``.
+ACTIVE_TRADING_PAIRS: list[str] = filter_trading_pairs(TRADING_PAIRS)
 
 # Per-pair minimum notional (from Binance API)
 MIN_NOTIONAL: dict[str, float] = {
@@ -385,7 +400,7 @@ class Orchestrator:
                 logger.warning(f"Startup cleanup failed for {pair}: {e}")
 
         # Subscribe to 4H kline close events for all pairs
-        for pair in TRADING_PAIRS:
+        for pair in ACTIVE_TRADING_PAIRS:
             try:
                 await self.market_data.subscribe_kline_close(
                     pair, TIMEFRAME_DIRECTION, self._on_4h_close,
@@ -526,7 +541,7 @@ class Orchestrator:
         pair_data_1h: dict[str, pd.DataFrame] = {}
         pair_data_15m: dict[str, pd.DataFrame] = {}
 
-        for pair in TRADING_PAIRS:
+        for pair in ACTIVE_TRADING_PAIRS:
             try:
                 raw_4h = await self.market_data.fetch_ohlcv(pair, TIMEFRAME_DIRECTION, limit=200)
                 if not raw_4h or len(raw_4h) < 100:
@@ -662,7 +677,13 @@ class Orchestrator:
         all_signals: list[tuple[Any, str]] = []  # (signal, pair)
 
         # ─── Cross-asset consensus (confidence adjustment) ───
-        consensus_adj = self.cross_asset_consensus.compute(pair_data_4h)
+        # Phase 2B reduced mode: neutralize by returning an empty map so the
+        # per-pair lookup below reads adj=0.0 for every pair. The compute()
+        # call itself is skipped to avoid wasting CPU on an unused value.
+        if is_consensus_adjust_allowed():
+            consensus_adj = self.cross_asset_consensus.compute(pair_data_4h)
+        else:
+            consensus_adj = {}
 
         # Build map of currently positioned symbols → side for filtering
         try:
@@ -671,7 +692,7 @@ class Orchestrator:
         except Exception:
             _positioned = {}
 
-        for pair in TRADING_PAIRS:
+        for pair in ACTIVE_TRADING_PAIRS:
             if pair not in pair_data_4h or pair not in pair_data_1h:
                 continue
 
@@ -2110,7 +2131,7 @@ class Orchestrator:
         """
         # Generate signals (lightweight — just direction check, don't execute)
         signal_directions: list[str] = []
-        for pair in TRADING_PAIRS:
+        for pair in ACTIVE_TRADING_PAIRS:
             if pair not in pair_data_4h or pair not in pair_data_1h:
                 continue
             try:
@@ -2965,6 +2986,11 @@ class Orchestrator:
         """
         base = constraints.max_positions
         if constraints.level != CircuitBreakerLevel.GREEN:
+            return base
+
+        # Phase 2B reduced mode: do not grant +1 slot above the CB cap.
+        # Rationale in docs/PHASE2B_REDUCED_LIVE_MODE.md.
+        if not is_dynamic_pos_override_allowed():
             return base
 
         if signal_confidence < DYNAMIC_POS_CONFIDENCE_MIN:

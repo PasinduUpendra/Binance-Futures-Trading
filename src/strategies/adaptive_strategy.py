@@ -32,6 +32,10 @@ from src.strategies.mean_reversion import MeanReversion
 from src.strategies.regime_detector import MarketRegime, RegimeDetector, RegimeState
 from src.strategies.supertrend_trend import SupertrendTrend
 from src.strategies.trend_follower import TrendFollower
+from src.orchestrator.reduced_live_mode import (
+    is_cascade_level_allowed,
+    is_strategy_route_allowed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +132,12 @@ class AdaptiveStrategy:
                 "(MeanReversion disabled; momentum-based ranging strategy)",
                 regime.adx,
             )
+            # Phase 2B reduced mode: AdaptiveTrend route disabled.
+            if not is_strategy_route_allowed("adaptive_trend"):
+                self.logger.info(
+                    "Reduced mode: AdaptiveTrend route disabled -> NO TRADE"
+                )
+                return None
             return self._adaptive_trend
 
         if regime.regime == MarketRegime.VOLATILE:
@@ -140,6 +150,12 @@ class AdaptiveStrategy:
                     regime.bb_width_ratio,
                     regime.adx,
                 )
+                # Phase 2B reduced mode: BreakoutTrader route disabled.
+                if not is_strategy_route_allowed("breakout_trader"):
+                    self.logger.info(
+                        "Reduced mode: BreakoutTrader route disabled -> NO TRADE"
+                    )
+                    return None
                 return self._breakout_trader
             self.logger.info(
                 "Regime VOLATILE (BBw=%.2f) but ADX=%.1f < 15 -> NO TRADE",
@@ -207,10 +223,12 @@ class AdaptiveStrategy:
 
                 # If 1H continuation also returned NONE, try 15m fast entry
                 # (requires 4H established + 1H aligned + 15m flip).
+                # Phase 2B reduced mode: 15m fast cascade level disabled.
                 if (
                     signal.direction == SignalDirection.NONE
                     and isinstance(strategy, SupertrendTrend)
                     and df_15m is not None
+                    and is_cascade_level_allowed("15m_fast")
                 ):
                     signal = strategy.generate_fast_signal(
                         df_4h, df_1h, df_15m, regime=regime_str,
@@ -218,9 +236,11 @@ class AdaptiveStrategy:
 
                 # If 15m fast also returned NONE, try aligned trend entry
                 # (all TFs aligned, no recent flip — RSI pullback recovery).
+                # Phase 2B reduced mode: aligned-trend cascade level disabled.
                 if (
                     signal.direction == SignalDirection.NONE
                     and isinstance(strategy, SupertrendTrend)
+                    and is_cascade_level_allowed("aligned_trend")
                 ):
                     signal = strategy.generate_aligned_signal(
                         df_4h, df_1h, regime=regime_str,

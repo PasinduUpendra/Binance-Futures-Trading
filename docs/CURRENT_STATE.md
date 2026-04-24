@@ -27,7 +27,8 @@ From [main.py:144-181](../src/orchestrator/main.py#L144-L181):
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `TRADING_PAIRS` | 8 pairs: `ETH, SOL, DOGE, XRP, LINK, AVAX, SUI, ADA` (all `/USDT:USDT`) | BTC is source-commented out despite balance >>$200 |
+| `TRADING_PAIRS` | 8 pairs: `ETH, SOL, DOGE, XRP, LINK, AVAX, SUI, ADA` (all `/USDT:USDT`) | Full universe — used for reconciliation/cleanup loops only |
+| `ACTIVE_TRADING_PAIRS` | **2 pairs: `SOL, SUI`** (under Phase 2B reduced-live mode) | Universe for signal gen / data fetch / WS subscribe — see [PHASE2B_REDUCED_LIVE_MODE.md](PHASE2B_REDUCED_LIVE_MODE.md) |
 | `TIMEFRAME_DIRECTION` | `4h` | Regime + SupertrendTrend primary |
 | `TIMEFRAME_ENTRY` | `1h` | Entry timing / continuation |
 | `TIMEFRAME_FAST` | `15m` | Fast-entry cascade level |
@@ -75,10 +76,10 @@ Per [`_run_cycle()`](../src/orchestrator/main.py#L398) in `main.py`:
 - Threshold = `WRONG_SIDE_FORCE_CLOSE_CYCLES = 8` (4h), NOT 2 as CHANGELOG claims
 
 **Step 3 — Multi-signal generation** ([main.py:547-623](../src/orchestrator/main.py#L547))
-- `CrossAssetConsensus.compute(pair_data_4h)` — computes per-pair ±10 pt adjustment
-- For each pair: `adaptive_strategy.get_signal_multi_tf(df_4h, df_1h, df_15m)`
+- `CrossAssetConsensus.compute(pair_data_4h)` — computes per-pair ±10 pt adjustment (**skipped under Phase 2B; `consensus_adj = {}`**)
+- For each pair in `ACTIVE_TRADING_PAIRS` (SOL, SUI under Phase 2B): `adaptive_strategy.get_signal_multi_tf(df_4h, df_1h, df_15m)`
 - Skip same-direction signals for already-positioned pairs
-- Apply consensus adjustment to confidence
+- Apply consensus adjustment to confidence (zero under Phase 2B)
 - Collect ALL valid signals (not just best) — sort by confidence descending
 
 **Steps 4-7 — Execute each signal under `_execution_lock`** ([main.py:664-1400+](../src/orchestrator/main.py#L664))
@@ -114,10 +115,12 @@ Per [`_run_cycle()`](../src/orchestrator/main.py#L398) in `main.py`:
 | TRENDING | ≥18 | **SupertrendTrend** (4H) | [adaptive_strategy.py:102](../src/strategies/adaptive_strategy.py#L102) |
 | TRENDING | <18 | NO TRADE | [adaptive_strategy.py:108](../src/strategies/adaptive_strategy.py#L108) |
 | RANGING | ≥18 | SupertrendTrend (dead-zone bridge) | [adaptive_strategy.py:119](../src/strategies/adaptive_strategy.py#L119) |
-| RANGING | <18 | **AdaptiveTrend** (momentum) | [adaptive_strategy.py:126-131](../src/strategies/adaptive_strategy.py#L126) |
-| VOLATILE | ≥15 | **BreakoutTrader** (1H) | [adaptive_strategy.py:137](../src/strategies/adaptive_strategy.py#L137) |
+| RANGING | <18 | **AdaptiveTrend** (momentum) — **DISABLED under Phase 2B** | [adaptive_strategy.py:126-131](../src/strategies/adaptive_strategy.py#L126) |
+| VOLATILE | ≥15 | **BreakoutTrader** (1H) — **DISABLED under Phase 2B** | [adaptive_strategy.py:137](../src/strategies/adaptive_strategy.py#L137) |
 | VOLATILE | <15 | NO TRADE | [adaptive_strategy.py:144](../src/strategies/adaptive_strategy.py#L144) |
 | QUIET | any | NO TRADE | [adaptive_strategy.py:93](../src/strategies/adaptive_strategy.py#L93) |
+
+> **Phase 2B reduced-live mode** ([PHASE2B_REDUCED_LIVE_MODE.md](PHASE2B_REDUCED_LIVE_MODE.md)): the AdaptiveTrend and BreakoutTrader routes return `None` (no trade) while `REDUCED_LIVE_MODE=True`. The source files remain on disk for resurrection; rollback is a one-line flag flip.
 
 **Present on disk but never routed:** `mean_reversion.py`, `trend_follower.py`, `scalper.py`. Source remains for resurrection; orchestrator never invokes them.
 
@@ -125,10 +128,10 @@ Per [`_run_cycle()`](../src/orchestrator/main.py#L398) in `main.py`:
 
 **SupertrendTrend signal cascade** ([supertrend_trend.py](../src/strategies/supertrend_trend.py)) — tries in order, stops at first non-NONE:
 
-1. **4H flip**: strict prev≠cur on exact last candle; max confidence 100. ADX ≥18 gate.
-2. **1H continuation**: 4H established (3+ bars same dir) + 1H flip within last **8 bars** (`CONTINUATION_LOOKBACK_1H`); confidence ceiling 80; staleness decay (−10% per bar over age 1).
-3. **15m fast**: 4H established + 1H aligned + 15m flip within last **3 bars**; confidence ceiling 70; staleness decay.
-4. **Aligned trend**: 4H established + 1H aligned + EMA aligned + RSI pullback recovery (long: min<55 and current≥55; short: max>45 and current≤45) + volume near average; confidence ceiling 55.
+1. **4H flip**: strict prev≠cur on exact last candle; max confidence 100. ADX ≥18 gate. **LIVE under Phase 2B.**
+2. **1H continuation**: 4H established (3+ bars same dir) + 1H flip within last **8 bars** (`CONTINUATION_LOOKBACK_1H`); confidence ceiling 80; staleness decay (−10% per bar over age 1). **LIVE under Phase 2B.**
+3. **15m fast**: 4H established + 1H aligned + 15m flip within last **3 bars**; confidence ceiling 70; staleness decay. **DISABLED under Phase 2B** (cascade level gated in `get_signal_multi_tf`).
+4. **Aligned trend**: 4H established + 1H aligned + EMA aligned + RSI pullback recovery (long: min<55 and current≥55; short: max>45 and current≤45) + volume near average; confidence ceiling 55. **DISABLED under Phase 2B.**
 
 SL/TP multipliers by regime ([supertrend_trend.py:79-84](../src/strategies/supertrend_trend.py#L79-L84)): trending (3.0/6.0), volatile (4.0/8.0), ranging (2.5/5.0), quiet (2.0/4.0). All R/R ≥ 2.0 with epsilon tolerance (`MIN_RR = 2.0 - 1e-9`). For cascade entries ATR uses **4H** (not 1H or 15m) to match backtest.
 
@@ -143,7 +146,7 @@ SL/TP multipliers by regime ([supertrend_trend.py:79-84](../src/strategies/super
 | `trades` | Trade journal (entries + exits) | `TradeJournal` — now points at the canonical DB via `Orchestrator.__init__` passing `db_path=self.db.db_path` |
 | `daily_reports` | Daily P&L snapshots | `main.py:2896` `self.db.store_daily_report()` |
 | `cycle_history` | Every orchestrator cycle | `main.py:2989` `self.db.store_cycle()` |
-| `system_state` | Key-value (drawdown + daily state) | `DrawdownMonitor._persist_state` and `_persist_daily_state` — JSON writers removed Sprint 1 |
+| `system_state` | Key-value (drawdown + daily state + Phase 2C baseline) | `DrawdownMonitor._persist_state` and `_persist_daily_state` — JSON writers removed Sprint 1. Phase 2C (2026-04-22) adds `baseline.*` keys written by `DatabaseManager.set_baseline/clear_baseline/restore_previous_baseline` via `scripts/set_mainnet_baseline.py`. Additive: no schema change; no existing writer touched. See [PHASE2C_BASELINE_REPORTING.md](PHASE2C_BASELINE_REPORTING.md). |
 | `strategy_metrics` | Cached perf per (strategy, regime) | unchanged (unused by live orchestrator) |
 | `trailing_stops` | Live TS state (ACID persistence) | `main.py:3148` `self.db.upsert_trailing_stop()` — JSON side-write removed Sprint 1 |
 | `audit_trail` | Decision-auditor reports | `DecisionAuditor._persist` — now writes to canonical DB (was standalone `audit_trail.db`) |
@@ -192,7 +195,7 @@ Additional gates enforced in `is_trading_allowed`:
 - 5 consecutive losses → 2h pause anchored to last-loss close time
 - Peak-drawdown override: 15% → YELLOW, 30% → RED, 50% → DEAD (tightens only)
 
-**Dynamic position override** (orchestrator-level, does NOT mutate CB constants): `_get_effective_max_positions(constraints, confidence, balance)` → `base+1` iff GREEN AND `confidence ≥ 60` AND balance covers $15 per extra slot, capped at `DYNAMIC_POS_ABSOLUTE_MAX = 5`. This means **under GREEN the practical cap is 4, not 3** — a functional relaxation of Immutable Rule #3.
+**Dynamic position override** (orchestrator-level, does NOT mutate CB constants): `_get_effective_max_positions(constraints, confidence, balance)` → `base+1` iff GREEN AND `confidence ≥ 60` AND balance covers $15 per extra slot, capped at `DYNAMIC_POS_ABSOLUTE_MAX = 5`. This means **under GREEN the practical cap is 4, not 3** — a functional relaxation of Immutable Rule #3. **DISABLED under Phase 2B reduced-live mode** (`ALLOW_DYNAMIC_POS_OVERRIDE = False`) — effective cap reverts to the CB base (3 at GREEN).
 
 ---
 
@@ -225,7 +228,7 @@ Additional gates enforced in `is_trading_allowed`:
 
 ## 10. The One-Line Summary
 
-**Single-process Python bot, mainnet, 8 alt pairs, 30-min polling + 4H WS triggers, 1 primary strategy + 2 auxiliary routes, multi-level signal cascade, SQLite-only state, zero production monitoring, zero live attribution telemetry, docs lag code by 3–6 weeks.**
+**Single-process Python bot, mainnet, Phase 2B reduced-live (SOL+SUI only, 4H flip + 1H continuation only, AdaptiveTrend/BreakoutTrader/consensus/dynamic-+1 all gated off; full 8-pair universe still reconciled), 30-min polling + 4H WS triggers, SQLite-only state, 833 tests passing.**
 
 ---
 

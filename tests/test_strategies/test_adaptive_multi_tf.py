@@ -199,8 +199,16 @@ def test_trending_low_adx_routes_to_none(adaptive: AdaptiveStrategy) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ranging_routes_to_adaptive_trend(adaptive: AdaptiveStrategy) -> None:
-    """RANGING with ADX < 18 routes to AdaptiveTrend (momentum strategy)."""
+def test_ranging_routes_to_adaptive_trend(
+    adaptive: AdaptiveStrategy, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RANGING with ADX < 18 routes to AdaptiveTrend (momentum strategy).
+
+    Phase 2B: reduced-live mode disables this route. Re-enable for the
+    full-mode semantic test.
+    """
+    from src.orchestrator import reduced_live_mode as rlm
+    monkeypatch.setattr(rlm, "ALLOW_ADAPTIVE_TREND_ROUTE", True)
     regime = RegimeState(
         regime=MarketRegime.RANGING,
         confidence=70.0,
@@ -234,8 +242,16 @@ def test_ranging_with_adx_18_routes_to_supertrend(adaptive: AdaptiveStrategy) ->
 # ---------------------------------------------------------------------------
 
 
-def test_volatile_routes_to_breakout_trader(adaptive: AdaptiveStrategy) -> None:
-    """VOLATILE with ADX >= 15 routes to BreakoutTrader."""
+def test_volatile_routes_to_breakout_trader(
+    adaptive: AdaptiveStrategy, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """VOLATILE with ADX >= 15 routes to BreakoutTrader.
+
+    Phase 2B: reduced-live mode disables this route. Re-enable for the
+    full-mode semantic test.
+    """
+    from src.orchestrator import reduced_live_mode as rlm
+    monkeypatch.setattr(rlm, "ALLOW_BREAKOUT_TRADER_ROUTE", True)
     regime = RegimeState(
         regime=MarketRegime.VOLATILE,
         confidence=65.0,
