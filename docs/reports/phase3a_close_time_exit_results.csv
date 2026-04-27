@@ -1,0 +1,11 @@
+exit_model,window,opportunities,avg_R,median_R,win_rate,fee_adj_avg_R_taker,fee_adj_avg_R_maker,verdict
+close_exit_4h,28d,305,0.0196,0.0,0.4951,-0.0002,0.0057,NEGATIVE_NEAR_BE
+close_exit_8h,28d,302,0.0026,-0.0042,0.4967,-0.0171,-0.0112,NEGATIVE_NEAR_BE
+close_exit_24h,28d,298,-0.2001,-0.1945,0.3322,-0.2197,-0.2139,NEGATIVE
+close_exit_48h,28d,290,-0.2783,-0.3427,0.2724,-0.2976,-0.2918,NEGATIVE
+close_exit_100h,28d,276,-0.3686,-0.3606,0.25,-0.3876,-0.3819,NEGATIVE
+close_exit_4h,60d,683,0.0331,0.0218,0.5447,0.0152,0.0206,MARGINAL
+close_exit_8h,60d,680,0.0152,0.0225,0.5324,-0.0026,0.0027,NEGATIVE_NEAR_BE
+close_exit_24h,60d,676,-0.0833,-0.0699,0.4438,-0.101,-0.0957,NEGATIVE
+close_exit_48h,60d,668,-0.1604,-0.1758,0.3817,-0.178,-0.1727,NEGATIVE
+close_exit_100h,60d,654,-0.2695,-0.3371,0.3272,-0.287,-0.2817,NEGATIVE
